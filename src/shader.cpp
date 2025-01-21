@@ -18,7 +18,6 @@ namespace fs {
         buffer << file.rdbuf();
 
         return buffer.str();
-
     }
 
     static unsigned int compile_shader( const std::string& source, GLenum type ) {
@@ -44,7 +43,6 @@ namespace fs {
             std::cerr << "ERROR::SHADER::COMPILATION_ERROR\n" << info_log << std::endl;
 
             throw std::runtime_error( "shader compilation failed" );
-
         }
 
         return shader;
@@ -64,7 +62,6 @@ namespace fs {
         glAttachShader( program, fragment_shader );
         glLinkProgram( program );
 
-
         // check for linking errors
         int success;
         char info_log[ 1024 ];
@@ -72,19 +69,18 @@ namespace fs {
         glGetProgramiv( program, GL_LINK_STATUS, &success );
 
         if ( !success ) {
+
             glGetProgramInfoLog( program, 1024, nullptr, info_log );
 
             std::cerr << "ERROR::PROGRAM::LINKING_FAILED\n" << info_log << std::endl;
 
             throw std::runtime_error( "program linking failed ");
-
         }
 
         glDeleteShader( vertex_shader );
         glDeleteShader( fragment_shader );
 
         return program;
-
     }
 
 }
