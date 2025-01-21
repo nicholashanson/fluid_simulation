@@ -24,7 +24,6 @@ namespace fs {
 
         glBindBuffer( GL_ARRAY_BUFFER, 0 );
         glBindVertexArray( 0 );
-
     }
 
     void render_grid( unsigned int VAO, size_t vertex_count ) {
