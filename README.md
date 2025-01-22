@@ -22,8 +22,10 @@ non-zero f-values. Non-zero f-values in obstacles cells first have their directi
 inverted and then propagated back to their original cell.
 ### Collision Step
 This step helps to ease the fluid towards a state of equilibrium.
+
 $$
 f^{\text{eq}}_q = w_q \rho \left( 1 + \frac{\mathbf{e}_q \cdot \mathbf{u}}{c_s^2} + \frac{(\mathbf{e}_q \cdot \mathbf{u})^2}{2 c_s^4} - \frac{|\mathbf{u}|^2}{2 c_s^2} \right)
 $$
+
 Where $w_q$ is the weight in the $q$-th direction, $\rho$ is the fluid density, and $e_q = ( e_{qx}, e_{qy} )$ is the discrete velocity vector in the $q$-th direction.
 After this step is complete we return to the "Set Inlet" step.
