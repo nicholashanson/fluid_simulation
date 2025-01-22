@@ -20,6 +20,11 @@ Lastly we stream the outlet. This is the opposite of inlet streaming in that we 
 This step resolves the direpancy in our previous step: that of obstacle cells having
 non-zero f-values. Non-zero f-values in obstacles cells first have their direction 
 inverted and then propagated back to their original cell.
+
+### Handle Obstacle
+
+If there are any obstacles inisde the tunnel interior, we flush these obstacle cells of any non-zero f-values in the same way as the tunnel walls.
+
 ### Collision Step
 This step helps to ease the fluid towards a state of equilibrium.
 
