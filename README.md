@@ -1,5 +1,8 @@
 # Fluid Simulation
 ## Lattice Boltzmann Methods ( LBM )
+
+![composite_image_with_labels](https://github.com/user-attachments/assets/9aa48893-fd37-4238-aefa-e6a7cc485a34)
+
 LBM was designed from inception to run on massively parallel architectures.
 ### Grid Initialization
 We need to initialize every cell on the grid with a non-zero density.
