@@ -10,7 +10,7 @@ Streaming only applies to fluid cells, so obstacle cells are ignored.
 For simplicity and efficiency, f-values form fluid cells are allowed to stream into obstacle cells. This results in obstacle cells having non-zero f-values. Obstacle cells
 are not allowed to have non-zero f-values, but this discrepancy will be handled later.
 
-First we stream the inlet. In the case of inlet cells, we ignore any f-value that are streamed towards the left ( as this is off-grid ). 
+First we stream the inlet. In the case of inlet cells, we ignore any f-values that are streamed towards the left ( as this is off-grid ). 
 
 Next we stream the interior of the tunnel. The f-values of these cells are streamed in all directions. 
 
