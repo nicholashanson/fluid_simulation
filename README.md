@@ -4,10 +4,12 @@
 ![composite_image_with_labels](https://github.com/user-attachments/assets/9aa48893-fd37-4238-aefa-e6a7cc485a34)
 
 ### Steps
-#### Grid Initialization
+#### (1) Grid Initialization
 We need to initialize every cell on the grid with a non-zero density.
-#### Set Inlet
-#### Streaming Step
+#### (2) Set Inlet
+In this step we set the velocity distribution across the inlet. We can choose from a variety of distributions, such as uniform or Poiseuille flow. In addition, we can add
+perturbation to the inlet, either temporal or spatial or both.
+#### (3) Streaming Step
 The streaming step propagates f-values to neighboring cells. 
 Streaming only applies to fluid cells, so obstacle cells are ignored.
 For simplicity and efficiency, f-values form fluid cells are allowed to stream into obstacle cells. This results in obstacle cells having non-zero f-values. Obstacle cells
@@ -19,16 +21,16 @@ Next we stream the interior of the tunnel. The f-values of these cells are strea
 
 Lastly we stream the outlet. This is the opposite of inlet streaming in that we ignore f-values that stream to the right.
 
-#### Flush Tunnel Walls
+#### (4) Flush Tunnel Walls
 This step resolves the direpancy in our previous step: that of obstacle cells having
 non-zero f-values. Non-zero f-values in obstacles cells first have their direction 
 inverted and then propagated back to their original cell.
 
-#### Handle Obstacle
+#### (5) Handle Obstacle
 
 If there are any obstacles inisde the tunnel interior, we flush these obstacle cells of any non-zero f-values in the same way as the tunnel walls.
 
-#### Collision Step
+#### (6) Collision Step
 This step helps to ease the fluid towards a state of equilibrium.
 
 $$
