@@ -5,17 +5,17 @@ LBM was designed from inception to run on massively parallel architectures.
 We need to initialize every cell on the grid with a non-zero density.
 ### Set Inlet
 ### Streaming Step
-The streaming step propagates f values to neighboring cells. 
+The streaming step propagates f-values to neighboring cells. 
 Streaming only applies to fluid cells, so obstacle cells are ignored.
-F values form fluid cells are allowed to stream into obstacle cells. Obstacle cells
-are not allowed to have non-zero f values, but this discrepancy 
-will be handled later.
-First we stream the inlet. 
-In the case of inlet cells, we ignore  any f value that are streamed towards the left. Next we stream 
-the interior of the tunnel. The f values of these cells are streamed 
-in all directions. 
-Lastly we stream the outlet. This is the opposite of inlet streaming in that
-we ignore f values that stream to the right.
+For simplicity and efficiency, f-values form fluid cells are allowed to stream into obstacle cells. This results in obstacle cells having non-zero f-values. Obstacle cells
+are not allowed to have non-zero f-values, but this discrepancy will be handled later.
+
+First we stream the inlet. In the case of inlet cells, we ignore any f-value that are streamed towards the left ( as this is off-grid ). 
+
+Next we stream the interior of the tunnel. The f-values of these cells are streamed in all directions. 
+
+Lastly we stream the outlet. This is the opposite of inlet streaming in that we ignore f-values that stream to the right.
+
 ### Flush Tunnel Walls
 This step resolves the direpancy in our previous step: that of obstacle cells having
 non-zero f-values. Non-zero f-values in obstacles cells first have their direction 
