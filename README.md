@@ -1,7 +1,7 @@
 # Fluid Simulation
 ## Lattice Boltzmann Methods ( LBM )
 
-![composite_image_with_labels](https://github.com/user-attachments/assets/9aa48893-fd37-4238-aefa-e6a7cc485a34)
+![fluid_simulation](https://github.com/user-attachments/assets/eb0b6921-b673-49c5-b0a2-a0ea1974d9c8)
 
 ### Steps
 #### (1) Grid Initialization
