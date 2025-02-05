@@ -1,6 +1,7 @@
 # Fluid Simulation
 ## Lattice Boltzmann Methods ( LBM )
 
+
 <p align="center">
   <img src="https://github.com/user-attachments/assets/eb0b6921-b673-49c5-b0a2-a0ea1974d9c8" alt="fluid_simulation">
 </p>
