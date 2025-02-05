@@ -1,5 +1,5 @@
 # Fluid Simulation
-## Lattice Boltzmann Methods ( LBM )
+## Lattice Boltzmann Method ( LBM )
 
 
 <p align="center">
