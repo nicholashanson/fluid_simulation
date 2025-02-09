@@ -2,7 +2,7 @@
 #include <glad/glad.h>
 #include <vector>
 
-namespace fs {
+namespace app {
 
     void setup_grid_buffers( const std::vector<float>& vertices, unsigned int& VAO, unsigned int& VBO ) {
 
