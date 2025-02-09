@@ -10,8 +10,9 @@ icpx ^
     -fsycl-targets=nvptx64-nvidia-cuda ^
     -std=c++23 ^
     -DDPCPP_COMPILER ^
+    lbm/grid_to_vertex_data.cpp ^
     lbm/collision_step.cpp ^
-    "C:/Users/HP/Documents/fluid_simulation/src/lbm/common.cpp" ^
+    C:/Users/HP/Documents/fluid_simulation/src/lbm/common.cpp ^
     -I"C:/Users/HP/Documents/fluid_simulation/include" ^
     -I%ONEAPI_INCLUDE% ^
     -L%ONEAPI_LIB% ^
