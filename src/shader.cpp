@@ -4,7 +4,7 @@
 #include <iostream>
 #include <stdexcept>
 
-namespace fs {
+namespace app {
 
     static std::string read_shader_source( const std::string& file_path ) {
 
@@ -46,7 +46,6 @@ namespace fs {
         }
 
         return shader;
-
     }
 
     unsigned int setup_shaders( const std::string& vertex_path, const std::string& fragment_path ) {
