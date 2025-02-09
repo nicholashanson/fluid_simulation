@@ -1,8 +1,18 @@
-#include <lbm/common.hpp>
+#include <fs/lbm/common.hpp>
 
 namespace fs {
 
     namespace lbm {
+
+        std::set<std::pair<size_t, size_t>> obstacle_coords;
+
+        std::vector<std::pair<size_t, size_t>> obstacle_coords_line = {
+            { 3, 3 }
+        };
+
+        const std::vector<double> D2Q9_states( settings::ydim * settings::xdim * 9, 0.0 );
+
+        const std::vector<double> property_states( settings::ydim * settings::xdim, 0.0 );
 
         double calculate_f_eq( size_t q, double rho, double u_x, double u_y ) {
 
@@ -16,29 +26,6 @@ namespace fs {
 
             return f_eq;
         }
-
-        std::vector<std::pair<size_t, size_t>> obstacle_coords = {
-                { 20, 15 },
-                { 20, 16 },
-                { 20, 17 },
-                { 20, 18 },
-                { 20, 19 },
-                { 20, 20 },
-                { 20, 21 },
-                { 20, 22 },
-                { 20, 23 },
-                { 20, 24 },
-                { 20, 25 },
-                { 20, 26 },
-                { 20, 27 },
-                { 20, 28 },
-                { 20, 29 },
-                { 20, 30 },
-                { 20, 31 },
-                { 20, 32 },
-                { 20, 33 },
-                { 20, 34 }
-        };
 
     } // lbm
 
