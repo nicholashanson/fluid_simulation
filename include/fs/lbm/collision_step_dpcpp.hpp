@@ -330,6 +330,8 @@ namespace fs {
                             d_A[ A_offset + 8 ] = local_f[ f_offset + 8 ];
                         });
                     });
+
+                    gpu_queue.wait();
             
                     gpu_queue.submit( [&]( sycl::handler& h ) {
             
@@ -345,21 +347,23 @@ namespace fs {
             
                             if ( !is_boundary ) {
 
+                                d_A_n[ base_index ] = d_A[ base_index ];
+
                                 d_A_n[ base_index + 1 ] = d_A[ ( ( x - 1 ) + y * xdim ) * 9 + 1 ];
 
-                                d_A_n[ base_index + 2 ] = d_A[ ( x + ( y + 1 ) * xdim ) * 9 + 2 ];
+                                d_A_n[ base_index + 4 ] = d_A[ ( x + ( y + 1 ) * xdim ) * 9 + 4 ];
                                 
                                 d_A_n[ base_index + 3 ] = d_A[ ( ( x + 1 ) + y * xdim ) * 9 + 3 ];
                                 
-                                d_A_n[ base_index + 4 ] = d_A[ ( x + ( y - 1 ) * xdim ) * 9 + 4 ];
+                                d_A_n[ base_index + 2 ] = d_A[ ( x + ( y - 1 ) * xdim ) * 9 + 2 ];
                                 
-                                d_A_n[ base_index + 5 ] = d_A[ ( ( x - 1 ) + ( y + 1 ) * xdim ) * 9 + 5 ];
+                                d_A_n[ base_index + 8 ] = d_A[ ( ( x - 1 ) + ( y + 1 ) * xdim ) * 9 + 8 ];
                                 
-                                d_A_n[ base_index + 6 ] = d_A[ ( ( x + 1 ) + ( y + 1 ) * xdim ) * 9 + 6 ];
+                                d_A_n[ base_index + 7 ] = d_A[ ( ( x + 1 ) + ( y + 1 ) * xdim ) * 9 + 7 ];
                                 
-                                d_A_n[ base_index + 7 ] = d_A[ ( ( x + 1 ) + ( y - 1 ) * xdim ) * 9 + 7 ];
+                                d_A_n[ base_index + 6 ] = d_A[ ( ( x + 1 ) + ( y - 1 ) * xdim ) * 9 + 6 ];
                                 
-                                d_A_n[ base_index + 8 ] = d_A[ ( ( x - 1 ) + ( y - 1 ) * xdim ) * 9 + 8 ];
+                                d_A_n[ base_index + 5 ] = d_A[ ( ( x - 1 ) + ( y - 1 ) * xdim ) * 9 + 5 ];
                             }
                         });
                     });
@@ -382,17 +386,17 @@ namespace fs {
                                 
                                 d_A_n[ ( x - 1 + y * xdim ) * 9 + 3 ] = d_A_n[ index + 1 ];
                                 
-                                d_A_n[ ( x + ( y + 1 ) * xdim ) * 9 + 4 ] = d_A_n[ index + 2 ];
+                                d_A_n[ ( x + ( y + 1 ) * xdim ) * 9 + 2 ] = d_A_n[ index + 4 ];
                                 
-                                d_A_n[ ( x + ( y - 1 ) * xdim ) * 9 + 2 ] = d_A_n[ index + 4 ];
+                                d_A_n[ ( x + ( y - 1 ) * xdim ) * 9 + 4 ] = d_A_n[ index + 2 ];
                                 
-                                d_A_n[ ( x + 1 + ( y + 1 ) * xdim ) * 9 + 8 ] = d_A_n[ index + 6 ];
+                                d_A_n[ ( x + 1 + ( y + 1 ) * xdim ) * 9 + 5 ] = d_A_n[ index + 7 ];
                                 
-                                d_A_n[ ( x - 1 + ( y + 1 ) * xdim ) * 9 + 7 ] = d_A_n[ index + 5 ];
+                                d_A_n[ ( x - 1 + ( y + 1 ) * xdim ) * 9 + 6 ] = d_A_n[ index + 8 ];
                                 
-                                d_A_n[ ( x + 1 + ( y - 1 ) * xdim ) * 9 + 5 ] = d_A_n[ index + 7 ];
+                                d_A_n[ ( x + 1 + ( y - 1 ) * xdim ) * 9 + 8 ] = d_A_n[ index + 6 ];
                                 
-                                d_A_n[ ( x - 1 + ( y - 1 ) * xdim ) * 9 + 6 ] = d_A_n[ index + 8 ];
+                                d_A_n[ ( x - 1 + ( y - 1 ) * xdim ) * 9 + 7 ] = d_A_n[ index + 5 ];
                             }  
                         });
                     });
@@ -502,67 +506,58 @@ namespace fs {
                                 for ( size_t x = 1; x < xdim - 1; ++x ) {
         
                                     const size_t base_index = ( x + y * xdim ) * 9;
+
+                                    A_n[ base_index ] = A[ base_index ];
         
                                     A_n[ base_index + 1 ] = A[ ( ( x - 1 ) + y * xdim ) * 9 + 1 ];
 
-                                    A_n[ base_index + 2 ] = A[ ( x + ( y + 1 ) * xdim ) * 9 + 2 ];
+                                    A_n[ base_index + 4 ] = A[ ( x + ( y + 1 ) * xdim ) * 9 + 4 ];
 
                                     A_n[ base_index + 3 ] = A[ ( ( x + 1 ) + y * xdim ) * 9 + 3 ];
 
-                                    A_n[ base_index + 4 ] = A[ ( x + ( y - 1 ) * xdim ) * 9 + 4 ];
+                                    A_n[ base_index + 2 ] = A[ ( x + ( y - 1 ) * xdim ) * 9 + 2 ];
 
-                                    A_n[ base_index + 5 ] = A[ ( ( x - 1 ) + ( y + 1 ) * xdim ) * 9 + 5 ];
+                                    A_n[ base_index + 8 ] = A[ ( ( x - 1 ) + ( y + 1 ) * xdim ) * 9 + 8 ];
 
-                                    A_n[ base_index + 6 ] = A[ ( ( x + 1 ) + ( y + 1 ) * xdim ) * 9 + 6 ];
+                                    A_n[ base_index + 7 ] = A[ ( ( x + 1 ) + ( y + 1 ) * xdim ) * 9 + 7 ];
 
-                                    A_n[ base_index + 7 ] = A[ ( ( x + 1 ) + ( y - 1 ) * xdim ) * 9 + 7 ];
+                                    A_n[ base_index + 6 ] = A[ ( ( x + 1 ) + ( y - 1 ) * xdim ) * 9 + 6 ];
 
-                                    A_n[ base_index + 8 ] = A[ ( ( x - 1 ) + ( y - 1 ) * xdim ) * 9 + 8 ];
+                                    A_n[ base_index + 5 ] = A[ ( ( x - 1 ) + ( y - 1 ) * xdim ) * 9 + 5 ];
                                 }
                             }
                         }
                     );
-                    
+
                     for ( size_t y = 1; y < ydim; ++y ) {
 
                         for ( size_t x = 1; x < xdim - 1; ++x ) {
 
                             if ( obstacle[ x + y * xdim ] ) {
 
-                                std::cout << "A_n [ 39 + 39 * xdim ] = " << A_n[ ( 39 + 39 * xdim ) * 9 + 6 ] << std::endl;
-
-                                std::cout << "evaluated true" << std::endl;
-
                                 size_t index = ( x + y * xdim ) * 9;
-
-                                std::cout << "index: " << index << std::endl;
                     
                                 A_n[ ( x + 1 + y * xdim ) * 9 + 1 ] = A_n[ index + 3 ];
 
                                 A_n[ ( x - 1 + y * xdim ) * 9 + 3 ] = A_n[ index + 1 ];
 
-                                A_n[ ( x + ( y + 1 ) * xdim ) * 9 + 4 ] = A_n[ index + 2 ];
+                                A_n[ ( x + ( y + 1 ) * xdim ) * 9 + 2 ] = A_n[ index + 4 ];
 
-                                A_n[ ( x + ( y - 1 ) * xdim ) * 9 + 2 ] = A_n[ index + 4 ];
+                                A_n[ ( x + ( y - 1 ) * xdim ) * 9 + 4 ] = A_n[ index + 2 ];
 
-                                A_n[ ( x + 1 + ( y + 1 ) * xdim ) * 9 + 8 ] = A_n[ index + 6 ];
+                                A_n[ ( x + 1 + ( y + 1 ) * xdim ) * 9 + 5 ] = A_n[ index + 7 ];
 
-                                A_n[ ( x - 1 + ( y + 1 ) * xdim ) * 9 + 7 ] = A_n[ index + 5 ];
+                                A_n[ ( x - 1 + ( y + 1 ) * xdim ) * 9 + 6 ] = A_n[ index + 8 ];
 
-                                A_n[ ( x + 1 + ( y - 1 ) * xdim ) * 9 + 5 ] = A_n[ index + 7 ];
+                                A_n[ ( x + 1 + ( y - 1 ) * xdim ) * 9 + 8 ] = A_n[ index + 6 ];
 
-                                A_n[ ( x - 1 + ( y - 1 ) * xdim ) * 9 + 6 ] = A_n[ index + 8 ];
-                                
-                                std::cout << "A_n [ 39 + 39 * xdim ] = " << A_n[ ( 39 + 39 * xdim ) * 9 + 6 ] << std::endl;
+                                A_n[ ( x - 1 + ( y - 1 ) * xdim ) * 9 + 7 ] = A_n[ index + 5 ];
                             }
-
                         }  
                     }
 
                     std::swap( A, A_n );
                 }
-
-                std::cout << "A[ 39 + 39 * xdim ] = " << A[ ( 39 + 39 * xdim ) * 9 + 6 ] << std::endl;
 
                 if ( A_n != A_n_initial ) {
 
@@ -570,8 +565,6 @@ namespace fs {
 
                     std::swap( A, A_n );
                 }
-
-                std::cout << "A[ 39 + 39 * xdim ] = " << A[ ( 39 + 39 * xdim ) * 9 + 6 ] << std::endl;
 
                 std::free( A_n );
             } 
