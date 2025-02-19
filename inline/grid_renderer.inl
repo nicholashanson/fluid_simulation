@@ -224,10 +224,9 @@ namespace app {
         return vertices; 
     }
 
-    /*
     template<typename Array, typename MDSpan>
-    std::vector<float> property_to_vertex_data( const sim::grid<Array, MDSpan>& gd, std::vector<double>& property_states,
-                                                std::function<double(std::array<double, 9> )> calculate_property ) {
+    std::vector<float> property_to_vertex_data( const sim::grid<Array, MDSpan>& gd, const std::vector<double>& property_states,
+                                                std::function<double( std::array<double, 9>& )> calculate_property ) {
 
         std::vector<float> vertices;
 
@@ -263,8 +262,6 @@ namespace app {
 
         return vertices;
     }
-
-    */
 
 }
 
