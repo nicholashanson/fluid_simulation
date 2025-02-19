@@ -4,12 +4,10 @@
 #include <glad/glad.h>
 #include <glm/glm.hpp>
 
-#include <fs/lbm/lbm.hpp>
+#include <fs/fs.hpp>
 
 #include <algorithm>
 #include <concepts>
-
-// #include <opencv2/opencv.hpp>
 
 #include <tbb/parallel_for.h>
 #include <tbb/blocked_range.h>
@@ -32,14 +30,14 @@ namespace app {
         return Color{ r, 0, b };
     }
 
-    template<typename Barrier>
-    concept boolean_indexable = requires( const Barrier& b, size_t i ) {
+    template<typename Obstacle>
+    concept boolean_indexable = requires( const Obstacle& b, size_t i ) {
         { b[ i ] } -> std::convertible_to<bool>;
     };
 
-    template<size_t ydim, size_t xdim, typename Barrier>
-    requires boolean_indexable<Barrier>
-    std::vector<float> obstacle_to_vertex_data( const Barrier& barrier ) {
+    template<size_t ydim, size_t xdim, typename Obstacle>
+    requires boolean_indexable<Obstacle>
+    std::vector<float> obstacle_to_vertex_data( const Obstacle& obstacle ) {
 
         // number of vertices per grid square
         const size_t vertex_n = ydim * xdim;
@@ -55,7 +53,7 @@ namespace app {
         for ( size_t y = 0; y < ydim; ++y ) {
             for ( size_t x = 0; x < xdim ; ++x ) {
 
-                if ( barrier[ x + y * xdim ] ) {
+                if ( obstacle[ x + y * xdim ] ) {
 
                     float x_ = -1.0f  + x * cell_size;
                     float y_ = 1.0f - y * cell_size;
@@ -188,9 +186,7 @@ namespace app {
     }
 
     template<size_t ydim, size_t xdim>
-    std::vector<float> js( const std::array<double, xdim*ydim>& u_x ) {
-
-        std::cout << "inside js" << std::endl;
+    std::vector<float> property_array_to_vertex_data( const std::array<double, xdim*ydim>& u_x ) {
 
         std::vector<float> vertices;
         
@@ -225,8 +221,8 @@ namespace app {
     }
 
     template<typename Array, typename MDSpan>
-    std::vector<float> property_to_vertex_data( const sim::grid<Array, MDSpan>& gd, const std::vector<double>& property_states,
-                                                std::function<double( std::array<double, 9>& )> calculate_property ) {
+    std::vector<float> property_grid_to_vertex_data( const sim::grid<Array, MDSpan>& gd, const std::vector<double>& property_states,
+                                                     std::function<double( std::array<double, 9>& )> calculate_property ) {
 
         std::vector<float> vertices;
 
