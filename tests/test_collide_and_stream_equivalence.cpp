@@ -20,6 +20,7 @@ bool approx_equal_cells( const size_t y, const size_t x, const std::array<double
         return std::fabs( a - b ) < epsilon;
     };
 
+    // an array of references to all the flat FD arrays for cleaner code
     std::array<std::reference_wrapper<std::array<double, fs::settings::ydim * fs::settings::xdim>>, 9> ni = {
         js::n0, js::nE, js::nN, js::nW, js::nS, js::nNE, js::nNW, js::nSW, js::nSE
     };
@@ -96,23 +97,8 @@ TEST( LBMTests, CollideAndStreamEquivalence ) {
     fs::dpcxx::lbm::collide_and_stream_tbb( grid_tbb, obstacle, steps );
     fs::dpcxx::lbm::collide_and_stream( grid_dpcxx, obstacle, steps );
 
-    for ( size_t y = 0; y < fs::settings::ydim; ++y ) {
-
-        fs::lbm::set_velocity( grid_tbb, y, 0, 0.1, 0.0 );
-        fs::lbm::set_velocity( grid_tbb, y, fs::settings::xdim - 1, 0.1, 0.0 );
-
-        fs::lbm::set_velocity( grid_dpcxx, y, 0, 0.1, 0.0 );
-        fs::lbm::set_velocity( grid_dpcxx, y, fs::settings::xdim - 1, 0.1, 0.0 );
-    } 
-
-    for ( size_t x = 0; x < fs::settings::xdim; ++x ) {
-        
-        fs::lbm::set_velocity( grid_tbb, 0, x, 0.1, 0.0 );
-        fs::lbm::set_velocity( grid_tbb, fs::settings::ydim - 1, x, 0.1, 0.0 );
-
-        fs::lbm::set_velocity( grid_dpcxx, 0, x, 0.1, 0.0 );
-        fs::lbm::set_velocity( grid_dpcxx, fs::settings::ydim - 1, x, 0.1, 0.0 );
-    }
+    fs::lbm::set_boundaries( grid_tbb );
+    fs::lbm::set_boundaries( grid_dpcxx );
 
     for ( size_t y = 0; y < fs::settings::ydim; ++y ) {
         for ( size_t x = 0; x < fs::settings::xdim; ++x ) {
