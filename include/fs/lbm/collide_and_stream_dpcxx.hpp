@@ -123,25 +123,25 @@ namespace fs {
             
                             const T uy_2 = u_y * u_y;
             
-                            const T u_215 = 1.5f * ( ( ux_2 ) + ( uy_2 ) );
+                            const T u_215 = 1.5 * ( ( ux_2 ) + ( uy_2 ) );
             
                             const T ux_3 = 3 * u_x;
             
                             const T uy_3 = 3 * u_y;
             
-                            local_Q9[ local_Q9_offset ] += omega * ( ( 4.0f / 9.0f ) * rho * ( 1 - u_215 ) - local_Q9[ local_Q9_offset ] );
+                            local_Q9[ local_Q9_offset ] += omega * ( ( 4.0 / 9.0 ) * rho * ( 1 - u_215 ) - local_Q9[ local_Q9_offset ] );
                             d_D2Q9[ d_D2Q9_offset ] = local_Q9[ local_Q9_offset ];
             
-                            local_Q9[ local_Q9_offset + 1 ] += omega * ( ( 1.0f / 9.0f ) * rho * ( 1 + ux_3 + 4.5 * ux_2 - u_215 ) - local_Q9[ local_Q9_offset + 1 ] );
+                            local_Q9[ local_Q9_offset + 1 ] += omega * ( ( 1.0 / 9.0 ) * rho * ( 1 + ux_3 + 4.5 * ux_2 - u_215 ) - local_Q9[ local_Q9_offset + 1 ] );
                             d_D2Q9[ d_D2Q9_offset + 1 ] = local_Q9[ local_Q9_offset + 1 ];
             
-                            local_Q9[ local_Q9_offset + 2 ] += omega * ( ( 1.0f / 9.0f ) * rho * ( 1 + uy_3 + 4.5 * uy_2 - u_215 ) - local_Q9[ local_Q9_offset + 2 ] );
+                            local_Q9[ local_Q9_offset + 2 ] += omega * ( ( 1.0 / 9.0 ) * rho * ( 1 + uy_3 + 4.5 * uy_2 - u_215 ) - local_Q9[ local_Q9_offset + 2 ] );
                             d_D2Q9[ d_D2Q9_offset + 2 ] = local_Q9[ local_Q9_offset + 2 ];
             
-                            local_Q9[ local_Q9_offset + 3 ] += omega * (  ( 1.0f / 9.0f ) * rho * ( 1 - ux_3 + 4.5 * ux_2 - u_215 )  - local_Q9[ local_Q9_offset + 3 ] );
+                            local_Q9[ local_Q9_offset + 3 ] += omega * (  ( 1.0 / 9.0 ) * rho * ( 1 - ux_3 + 4.5 * ux_2 - u_215 )  - local_Q9[ local_Q9_offset + 3 ] );
                             d_D2Q9[ d_D2Q9_offset + 3 ] = local_Q9[ local_Q9_offset + 3 ]; 
             
-                            local_Q9[ local_Q9_offset + 4 ] += omega * ( ( 1.0f / 9.0f ) * rho * ( 1 - uy_3 + 4.5 * uy_2 - u_215 )  - local_Q9[ local_Q9_offset + 4 ] );
+                            local_Q9[ local_Q9_offset + 4 ] += omega * ( ( 1.0 / 9.0 ) * rho * ( 1 - uy_3 + 4.5 * uy_2 - u_215 )  - local_Q9[ local_Q9_offset + 4 ] );
                             d_D2Q9[ d_D2Q9_offset + 4 ] = local_Q9[ local_Q9_offset + 4 ];
             
                             const T uxuy_2 = 2 * u_x * u_y;
@@ -305,13 +305,13 @@ namespace fs {
         
                                 const T uy_2 = uy_ * uy_;
         
-                                const T u_215 = 1.5f * ( ( ux_2 ) + ( uy_2 ) );
+                                const T u_215 = 1.5 * ( ( ux_2 ) + ( uy_2 ) );
         
                                 const T ux_3 = ux_ * 3;
         
                                 const T uy_3 = uy_ * 3;
         
-                                A[ index_offset ] += omega * ( ( 4.0f / 9.0f ) * rho_ * ( 1 - u_215 ) - A[ index_offset ] );
+                                A[ index_offset ] += omega * ( ( 4.0 / 9.0 ) * rho_ * ( 1 - u_215 ) - A[ index_offset ] );
         
                                 A[ index_offset + 1 ] += omega * ( ( 1.0f / 9.0f ) * rho_ * ( 1 + ux_3 + 4.5 * ux_2 - u_215 ) - A[ index_offset + 1 ] );
         
