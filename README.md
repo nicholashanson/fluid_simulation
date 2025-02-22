@@ -11,4 +11,12 @@
   <span>top-left: curl, top-right: speed, bottom-left: ux, bottom-right: uy</span>
 </p>
 
+### Optimizations
+
+LBM is highly-parallelizable, which makes it a perfect candidate for GPU acceleration.
+
+<p align="center">
+  <img src="main/performance_profiling/graphs/performance_collide_and_stream.png" width="400">
+</p>
+
 
