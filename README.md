@@ -6,7 +6,7 @@
   <img src="https://github.com/user-attachments/assets/24f21671-62f4-4fb1-8f71-8f834e3fce89" height="160" width="400">
   <br>
   <img src="https://github.com/user-attachments/assets/17f60251-462b-441c-a8e6-456738ee8cfc" height="160" width="400">
-  <img src="https://github.com/user-attachments/assets/a09bb649-6b64-411a-8905-7bcc1a2bf13e" height="160" width="400">
+  <img src="https://github.com/user-attachments/assets/31d7a299-d3e2-4f0e-9794-5e444115d28e" height="160" width="400">
 </p>
 
 ### Steps
