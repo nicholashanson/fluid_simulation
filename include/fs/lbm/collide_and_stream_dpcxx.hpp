@@ -177,23 +177,32 @@ namespace fs {
                             bool is_boundary = ( y == 0 || x == 0 || y == ydim - 1 || x == xdim - 1 );
             
                             if ( !is_boundary ) {
-
+                                
+                                // rest particle frequency distribution directly copied to the new grid
                                 d_D2Q9_n[ base_index ] = d_D2Q9[ base_index ];
 
+                                // get east from left-hand cell
                                 d_D2Q9_n[ base_index + 1 ] = d_D2Q9[ ( ( x - 1 ) + y * xdim ) * 9 + 1 ];
 
+                                // get south from above cell 
                                 d_D2Q9_n[ base_index + 4 ] = d_D2Q9[ ( x + ( y + 1 ) * xdim ) * 9 + 4 ];
                                 
+                                // get west from right-hand cell
                                 d_D2Q9_n[ base_index + 3 ] = d_D2Q9[ ( ( x + 1 ) + y * xdim ) * 9 + 3 ];
-                                
+
+                                // get north from below cell
                                 d_D2Q9_n[ base_index + 2 ] = d_D2Q9[ ( x + ( y - 1 ) * xdim ) * 9 + 2 ];
                                 
+                                // get south-east from north-west cell
                                 d_D2Q9_n[ base_index + 8 ] = d_D2Q9[ ( ( x - 1 ) + ( y + 1 ) * xdim ) * 9 + 8 ];
-                                
+
+                                // get south-west from north-east cell
                                 d_D2Q9_n[ base_index + 7 ] = d_D2Q9[ ( ( x + 1 ) + ( y + 1 ) * xdim ) * 9 + 7 ];
                                 
+                                // get north-west from south-east cell
                                 d_D2Q9_n[ base_index + 6 ] = d_D2Q9[ ( ( x + 1 ) + ( y - 1 ) * xdim ) * 9 + 6 ];
                                 
+                                // get north-east from south-west cell
                                 d_D2Q9_n[ base_index + 5 ] = d_D2Q9[ ( ( x - 1 ) + ( y - 1 ) * xdim ) * 9 + 5 ];
                             }
                         });
