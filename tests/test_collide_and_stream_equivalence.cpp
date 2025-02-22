@@ -5,9 +5,35 @@
 #include <settings.hpp>
 #include <grid.hpp>
 #include <iostream>
+#include <functional>
 
 #include <vector>
 #include <array>
+
+const double epsilon = 1e-6; 
+
+bool approx_equal_cells( const size_t y, const size_t x, const std::array<double, 9>& dpcxx_state, const std::array<double, 9>& tbb_state ) {
+
+    bool approx_equal_ = true;
+
+    auto approx_equal = [=]( double a, double b ) {
+        return std::fabs( a - b ) < epsilon;
+    };
+
+    std::array<std::reference_wrapper<std::array<double, fs::settings::ydim * fs::settings::xdim>>, 9> ni = {
+        js::n0, js::nE, js::nN, js::nW, js::nS, js::nNE, js::nNW, js::nSW, js::nSE
+    };
+
+    for ( size_t k = 0; k < 9; ++k ) {
+        if ( !approx_equal( ni[ k ].get()[ x + y * fs::settings::xdim ], tbb_state[ k ] ) ||
+             !approx_equal( ni[ k ].get()[ x + y * fs::settings::xdim ], dpcxx_state[ k ] ) ) {
+
+            approx_equal_ = false;
+        }
+    }
+
+    return approx_equal_;
+}
 
 // init same obstacle in test target
 
@@ -30,7 +56,11 @@ TEST( LBMTests, CollideAndStreamEquivalence ) {
 
     std::cout << "yxxy" << std::endl;
 
-    const size_t steps = 10;
+    const size_t steps = 20;
+
+    auto approx_equal = [=]( double a, double b ) {
+        return std::fabs( a - b ) < epsilon;
+    };
 
     sim::grid<std::vector<double>, fs::lbm::D2Q9_view> grid_tbb( fs::lbm::D2Q9_states );
     sim::grid<std::vector<double>, fs::lbm::D2Q9_view> grid_dpcxx( fs::lbm::D2Q9_states );
@@ -47,12 +77,6 @@ TEST( LBMTests, CollideAndStreamEquivalence ) {
     std::cout << std::endl;
 
     bool equivalent_values = true;
-    
-    const double epsilon = 1e-6; 
-
-    auto approx_equal = [=]( double a, double b ) {
-        return std::fabs( a - b ) < epsilon;
-    };
 
     for ( size_t y = 0; y < fs::settings::ydim; ++y ) {
         for ( size_t x = 0; x < fs::settings::xdim; ++x ) {
@@ -60,36 +84,7 @@ TEST( LBMTests, CollideAndStreamEquivalence ) {
             const std::array<double, 9> tbb_state = grid_tbb.get_cell_state_array( y, x );
             const std::array<double, 9> dpcxx_state = grid_dpcxx.get_cell_state_array( y, x );
 
-            // std::cout << "n0: " << js::n0[ x + y * fs::settings::xdim ] << std::endl;
-            // std::cout << "tbb: " << tbb_state[ 0 ] << std::endl; 
-            // std::cout << "dpcxx: " << dpcxx_state[ 0 ] << std::endl;
-
-            if ( (!approx_equal(js::n0[ x + y * fs::settings::xdim ], tbb_state[0]) || 
-                !approx_equal(js::n0[ x + y * fs::settings::xdim ], dpcxx_state[0])) ||
-                
-                (!approx_equal(js::nE[ x + y * fs::settings::xdim ], tbb_state[1]) || 
-                !approx_equal(js::nE[ x + y * fs::settings::xdim ], dpcxx_state[1])) ||
-                
-                (!approx_equal(js::nN[ x + y * fs::settings::xdim ], tbb_state[2]) || 
-                !approx_equal(js::nN[ x + y * fs::settings::xdim ], dpcxx_state[2])) ||
-                
-                (!approx_equal(js::nW[ x + y * fs::settings::xdim ], tbb_state[3]) || 
-                !approx_equal(js::nW[ x + y * fs::settings::xdim ], dpcxx_state[3])) ||
-                
-                (!approx_equal(js::nS[ x + y * fs::settings::xdim ], tbb_state[4]) || 
-                !approx_equal(js::nS[ x + y * fs::settings::xdim ], dpcxx_state[4])) ||
-                
-                (!approx_equal(js::nNE[ x + y * fs::settings::xdim ], tbb_state[5]) || 
-                !approx_equal(js::nNE[ x + y * fs::settings::xdim ], dpcxx_state[5])) ||
-                
-                (!approx_equal(js::nNW[ x + y * fs::settings::xdim ], tbb_state[6]) || 
-                !approx_equal(js::nNW[ x + y * fs::settings::xdim ], dpcxx_state[6])) ||
-                
-                (!approx_equal(js::nSW[ x + y * fs::settings::xdim ], tbb_state[7]) || 
-                !approx_equal(js::nSW[ x + y * fs::settings::xdim ], dpcxx_state[7])) ||
-                
-                (!approx_equal(js::nSE[ x + y * fs::settings::xdim ], tbb_state[8]) || 
-                !approx_equal(js::nSE[ x + y * fs::settings::xdim ], dpcxx_state[8])) ) { 
+            if ( !approx_equal_cells( y, x, dpcxx_state, tbb_state ) ) { 
 
                 equivalent_values = false;
 
@@ -183,32 +178,7 @@ TEST( LBMTests, CollideAndStreamEquivalence ) {
             // std::cout << "tbb: " << tbb_state[ 0 ] << std::endl; 
             // std::cout << "dpcxx: " << dpcxx_state[ 0 ] << std::endl;
 
-            if ( (!approx_equal(js::n0[ x + y * fs::settings::xdim ], tbb_state[0]) || 
-                !approx_equal(js::n0[ x + y * fs::settings::xdim ], dpcxx_state[0])) ||
-                
-                (!approx_equal(js::nE[ x + y * fs::settings::xdim ], tbb_state[1]) || 
-                !approx_equal(js::nE[ x + y * fs::settings::xdim ], dpcxx_state[1])) ||
-                
-                (!approx_equal(js::nN[ x + y * fs::settings::xdim ], tbb_state[2]) || 
-                !approx_equal(js::nN[ x + y * fs::settings::xdim ], dpcxx_state[2])) ||
-                
-                (!approx_equal(js::nW[ x + y * fs::settings::xdim ], tbb_state[3]) || 
-                !approx_equal(js::nW[ x + y * fs::settings::xdim ], dpcxx_state[3])) ||
-                
-                (!approx_equal(js::nS[ x + y * fs::settings::xdim ], tbb_state[4]) || 
-                !approx_equal(js::nS[ x + y * fs::settings::xdim ], dpcxx_state[4])) ||
-                
-                (!approx_equal(js::nNE[ x + y * fs::settings::xdim ], tbb_state[5]) || 
-                !approx_equal(js::nNE[ x + y * fs::settings::xdim ], dpcxx_state[5])) ||
-                
-                (!approx_equal(js::nNW[ x + y * fs::settings::xdim ], tbb_state[6]) || 
-                !approx_equal(js::nNW[ x + y * fs::settings::xdim ], dpcxx_state[6])) ||
-                
-                (!approx_equal(js::nSW[ x + y * fs::settings::xdim ], tbb_state[7]) || 
-                !approx_equal(js::nSW[ x + y * fs::settings::xdim ], dpcxx_state[7])) ||
-                
-                (!approx_equal(js::nSE[ x + y * fs::settings::xdim ], tbb_state[8]) || 
-                !approx_equal(js::nSE[ x + y * fs::settings::xdim ], dpcxx_state[8])) ) { 
+            if ( !approx_equal_cells( y, x, dpcxx_state, tbb_state ) ) { 
 
                 equivalent_values = false;
 
