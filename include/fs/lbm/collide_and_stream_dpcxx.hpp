@@ -51,7 +51,7 @@ namespace fs {
                 return state;
             } 
 
-            void collide_and_stream( T* A_f32, unsigned char* obstacle, size_t steps ) {
+            void collide_and_stream( T* D2Q9, unsigned char* obstacle, size_t steps ) {
 
                 const T viscosity = 0.005;
             
@@ -67,19 +67,19 @@ namespace fs {
             
                 sycl::queue gpu_queue( *gpu );
             
-                T* d_A = sycl::malloc_device<T>( vec_len * 9, gpu_queue );
+                T* d_D2Q9 = sycl::malloc_device<T>( vec_len * 9, gpu_queue );
             
-                T* d_A_n = sycl::malloc_device<T>( vec_len * 9, gpu_queue ); 
+                T* d_D2Q9_n = sycl::malloc_device<T>( vec_len * 9, gpu_queue ); 
 
                 unsigned char* d_obstacle = sycl::malloc_device<unsigned char>( vec_len, gpu_queue );
 
                 gpu_queue.memcpy( d_obstacle, obstacle, vec_len * sizeof( unsigned char ) );
             
-                gpu_queue.memcpy( d_A, A_f32, vec_len * 9 * sizeof( T ) );
+                gpu_queue.memcpy( d_D2Q9, D2Q9, vec_len * 9 * sizeof( T ) );
             
                 gpu_queue.wait();
 
-                gpu_queue.memcpy( d_A_n, d_A, vec_len * 9 * sizeof( T ) );
+                gpu_queue.memcpy( d_D2Q9_n, d_D2Q9, vec_len * 9 * sizeof( T ) );
 
                 gpu_queue.wait();
             
@@ -87,7 +87,7 @@ namespace fs {
             
                     gpu_queue.submit( [&]( sycl::handler& h ) {
             
-                        sycl::local_accessor<T, 1> local_f( 9 * 32, h );
+                        sycl::local_accessor<T, 1> local_Q9( 9 * 32, h );
             
                         h.parallel_for( sycl::nd_range<1>{ { vec_len }, { 32 } }, [=]( sycl::nd_item<1> item ) {
                             
@@ -95,29 +95,29 @@ namespace fs {
                             
                             const size_t k = item.get_local_id();
             
-                            const size_t A_offset = ( i * 32 + k ) * 9;
+                            const size_t d_D2Q9_offset = ( i * 32 + k ) * 9;
                             
-                            const size_t f_offset = k * 9;
+                            const size_t local_Q9_offset = k * 9;
             
                             for ( size_t z = 0; z < 9; ++z ) 
-                                local_f[ f_offset + z ] = d_A[ A_offset + z ];
+                                local_Q9[ local_Q9_offset + z ] = d_D2Q9[ d_D2Q9_offset + z ];
             
                             T rho{};
                             
                             for ( size_t z = 0; z < 9; ++ z ) 
-                                rho += local_f[ f_offset + z ]; 
+                                rho += local_Q9[ local_Q9_offset + z ]; 
             
                             T u_x{};
             
-                            u_x = ( local_f[ f_offset + 1 ] + local_f[ f_offset + 5 ] +
-                                    local_f[ f_offset + 8 ] - local_f[ f_offset + 3 ] -
-                                    local_f[ f_offset + 6 ] - local_f[ f_offset + 7 ] ) / rho;
+                            u_x = ( local_Q9[ local_Q9_offset + 1 ] + local_Q9[ local_Q9_offset + 5 ] +
+                                    local_Q9[ local_Q9_offset + 8 ] - local_Q9[ local_Q9_offset + 3 ] -
+                                    local_Q9[ local_Q9_offset + 6 ] - local_Q9[ local_Q9_offset + 7 ] ) / rho;
             
                             T u_y{};
             
-                            u_y = ( local_f[ f_offset + 2 ] + local_f[ f_offset + 5 ] +
-                                    local_f[ f_offset + 6 ] - local_f[ f_offset + 4 ] -
-                                    local_f[ f_offset + 7 ] - local_f[ f_offset + 8 ] ) / rho;
+                            u_y = ( local_Q9[ local_Q9_offset + 2 ] + local_Q9[ local_Q9_offset + 5 ] +
+                                    local_Q9[ local_Q9_offset + 6 ] - local_Q9[ local_Q9_offset + 4 ] -
+                                    local_Q9[ local_Q9_offset + 7 ] - local_Q9[ local_Q9_offset + 8 ] ) / rho;
             
                             const T ux_2 = u_x * u_x;
             
@@ -129,36 +129,36 @@ namespace fs {
             
                             const T uy_3 = 3 * u_y;
             
-                            local_f[ f_offset ] += omega * ( ( 4.0f / 9.0f ) * rho * ( 1 - u_215 ) - local_f[ f_offset ] );
-                            d_A[ A_offset ] = local_f[ f_offset ];
+                            local_Q9[ local_Q9_offset ] += omega * ( ( 4.0f / 9.0f ) * rho * ( 1 - u_215 ) - local_Q9[ local_Q9_offset ] );
+                            d_D2Q9[ d_D2Q9_offset ] = local_Q9[ local_Q9_offset ];
             
-                            local_f[ f_offset + 1 ] += omega * ( ( 1.0f / 9.0f ) * rho * ( 1 + ux_3 + 4.5 * ux_2 - u_215 ) - local_f[ f_offset + 1 ] );
-                            d_A[ A_offset + 1 ] = local_f[ f_offset + 1 ];
+                            local_Q9[ local_Q9_offset + 1 ] += omega * ( ( 1.0f / 9.0f ) * rho * ( 1 + ux_3 + 4.5 * ux_2 - u_215 ) - local_Q9[ local_Q9_offset + 1 ] );
+                            d_D2Q9[ d_D2Q9_offset + 1 ] = local_Q9[ local_Q9_offset + 1 ];
             
-                            local_f[ f_offset + 2 ] += omega * ( ( 1.0f / 9.0f ) * rho * ( 1 + uy_3 + 4.5 * uy_2 - u_215 ) - local_f[ f_offset + 2 ] );
-                            d_A[ A_offset + 2 ] = local_f[ f_offset + 2 ];
+                            local_Q9[ local_Q9_offset + 2 ] += omega * ( ( 1.0f / 9.0f ) * rho * ( 1 + uy_3 + 4.5 * uy_2 - u_215 ) - local_Q9[ local_Q9_offset + 2 ] );
+                            d_D2Q9[ d_D2Q9_offset + 2 ] = local_Q9[ local_Q9_offset + 2 ];
             
-                            local_f[ f_offset + 3 ] += omega * (  ( 1.0f / 9.0f ) * rho * ( 1 - ux_3 + 4.5 * ux_2 - u_215 )  - local_f[ f_offset + 3 ] );
-                            d_A[ A_offset + 3 ] = local_f[ f_offset + 3 ]; 
+                            local_Q9[ local_Q9_offset + 3 ] += omega * (  ( 1.0f / 9.0f ) * rho * ( 1 - ux_3 + 4.5 * ux_2 - u_215 )  - local_Q9[ local_Q9_offset + 3 ] );
+                            d_D2Q9[ d_D2Q9_offset + 3 ] = local_Q9[ local_Q9_offset + 3 ]; 
             
-                            local_f[ f_offset + 4 ] += omega * ( ( 1.0f / 9.0f ) * rho * ( 1 - uy_3 + 4.5 * uy_2 - u_215 )  - local_f[ f_offset + 4 ] );
-                            d_A[ A_offset + 4 ] = local_f[ f_offset + 4 ];
+                            local_Q9[ local_Q9_offset + 4 ] += omega * ( ( 1.0f / 9.0f ) * rho * ( 1 - uy_3 + 4.5 * uy_2 - u_215 )  - local_Q9[ local_Q9_offset + 4 ] );
+                            d_D2Q9[ d_D2Q9_offset + 4 ] = local_Q9[ local_Q9_offset + 4 ];
             
                             const T uxuy_2 = 2 * u_x * u_y;
             
                             const T u_2 = ux_2 + uy_2;
             
-                            local_f[ f_offset + 5 ] += omega * ( ( 1.0 / 36.0 ) * rho * ( 1 + ux_3 + uy_3 + 4.5 * ( u_2 + uxuy_2 ) - u_215 ) - local_f[ f_offset + 5 ] ); 
-                            d_A[ A_offset + 5 ] = local_f[ f_offset + 5 ];
+                            local_Q9[ local_Q9_offset + 5 ] += omega * ( ( 1.0 / 36.0 ) * rho * ( 1 + ux_3 + uy_3 + 4.5 * ( u_2 + uxuy_2 ) - u_215 ) - local_Q9[ local_Q9_offset + 5 ] ); 
+                            d_D2Q9[ d_D2Q9_offset + 5 ] = local_Q9[ local_Q9_offset + 5 ];
             
-                            local_f[ f_offset + 6 ] += omega * ( ( 1.0 / 36.0 ) * rho * ( 1 - ux_3 + uy_3 + 4.5 * ( u_2 - uxuy_2 ) - u_215 ) - local_f[ f_offset + 6 ] ); 
-                            d_A[ A_offset + 6 ] = local_f[ f_offset + 6 ];
+                            local_Q9[ local_Q9_offset + 6 ] += omega * ( ( 1.0 / 36.0 ) * rho * ( 1 - ux_3 + uy_3 + 4.5 * ( u_2 - uxuy_2 ) - u_215 ) - local_Q9[ local_Q9_offset + 6 ] ); 
+                            d_D2Q9[ d_D2Q9_offset + 6 ] = local_Q9[ local_Q9_offset + 6 ];
             
-                            local_f[ f_offset + 7 ] += omega * ( ( 1.0 / 36.0 ) * rho * ( 1 - ux_3 - uy_3 + 4.5 * ( u_2 + uxuy_2 ) - u_215 ) - local_f[ f_offset + 7 ] ); 
-                            d_A[ A_offset + 7 ] = local_f[ f_offset + 7 ];
+                            local_Q9[ local_Q9_offset + 7 ] += omega * ( ( 1.0 / 36.0 ) * rho * ( 1 - ux_3 - uy_3 + 4.5 * ( u_2 + uxuy_2 ) - u_215 ) - local_Q9[ local_Q9_offset + 7 ] ); 
+                            d_D2Q9[ d_D2Q9_offset + 7 ] = local_Q9[ local_Q9_offset + 7 ];
             
-                            local_f[ f_offset + 8 ] += omega * ( ( 1.0 / 36.0 ) * rho * ( 1 + ux_3 - uy_3 + 4.5 * ( u_2 - uxuy_2 ) - u_215 ) - local_f[ f_offset + 8 ] ); 
-                            d_A[ A_offset + 8 ] = local_f[ f_offset + 8 ];
+                            local_Q9[ local_Q9_offset + 8 ] += omega * ( ( 1.0 / 36.0 ) * rho * ( 1 + ux_3 - uy_3 + 4.5 * ( u_2 - uxuy_2 ) - u_215 ) - local_Q9[ local_Q9_offset + 8 ] ); 
+                            d_D2Q9[ d_D2Q9_offset + 8 ] = local_Q9[ local_Q9_offset + 8 ];
                         });
                     });
 
@@ -178,23 +178,23 @@ namespace fs {
             
                             if ( !is_boundary ) {
 
-                                d_A_n[ base_index ] = d_A[ base_index ];
+                                d_D2Q9_n[ base_index ] = d_D2Q9[ base_index ];
 
-                                d_A_n[ base_index + 1 ] = d_A[ ( ( x - 1 ) + y * xdim ) * 9 + 1 ];
+                                d_D2Q9_n[ base_index + 1 ] = d_D2Q9[ ( ( x - 1 ) + y * xdim ) * 9 + 1 ];
 
-                                d_A_n[ base_index + 4 ] = d_A[ ( x + ( y + 1 ) * xdim ) * 9 + 4 ];
+                                d_D2Q9_n[ base_index + 4 ] = d_D2Q9[ ( x + ( y + 1 ) * xdim ) * 9 + 4 ];
                                 
-                                d_A_n[ base_index + 3 ] = d_A[ ( ( x + 1 ) + y * xdim ) * 9 + 3 ];
+                                d_D2Q9_n[ base_index + 3 ] = d_D2Q9[ ( ( x + 1 ) + y * xdim ) * 9 + 3 ];
                                 
-                                d_A_n[ base_index + 2 ] = d_A[ ( x + ( y - 1 ) * xdim ) * 9 + 2 ];
+                                d_D2Q9_n[ base_index + 2 ] = d_D2Q9[ ( x + ( y - 1 ) * xdim ) * 9 + 2 ];
                                 
-                                d_A_n[ base_index + 8 ] = d_A[ ( ( x - 1 ) + ( y + 1 ) * xdim ) * 9 + 8 ];
+                                d_D2Q9_n[ base_index + 8 ] = d_D2Q9[ ( ( x - 1 ) + ( y + 1 ) * xdim ) * 9 + 8 ];
                                 
-                                d_A_n[ base_index + 7 ] = d_A[ ( ( x + 1 ) + ( y + 1 ) * xdim ) * 9 + 7 ];
+                                d_D2Q9_n[ base_index + 7 ] = d_D2Q9[ ( ( x + 1 ) + ( y + 1 ) * xdim ) * 9 + 7 ];
                                 
-                                d_A_n[ base_index + 6 ] = d_A[ ( ( x + 1 ) + ( y - 1 ) * xdim ) * 9 + 6 ];
+                                d_D2Q9_n[ base_index + 6 ] = d_D2Q9[ ( ( x + 1 ) + ( y - 1 ) * xdim ) * 9 + 6 ];
                                 
-                                d_A_n[ base_index + 5 ] = d_A[ ( ( x - 1 ) + ( y - 1 ) * xdim ) * 9 + 5 ];
+                                d_D2Q9_n[ base_index + 5 ] = d_D2Q9[ ( ( x - 1 ) + ( y - 1 ) * xdim ) * 9 + 5 ];
                             }
                         });
                     });
@@ -213,35 +213,35 @@ namespace fs {
             
                             if ( d_obstacle[ x + y * xdim ] ) {
                                 
-                                d_A_n[ ( x + 1 + y * xdim ) * 9 + 1 ] = d_A_n[ index + 3 ];
+                                d_D2Q9_n[ ( x + 1 + y * xdim ) * 9 + 1 ] = d_D2Q9_n[ index + 3 ];
                                 
-                                d_A_n[ ( x - 1 + y * xdim ) * 9 + 3 ] = d_A_n[ index + 1 ];
+                                d_D2Q9_n[ ( x - 1 + y * xdim ) * 9 + 3 ] = d_D2Q9_n[ index + 1 ];
                                 
-                                d_A_n[ ( x + ( y + 1 ) * xdim ) * 9 + 2 ] = d_A_n[ index + 4 ];
+                                d_D2Q9_n[ ( x + ( y + 1 ) * xdim ) * 9 + 2 ] = d_D2Q9_n[ index + 4 ];
                                 
-                                d_A_n[ ( x + ( y - 1 ) * xdim ) * 9 + 4 ] = d_A_n[ index + 2 ];
+                                d_D2Q9_n[ ( x + ( y - 1 ) * xdim ) * 9 + 4 ] = d_D2Q9_n[ index + 2 ];
                                 
-                                d_A_n[ ( x + 1 + ( y + 1 ) * xdim ) * 9 + 5 ] = d_A_n[ index + 7 ];
+                                d_D2Q9_n[ ( x + 1 + ( y + 1 ) * xdim ) * 9 + 5 ] = d_D2Q9_n[ index + 7 ];
                                 
-                                d_A_n[ ( x - 1 + ( y + 1 ) * xdim ) * 9 + 6 ] = d_A_n[ index + 8 ];
+                                d_D2Q9_n[ ( x - 1 + ( y + 1 ) * xdim ) * 9 + 6 ] = d_D2Q9_n[ index + 8 ];
                                 
-                                d_A_n[ ( x + 1 + ( y - 1 ) * xdim ) * 9 + 8 ] = d_A_n[ index + 6 ];
+                                d_D2Q9_n[ ( x + 1 + ( y - 1 ) * xdim ) * 9 + 8 ] = d_D2Q9_n[ index + 6 ];
                                 
-                                d_A_n[ ( x - 1 + ( y - 1 ) * xdim ) * 9 + 7 ] = d_A_n[ index + 5 ];
+                                d_D2Q9_n[ ( x - 1 + ( y - 1 ) * xdim ) * 9 + 7 ] = d_D2Q9_n[ index + 5 ];
                             }  
                         });
                     });
 
                     gpu_queue.wait();
             
-                    std::swap( d_A, d_A_n ); 
+                    std::swap( d_D2Q9, d_D2Q9_n ); 
                 }
             
-                gpu_queue.memcpy( A_f32, d_A, vec_len * 9 * sizeof( T ) );
+                gpu_queue.memcpy( D2Q9, d_D2Q9, vec_len * 9 * sizeof( T ) );
             
-                sycl::free( d_A, gpu_queue );
+                sycl::free( d_D2Q9, gpu_queue );
 
-                sycl::free( d_A_n, gpu_queue );
+                sycl::free( d_D2Q9_n, gpu_queue );
 
                 sycl::free( d_obstacle, gpu_queue );
             }
