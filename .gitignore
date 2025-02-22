@@ -4,9 +4,6 @@
 /include/KHR
 /include/mdspan-stable
 /include/gtest
-/build
-/bin
-/.objs
 /src/glad.c
 
 
