@@ -280,7 +280,57 @@ namespace app {
 
         colors.convertTo( colors, CV_8U, scale );
 
-        cv::applyColorMap( colors, colors, cv::COLORMAP_JET);
+        cv::applyColorMap( colors, colors, cv::COLORMAP_RAINBOW );
+
+        for ( size_t y = 0; y < ydim; ++y ) {
+            for ( size_t x = 0; x < xdim; ++x ) {
+
+                cv::Vec3b color = colors.at<cv::Vec3b>( y, x );
+
+                float x_ = -1.0f + x * cell_size;
+                float y_ = 1.0f - y * cell_size;
+    
+                float r = color[ 2 ] / 255.0f; 
+                float g = color[ 1 ] / 255.0f;
+                float b = color[ 0 ] / 255.0f;
+
+                vertices.insert( vertices.end(), {
+
+                    // first triangle
+                    x_, y_, r, g, b,
+                    x_ + cell_size, y_, r, g, b,
+                    x_, y_ - cell_size, r, g, b,
+
+                    // second triangle
+                    x_ + cell_size, y_, r, g, b,
+                    x_, y_ - cell_size, r, g, b,
+                    x_ + cell_size, y_ - cell_size, r, g, b,
+                });
+            }
+        }
+
+        return vertices;
+    }
+
+    template<typename Array, typename MDSpan>
+    std::vector<float> curl_to_vertex_data_cv( const sim::grid<Array, MDSpan>& gd, const std::vector<double>& property_states ) {
+
+        std::vector<float> vertices;
+
+        auto [ max_curl, curl ] = fs::lbm::calculate_curl_with_max( gd, property_states );
+        
+        const size_t ydim = gd.get_dim( 0 );
+        const size_t xdim = gd.get_dim( 1 );
+
+        const float cell_size = 2.0f / std::max( ydim, xdim );
+
+        cv::Mat colors( ydim, xdim, CV_64F, ( void* )curl.get_data_handle() );
+
+        double scale = 255.0 / max_curl;
+
+        colors.convertTo( colors, CV_8U, scale );
+
+        cv::applyColorMap( colors, colors, cv::COLORMAP_VIRIDIS );
 
         for ( size_t y = 0; y < ydim; ++y ) {
             for ( size_t x = 0; x < xdim; ++x ) {
