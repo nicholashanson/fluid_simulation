@@ -324,22 +324,28 @@ namespace app {
 
         const float cell_size = 2.0f / std::max( ydim, xdim );
 
+        // construct a non-owning OpenCV matrix with curl data
         cv::Mat colors( ydim, xdim, CV_64F, ( void* )curl.get_data_handle() );
 
+        // scale used to normalize the curl data 
         double scale = 255.0 / max_curl;
 
+        // convert the matrix to a gray-scale image
         colors.convertTo( colors, CV_8U, scale );
 
+        // apply the color-map to the gray-scale image
         cv::applyColorMap( colors, colors, cv::COLORMAP_VIRIDIS );
 
         for ( size_t y = 0; y < ydim; ++y ) {
             for ( size_t x = 0; x < xdim; ++x ) {
 
+                // access RGB values for this cell
                 cv::Vec3b color = colors.at<cv::Vec3b>( y, x );
 
                 float x_ = -1.0f + x * cell_size;
                 float y_ = 1.0f - y * cell_size;
     
+                // OpenCV uses BGR
                 float r = color[ 2 ] / 255.0f; 
                 float g = color[ 1 ] / 255.0f;
                 float b = color[ 0 ] / 255.0f;
