@@ -20,16 +20,16 @@ namespace fs {
             struct cs_state {
 
                 sycl::queue gpu_queue;
-                float* d_A;
-                float* d_A_n;
+                T* d_A;
+                T* d_A_n;
                 unsigned char * d_obstacle;
                 size_t ydim;
                 size_t xdim;
                 size_t vec_len;
-                float omega;
+                T omega;
             };
 
-            void* init_cs( size_t ydim, size_t xdim, float viscosity ) {
+            void* init_cs( size_t ydim, size_t xdim, T viscosity ) {
 
                 cs_state* state = ( cs_state* )std::malloc( sizeof( cs_state ) );
 
@@ -45,6 +45,8 @@ namespace fs {
                 state->vec_len = xdim * ydim;
                 state->omega = 1.0 / ( 3.0 * viscosity + 0.5 );
                 state->gpu_queue = sycl::queue( *gpu );
+
+                state->d_A = sycl::malloc_device<T>( state->vec_len * 9, state->gpu_queue );
 
                 return state;
             } 
