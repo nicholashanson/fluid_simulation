@@ -8,7 +8,7 @@
   <img src="https://github.com/user-attachments/assets/17f60251-462b-441c-a8e6-456738ee8cfc" height="160" width="400">
   <img src="https://github.com/user-attachments/assets/31d7a299-d3e2-4f0e-9794-5e444115d28e" height="160" width="400">
   <br>
-  <span>Caption for the whole set of images</span>
+  <span>top-left: curl, top-right: speed, bottom-left: ux, bottom-right: uy</span>
 </p>
 
 ### Steps
