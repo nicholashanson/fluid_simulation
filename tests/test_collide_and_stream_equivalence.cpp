@@ -35,8 +35,6 @@ bool approx_equal_cells( const size_t y, const size_t x, const std::array<double
     return approx_equal_;
 }
 
-// init same obstacle in test target
-
 TEST( LBMTests, CollideAndStreamEquivalence ) {
 
     js::initFluid();
@@ -54,8 +52,6 @@ TEST( LBMTests, CollideAndStreamEquivalence ) {
 	}
     */
 
-    std::cout << "yxxy" << std::endl;
-
     const size_t steps = 20;
 
     auto approx_equal = [=]( double a, double b ) {
@@ -68,14 +64,6 @@ TEST( LBMTests, CollideAndStreamEquivalence ) {
     fs::lbm::initialize_grid( grid_tbb );
     fs::lbm::initialize_grid( grid_dpcxx );
 
-    std::array<double, 9> cell_state_0 = grid_dpcxx.get_cell_state_array( 0, 0 );
-
-    std::cout << "dpcxx: ";
-    for ( auto x: cell_state_0 ) {
-        std::cout << x << ", ";
-    }
-    std::cout << std::endl;
-
     bool equivalent_values = true;
 
     for ( size_t y = 0; y < fs::settings::ydim; ++y ) {
@@ -87,27 +75,6 @@ TEST( LBMTests, CollideAndStreamEquivalence ) {
             if ( !approx_equal_cells( y, x, dpcxx_state, tbb_state ) ) { 
 
                 equivalent_values = false;
-
-                std::cout << "x: " << x << std::endl;
-                std::cout << "y: " << y << std::endl;
-
-                std::cout << js::n0[ x + y * fs::settings::xdim ] << ", " << js::nE[ x + y * fs::settings::xdim ] << ", " 
-                    << js::nN[ x + y * fs::settings::xdim ] << ", "<< js::nW[ x + y * fs::settings::xdim ] << ", " 
-                    << js::nS[ x + y * fs::settings::xdim ] << ", " << js::nNE[ x + y * fs::settings::xdim ] << ", " 
-                    << js::nNW[ x + y * fs::settings::xdim ] << ", " << js::nSW[ x + y * fs::settings::xdim ] << ", " 
-                    << js::nSE[ x + y * fs::settings::xdim ] << ", " << std::endl;
-
-                std::cout << "tbb: ";
-                for ( auto x : tbb_state ) {
-                    std::cout << x << ", ";
-                }
-                std::cout << std::endl;
-
-                std::cout << "dpcxx: ";
-                for ( auto x : dpcxx_state ) {
-                    std::cout << x << ", ";
-                }
-                std::cout << std::endl;
             }
         }
     }
@@ -122,29 +89,11 @@ TEST( LBMTests, CollideAndStreamEquivalence ) {
         js::collide();
 
         js::stream();
-
-        /*
-        if ( z == 1 ) 
-            js::stream( true );
-        else
-            js::stream();
-        */
     }
 
     js::setBoundaries();
 
-    std::cout << js::n0[ 0 ] << ", " << js::nE[ 0 ] << ", " 
-        << js::nN[ 0 ] << ", "<< js::nW[ 0 ] << ", " 
-        << js::nS[ 0 ] << ", " << js::nNE[ 0 ] << ", " 
-        << js::nNW[ 0 ] << ", " << js::nSW[ 0 ] << ", " 
-        << js::nSE[ 0 ] << ", " << std::endl;
-
-    std::cout << "getting ready" << std::endl;
-
     fs::dpcxx::lbm::collide_and_stream_tbb( grid_tbb, obstacle, steps );
-
-    std::cout << "finished dpcxx" << std::endl;
-
     fs::dpcxx::lbm::collide_and_stream( grid_dpcxx, obstacle, steps );
 
     for ( size_t y = 0; y < fs::settings::ydim; ++y ) {
@@ -165,64 +114,18 @@ TEST( LBMTests, CollideAndStreamEquivalence ) {
         fs::lbm::set_velocity( grid_dpcxx, fs::settings::ydim - 1, x, 0.1, 0.0 );
     }
 
-    // grid_tbb.reverse_rows();
-    // grid_dpcxx.reverse_rows();
-
     for ( size_t y = 0; y < fs::settings::ydim; ++y ) {
         for ( size_t x = 0; x < fs::settings::xdim; ++x ) {
 
             const std::array<double, 9> tbb_state = grid_tbb.get_cell_state_array( y, x );
             const std::array<double, 9> dpcxx_state = grid_dpcxx.get_cell_state_array( y, x );
 
-            // std::cout << "n0: " << js::n0[ x + y * fs::settings::xdim ] << std::endl;
-            // std::cout << "tbb: " << tbb_state[ 0 ] << std::endl; 
-            // std::cout << "dpcxx: " << dpcxx_state[ 0 ] << std::endl;
-
             if ( !approx_equal_cells( y, x, dpcxx_state, tbb_state ) ) { 
 
                 equivalent_values = false;
-
-                std::cout << "x: " << x << std::endl;
-                std::cout << "y: " << y << std::endl;
-
-                std::cout << js::n0[ x + y * fs::settings::xdim ] << ", " << js::nE[ x + y * fs::settings::xdim ] << ", " 
-                    << js::nN[ x + y * fs::settings::xdim ] << ", "<< js::nW[ x + y * fs::settings::xdim ] << ", " 
-                    << js::nS[ x + y * fs::settings::xdim ] << ", " << js::nNE[ x + y * fs::settings::xdim ] << ", " 
-                    << js::nNW[ x + y * fs::settings::xdim ] << ", " << js::nSW[ x + y * fs::settings::xdim ] << ", " 
-                    << js::nSE[ x + y * fs::settings::xdim ] << ", " << std::endl;
-
-                std::cout << "tbb: ";
-                for ( auto x : tbb_state ) {
-                    std::cout << x << ", ";
-                }
-                std::cout << std::endl;
-
-                std::cout << "dpcxx: ";
-                for ( auto x : dpcxx_state ) {
-                    std::cout << x << ", ";
-                }
-                std::cout << std::endl;
             }
         }
     }
-
-    cell_state_0 = grid_dpcxx.get_cell_state_array( 0, 0 );
-
-    std::cout << "dpcxx: ";
-    for ( auto x: cell_state_0 ) {
-        std::cout << x << ", ";
-    }
-    std::cout << std::endl;
-
-    cell_state_0 = grid_tbb.get_cell_state_array( 0, 0 );
-
-    std::cout << "tbb: ";
-    for ( auto x: cell_state_0 ) {
-        std::cout << x << ", ";
-    }
-    std::cout << std::endl;
-
-    std::cout << "setps: " << steps << std::endl;
 
     ASSERT_TRUE( equivalent_values ) << "values are not equivalent";
     ASSERT_EQ( grid_tbb, grid_dpcxx ) << "collide-and-stream results are inconsistent";
