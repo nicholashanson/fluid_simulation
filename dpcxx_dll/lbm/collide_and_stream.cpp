@@ -14,16 +14,14 @@ namespace fs {
                     return init_cs( ydim, xdim, viscosity );
                 }
 
-                void collide_and_stream_c( T* Af_32, unsigned char* obstacle, size_t steps ) {
+                void collide_and_stream_c( T* D2Q9, unsigned char* obstacle, size_t steps ) {
 
-                    std::cout << "inside collide and stream" << std::endl;
-
-                    collide_and_stream( Af_32, obstacle, steps ); 
+                    collide_and_stream( D2Q9, obstacle, steps ); 
                 }
 
-                void collide_and_stream_tbb_c( T* A, unsigned char* obstacle, size_t steps ) {
+                void collide_and_stream_tbb_c( T* D2Q9, unsigned char* obstacle, size_t steps ) {
 
-                    collide_and_stream_tbb( A, obstacle, steps );
+                    collide_and_stream_tbb( D2Q9, obstacle, steps );
                 } 
 
                 char** get_available_devices( int* num_devices ) {
