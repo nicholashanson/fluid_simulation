@@ -29,3 +29,4 @@ function Install-Dependencies {
 }
 
 Install-Chocolatey
+Install-Dependencies
