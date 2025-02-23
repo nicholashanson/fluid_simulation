@@ -27,7 +27,7 @@ function Install-Dependencies {
         }
     }
 
-    $downloadDir = Join-Path (Get-Location) "../include"
+    $downloadDir = [System.IO.Path]::Combine((Get-Location).Path, "../include")
     if (-not (Test-Path $downloadDir)) {
         New-Item -ItemType Directory -Path $downloadDir
     }
@@ -67,7 +67,7 @@ function Download-Files {
         "https://raw.githubusercontent.com/nicholashanson/performance_profiler/refs/heads/main/average_time_profiler.hpp"
     )
 
-    $downloadDir = Join-Path (Get-Location) "include"
+    $downloadDir = [System.IO.Path]::Combine((Get-Location).Path, "../include")
     if (-not (Test-Path $downloadDir)) {
         New-Item -ItemType Directory -Path $downloadDir
     }
