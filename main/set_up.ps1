@@ -1,3 +1,5 @@
+[Environment]::CurrentDirectory = (Get-Location -PSProvider FileSystem).ProviderPath
+
 function Install-Chocolatey {
     if (-not (Get-Command choco -ErrorAction SilentlyContinue)) {
         Write-Host "Chocolatey not found. Installing..."
