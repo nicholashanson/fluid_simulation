@@ -26,6 +26,20 @@ function Install-Dependencies {
             Write-Host "$dep is already installed."
         }
     }
+
+    # Download glfw3.h from GLFW official repository
+    $glfwUrl = "https://raw.githubusercontent.com/glfw/glfw/master/include/GLFW/glfw3.h"
+    $glfwFileName = "glfw3.h"
+    $glfwFilePath = Join-Path $glfwDir $glfwFileName
+
+    Write-Host "Downloading $glfwFileName from GLFW official repository..."
+    try {
+        Invoke-WebRequest -Uri $glfwUrl -OutFile $glfwFilePath
+        Write-Host "Successfully downloaded $glfwFileName."
+    } catch {
+        Write-Host "Failed to download $glfwFileName. Exiting."
+        exit 1
+    }
 }
 
 # Function to download the necessary files
