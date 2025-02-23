@@ -62,6 +62,43 @@ function Download-Files {
     }
 }
 
+function Compile-Code {
+    param (
+        [string]$buildType = "--db"
+    )
+
+    Write-Host "Compiling program..."
+
+    $srcDir = Join-Path (Get-Location) "src"
+    $libDir = Join-Path (Get-Location) "lib"
+
+    $gppArgs = "-g -O0 -v -std=c++23"
+
+    $files = @(
+        "gl.cpp",
+        "../src/lbm/common.cpp",
+        "../src/grid_renderer.cpp",
+        "../src/shader.cpp",
+        "../src/glad.c",
+    )
+
+    $includes = @(
+        "../include",
+        "../inline"
+    )
+
+    # Output file name
+    $outputFile = "fs.exe"
+
+    # Build command
+    $compileCommand = "g++ $gppArgs -o $outputFile " + ($files | ForEach-Object { Join-Path $srcDir $_ }) + " " + ($includes | ForEach-Object { "-I" + (Join-Path (Get-Location) $_) }) + " " + " -lfs_dpcxx -lopengl32 -lglfw3 -lgdi32 -ltbb12 -lopencv_core -lopencv_imgproc -lopencv_highgui -lopencv_imgcodecs"
+
+    # Execute the build
+    Invoke-Expression $compileCommand
+
+    Write-Host "Compilation complete."
+}
+
 Install-Chocolatey
 Install-Dependencies
 Download-Files
