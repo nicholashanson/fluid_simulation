@@ -93,18 +93,19 @@ function Download-mdspan {
         [string]$destination = "../include/mdspan-stable.zip"
     )
 
-    $destinationPath = Resolve-Path -Path $destination
+    $destinationFullPath = [System.IO.Path]::GetFullPath($destination)
+    $destinationDir = [System.IO.Path]::GetDirectoryName($destinationFullPath)
 
-    $extractionPath = [System.IO.Path]::GetDirectoryName($destinationPath)
-
-    Write-Host "Downloading mdspan library..."
+    Write-Host "Downloading mdspan library to $destinationFullPath ..."
     try {
-        Invoke-WebRequest -Uri $url -OutFile $destinationPath
+        Invoke-WebRequest -Uri $url -OutFile $destinationFullPath
         Write-Host "Successfully downloaded mdspan."
     } catch {
         Write-Host "Failed to download mdspan. Exiting."
         exit 1
     }
+
+    $extractionPath = [System.IO.Path]::Combine($destinationDir, "mdspan-stable")
 
     Write-Host "Extracting mdspan..."
     try {
