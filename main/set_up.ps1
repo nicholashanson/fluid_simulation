@@ -126,6 +126,7 @@ function Download-GLM {
         [string]$destination = "../include/glm-0.9.9.8.zip"
     )
 
+    # Determine the full path for the destination zip file and destination directory (i.e. the include directory)
     $destinationFullPath = [System.IO.Path]::GetFullPath($destination)
     $destinationDir = [System.IO.Path]::GetDirectoryName($destinationFullPath)
 
@@ -147,8 +148,39 @@ function Download-GLM {
         exit 1
     }
 
-    # Clean up the zip file
-    Remove-Item $destinationFullPath
+    # Define the extracted folder name (based on the tag version)
+    $extractedFolderName = "glm-0.9.9.8"
+    $extractedFolderPath = Join-Path $destinationDir $extractedFolderName
+
+    # Path to the 'glm' subdirectory within the extracted folder
+    $glmSourcePath = Join-Path $extractedFolderPath "glm"
+    # Destination for the glm directory in the include folder
+    $includeDir = Join-Path (Get-Location).Path "../include"
+    $glmDestinationPath = Join-Path $includeDir "glm"
+
+    if (Test-Path $glmSourcePath) {
+        Write-Host "Moving 'glm' directory to $includeDir ..."
+        try {
+            # Move the 'glm' folder from the extracted folder to the include directory
+            Move-Item -Path $glmSourcePath -Destination $glmDestinationPath -Force
+            Write-Host "Successfully moved 'glm' directory."
+        } catch {
+            Write-Host "Failed to move 'glm' directory. Exiting."
+            exit 1
+        }
+    } else {
+        Write-Host "Could not find the 'glm' directory in the extracted folder. Exiting."
+        exit 1
+    }
+
+    # Clean up: remove the extracted folder and the zip file
+    try {
+        Remove-Item -Path $extractedFolderPath -Recurse -Force
+        Remove-Item -Path $destinationFullPath -Force
+        Write-Host "Cleaned up extracted files."
+    } catch {
+        Write-Host "Failed to clean up extracted files. Please remove them manually."
+    }
 }
 
 function Compile-Code {
