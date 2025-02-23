@@ -111,7 +111,7 @@ function Download-mdspan {
 
     Write-Host "Extracting mdspan..."
     try {
-        Expand-Archive -Path $destinationPath -DestinationPath $extractionPath -Force
+        Expand-Archive -Path $destinationFullPath -DestinationPath $extractionPath -Force
         Write-Host "Successfully extracted mdspan."
     } catch {
         Write-Host "Failed to extract mdspan. Exiting."
