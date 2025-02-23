@@ -158,10 +158,21 @@ function Download-GLM {
     $includeDir = Join-Path (Get-Location).Path "../include"
     $glmDestinationPath = Join-Path $includeDir "glm"
 
+    # If the destination exists, remove it
+    if (Test-Path $glmDestinationPath) {
+        Write-Host "Removing existing 'glm' directory at $glmDestinationPath..."
+        try {
+            Remove-Item -Path $glmDestinationPath -Recurse -Force
+            Write-Host "Successfully removed existing 'glm' directory."
+        } catch {
+            Write-Host "Failed to remove existing 'glm' directory. Exiting."
+            exit 1
+        }
+    }
+
     if (Test-Path $glmSourcePath) {
         Write-Host "Moving 'glm' directory to $includeDir ..."
         try {
-            # Move the 'glm' folder from the extracted folder to the include directory
             Move-Item -Path $glmSourcePath -Destination $glmDestinationPath -Force
             Write-Host "Successfully moved 'glm' directory."
         } catch {
