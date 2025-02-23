@@ -27,6 +27,17 @@ function Install-Dependencies {
         }
     }
 
+    $downloadDir = Join-Path (Get-Location) "include"
+    if (-not (Test-Path $downloadDir)) {
+        New-Item -ItemType Directory -Path $downloadDir
+    }
+
+    # Create the 'glfw' subdirectory
+    $glfwDir = Join-Path $downloadDir "GLFW"
+    if (-not (Test-Path $glfwDir)) {
+        New-Item -ItemType Directory -Path $glfwDir
+    }
+
     # Download glfw3.h from GLFW official repository
     $glfwUrl = "https://raw.githubusercontent.com/glfw/glfw/master/include/GLFW/glfw3.h"
     $glfwFileName = "glfw3.h"
