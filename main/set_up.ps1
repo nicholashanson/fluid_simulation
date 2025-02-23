@@ -152,5 +152,6 @@ function Compile-Code {
 Install-Chocolatey
 Install-Dependencies
 Download-Files
+Download-mdspan
 
 Compile-Code -buildType $buildType
