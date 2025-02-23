@@ -120,6 +120,37 @@ function Download-mdspan {
     Remove-Item $destination
 }
 
+function Download-GLM {
+    param (
+        [string]$url = "https://github.com/g-truc/glm/archive/refs/tags/0.9.9.8.zip",
+        [string]$destination = "../include/glm-0.9.9.8.zip"
+    )
+
+    $destinationFullPath = [System.IO.Path]::GetFullPath($destination)
+    $destinationDir = [System.IO.Path]::GetDirectoryName($destinationFullPath)
+
+    Write-Host "Downloading GLM library to $destinationFullPath ..."
+    try {
+        Invoke-WebRequest -Uri $url -OutFile $destinationFullPath
+        Write-Host "Successfully downloaded GLM."
+    } catch {
+        Write-Host "Failed to download GLM. Exiting."
+        exit 1
+    }
+
+    Write-Host "Extracting GLM..."
+    try {
+        Expand-Archive -Path $destinationFullPath -DestinationPath $destinationDir -Force
+        Write-Host "Successfully extracted GLM."
+    } catch {
+        Write-Host "Failed to extract GLM. Exiting."
+        exit 1
+    }
+
+    # Clean up the zip file
+    Remove-Item $destinationFullPath
+}
+
 function Compile-Code {
     param (
         [string]$buildType = "--db"
@@ -158,5 +189,6 @@ Install-Chocolatey
 Install-Dependencies
 Download-Files
 Download-mdspan
+Download-GLM
 
 Compile-Code -buildType $buildType
