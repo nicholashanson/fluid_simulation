@@ -194,6 +194,23 @@ function Download-GLM {
     }
 }
 
+function Install-OneAPI {
+    param(
+        [string]$installerPath = "C:\Intel\oneapi_installer.exe"
+    )
+    
+    Write-Host "Installing oneAPI toolkit silently..."
+    # Many oneAPI installers support silent installation flags like /quiet and /norestart.
+    try {
+        Start-Process -FilePath $installerPath -ArgumentList "/quiet", "/norestart" -Wait -NoNewWindow
+        Write-Host "oneAPI toolkit installed successfully."
+    }
+    catch {
+        Write-Host "Failed to install oneAPI toolkit. Exiting."
+        exit 1
+    }
+}
+
 function Compile-Code {
     param (
         [string]$buildType = "--db"
@@ -233,5 +250,7 @@ Install-Dependencies
 Download-Files
 Download-mdspan
 Download-GLM
+
+Install-OneAPI
 
 Compile-Code -buildType $buildType
