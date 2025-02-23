@@ -21,7 +21,7 @@ function Install-Dependencies {
     foreach ($dep in $dependencies) {
         if (-not (choco list --local-only | Select-String $dep)) {
             Write-Host "Installing $dep..."
-            choco install $dep -y
+            choco install $dep -y --force
         } else {
             Write-Host "$dep is already installed."
         }
