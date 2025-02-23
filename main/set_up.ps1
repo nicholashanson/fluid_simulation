@@ -102,3 +102,9 @@ function Compile-Code {
 Install-Chocolatey
 Install-Dependencies
 Download-Files
+
+param (
+    [string]$buildType = "--db"
+)
+
+Compile-Code -buildType $buildType
