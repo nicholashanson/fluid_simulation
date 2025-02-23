@@ -178,19 +178,19 @@ namespace fs {
             
                             if ( !is_boundary ) {
                                 
-                                // rest particle frequency distribution directly copied to the new grid
+                                // rest particle frequency-distribution directly copied to the new grid
                                 d_D2Q9_n[ base_index ] = d_D2Q9[ base_index ];
 
-                                // get east from left-hand cell
+                                // get east from west cell
                                 d_D2Q9_n[ base_index + 1 ] = d_D2Q9[ ( ( x - 1 ) + y * xdim ) * 9 + 1 ];
 
-                                // get south from above cell 
+                                // get south from north cell 
                                 d_D2Q9_n[ base_index + 4 ] = d_D2Q9[ ( x + ( y + 1 ) * xdim ) * 9 + 4 ];
                                 
-                                // get west from right-hand cell
+                                // get west from east cell
                                 d_D2Q9_n[ base_index + 3 ] = d_D2Q9[ ( ( x + 1 ) + y * xdim ) * 9 + 3 ];
 
-                                // get north from below cell
+                                // get north from south cell
                                 d_D2Q9_n[ base_index + 2 ] = d_D2Q9[ ( x + ( y - 1 ) * xdim ) * 9 + 2 ];
                                 
                                 // get south-east from north-west cell
