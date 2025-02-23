@@ -27,7 +27,7 @@ function Install-Dependencies {
         }
     }
 
-    $downloadDir = Join-Path (Get-Location) "include"
+    $downloadDir = Join-Path (Get-Location) "../include"
     if (-not (Test-Path $downloadDir)) {
         New-Item -ItemType Directory -Path $downloadDir
     }
