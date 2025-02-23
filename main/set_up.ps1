@@ -87,6 +87,34 @@ function Download-Files {
     }
 }
 
+function Download-mdspan {
+    param (
+        [string]$url = "https://github.com/kokkos/mdspan/archive/refs/heads/stable.zip",
+        [string]$destination = "../include/mdspan-stable.zip"
+    )
+
+    Write-Host "Downloading mdspan library..."
+    try {
+        Invoke-WebRequest -Uri $url -OutFile $destination
+        Write-Host "Successfully downloaded mdspan."
+    } catch {
+        Write-Host "Failed to download mdspan. Exiting."
+        exit 1
+    }
+
+    Write-Host "Extracting mdspan..."
+    try {
+        Expand-Archive -Path $destination -DestinationPath "./"
+        Write-Host "Successfully extracted mdspan."
+    } catch {
+        Write-Host "Failed to extract mdspan. Exiting."
+        exit 1
+    }
+
+    # Clean up the zip file
+    Remove-Item $destination
+}
+
 function Compile-Code {
     param (
         [string]$buildType = "--db"
