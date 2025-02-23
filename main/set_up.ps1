@@ -69,9 +69,6 @@ function Compile-Code {
 
     Write-Host "Compiling program..."
 
-    $srcDir = Join-Path (Get-Location) "src"
-    $libDir = Join-Path (Get-Location) "lib"
-
     $gppArgs = "-g -O0 -v -std=c++23"
 
     $files = @(
@@ -91,7 +88,7 @@ function Compile-Code {
     $outputFile = "fs.exe"
 
     # Build command
-    $compileCommand = "g++ $gppArgs -o $outputFile " + ($files | ForEach-Object { Join-Path $srcDir $_ }) + " " + ($includes | ForEach-Object { "-I" + (Join-Path (Get-Location) $_) }) + " " + " -lfs_dpcxx -lopengl32 -lglfw3 -lgdi32 -ltbb12 -lopencv_core -lopencv_imgproc -lopencv_highgui -lopencv_imgcodecs"
+    $compileCommand = "g++ $gppArgs -o $outputFile " + ($files | ForEach-Object { $_ }) + " " + ($includes | ForEach-Object { "-I" + (Join-Path (Get-Location) $_) }) + " " + " -lfs_dpcxx -lopengl32 -lglfw3 -lgdi32 -ltbb12 -lopencv_core -lopencv_imgproc -lopencv_highgui -lopencv_imgcodecs"
 
     # Execute the build
     Invoke-Expression $compileCommand
