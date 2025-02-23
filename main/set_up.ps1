@@ -8,4 +8,24 @@ function Install-Chocolatey {
     }
 }
 
+
+# Install necessary dependencies if not already installed
+function Install-Dependencies {
+    Write-Host "Ensuring dependencies are installed..."
+
+    $dependencies = @(
+        "mingw",
+        "curl"
+    )
+
+    foreach ($dep in $dependencies) {
+        if (-not (choco list --local-only | Select-String $dep)) {
+            Write-Host "Installing $dep..."
+            choco install $dep -y
+        } else {
+            Write-Host "$dep is already installed."
+        }
+    }
+}
+
 Install-Chocolatey

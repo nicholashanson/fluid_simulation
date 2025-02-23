@@ -113,13 +113,13 @@ int main() {
 
             fs::dpcxx::lbm::collide_and_stream( D2Q9_grid, barrier.data(), steps_per_frame );
 
-            vertices = app::property_grid_to_vertex_data( D2Q9_grid, fs::lbm::property_states, fs::lbm::calculate_u_x );
+            vertices = app::property_grid_to_vertex_data_cv( D2Q9_grid, fs::lbm::property_states, fs::lbm::calculate_u_y );
+
             vertices.insert( vertices.end(), barrier_vertices.begin(), barrier_vertices.end() );
 
             GLint vbo_size;
-            glBindBuffer(GL_ARRAY_BUFFER, VBO);
-            glGetBufferParameteriv(GL_ARRAY_BUFFER, GL_BUFFER_SIZE, &vbo_size);
-
+            glBindBuffer( GL_ARRAY_BUFFER, VBO );
+            glGetBufferParameteriv( GL_ARRAY_BUFFER, GL_BUFFER_SIZE, &vbo_size );
         
             // if the VBO is not large enough, reallocate it
             if ( vertices.size() * sizeof( float ) > vbo_size ) {
