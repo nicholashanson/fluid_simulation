@@ -107,11 +107,9 @@ function Download-mdspan {
         exit 1
     }
 
-    $extractionPath = [System.IO.Path]::Combine($destinationDir, "mdspan-stable")
-
     Write-Host "Extracting mdspan..."
     try {
-        Expand-Archive -Path $destinationFullPath -DestinationPath $extractionPath -Force
+        Expand-Archive -Path $destinationFullPath -DestinationPath $destinationDir -Force
         Write-Host "Successfully extracted mdspan."
     } catch {
         Write-Host "Failed to extract mdspan. Exiting."
