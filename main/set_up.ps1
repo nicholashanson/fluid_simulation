@@ -195,17 +195,25 @@ function Download-GLM {
 }
 
 function Install-OneAPI {
-    param(
+    param (
+        [string]$installerUrl = "https://drive.google.com/uc?export=download&id=1nG1jNbm798FZW85qo3dPbFVoFwMTSpn5",
         [string]$installerPath = "C:\Intel\oneapi_installer.exe"
     )
     
+    Write-Host "Downloading oneAPI installer..."
+    try {
+        Invoke-WebRequest -Uri $installerUrl -OutFile $installerPath
+        Write-Host "Successfully downloaded oneAPI installer."
+    } catch {
+        Write-Host "Failed to download oneAPI installer. Exiting."
+        exit 1
+    }
+
     Write-Host "Installing oneAPI toolkit silently..."
-    # Many oneAPI installers support silent installation flags like /quiet and /norestart.
     try {
         Start-Process -FilePath $installerPath -ArgumentList "/quiet", "/norestart" -Wait -NoNewWindow
         Write-Host "oneAPI toolkit installed successfully."
-    }
-    catch {
+    } catch {
         Write-Host "Failed to install oneAPI toolkit. Exiting."
         exit 1
     }
