@@ -216,8 +216,17 @@ function Install-OneAPI {
         exit 1
     }
 
-    # Step 3: Download the real file
-    Invoke-WebRequest -Uri "https://drive.google.com/uc?export=download&confirm=$confirmCode&id=$GoogleFileId" -OutFile $installerPath -WebSession $googleDriveSession
+    # Step 3: Construct the download URL
+    $downloadUrl = "https://drive.google.com/uc?export=download&confirm=$confirmCode&id=$GoogleFileId"
+
+    # Step 4: Create a BITS transfer job
+    $bitsJob = Start-BitsTransfer -Source $downloadUrl -Destination $installerPath -Asynchronous
+
+    # Step 5: Monitor the transfer job
+    $bitsJob | Wait-BitsTransfer
+
+    # Step 6: Check the transfer job status
+    $bitsJob | Get-BitsTransfer
 
     Write-Host "Successfully downloaded oneAPI installer."
 
