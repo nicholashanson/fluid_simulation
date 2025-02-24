@@ -201,11 +201,26 @@ function Install-OneAPI {
     )
     
     Write-Host "Downloading oneAPI installer..."
-    try {
-        Invoke-WebRequest -Uri $installerUrl -OutFile $installerPath
-        Write-Host "Successfully downloaded oneAPI installer."
-    } catch {
-        Write-Host "Failed to download oneAPI installer. Exiting."
+
+    # Create a WebClient object
+    $webClient = New-Object System.Net.WebClient
+
+    # Download the initial response to get the confirmation code
+    $response = $webClient.DownloadString($installerUrl)
+
+    # Extract the confirmation code from the response
+    if ($response -match 'confirm=([0-9A-Za-z_]+)') {
+        $confirmCode = $matches[1]
+        $finalUrl = "$installerUrl&confirm=$confirmCode"
+        try {
+            $webClient.DownloadFile($finalUrl, $installerPath)
+            Write-Host "Successfully downloaded oneAPI installer."
+        } catch {
+            Write-Host "Failed to download oneAPI installer. Exiting."
+            exit 1
+        }
+    } else {
+        Write-Host "Failed to retrieve confirmation code. The file may be too large or restricted."
         exit 1
     }
 
