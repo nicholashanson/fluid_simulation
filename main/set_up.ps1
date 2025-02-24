@@ -196,33 +196,30 @@ function Download-GLM {
 
 function Install-OneAPI {
     param (
-        [string]$installerUrl = "https://drive.google.com/uc?export=download&id=1nG1jNbm798FZW85qo3dPbFVoFwMTSpn5",
+        [string]$GoogleFileId = "1nG1jNbm798FZW85qo3dPbFVoFwMTSpn5",
         [string]$installerPath = "C:\Intel\oneapi_installer.exe"
     )
     
     Write-Host "Downloading oneAPI installer..."
 
-    # Create a WebClient object
-    $webClient = New-Object System.Net.WebClient
+    # Set protocol to TLS version 1.2
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
-    # Download the initial response to get the confirmation code
-    $response = $webClient.DownloadString($installerUrl)
+    # Step 1: Initial request to get the confirmation code
+    $response = Invoke-WebRequest -Uri "https://drive.google.com/uc?export=download&id=$GoogleFileId" -SessionVariable googleDriveSession
 
-    # Extract the confirmation code from the response
-    if ($response -match 'confirm=([0-9A-Za-z_]+)') {
-        $confirmCode = $matches[1]
-        $finalUrl = "$installerUrl&confirm=$confirmCode"
-        try {
-            $webClient.DownloadFile($finalUrl, $installerPath)
-            Write-Host "Successfully downloaded oneAPI installer."
-        } catch {
-            Write-Host "Failed to download oneAPI installer. Exiting."
-            exit 1
-        }
-    } else {
+    # Step 2: Extract the confirmation code
+    $confirmCode = ($response.Content -match 'confirm=([a-zA-Z0-9_-]+)') ? $matches[1] : $null
+
+    if (-not $confirmCode) {
         Write-Host "Failed to retrieve confirmation code. The file may be too large or restricted."
         exit 1
     }
+
+    # Step 3: Download the real file
+    Invoke-WebRequest -Uri "https://drive.google.com/uc?export=download&confirm=$confirmCode&id=$GoogleFileId" -OutFile $installerPath -WebSession $googleDriveSession
+
+    Write-Host "Successfully downloaded oneAPI installer."
 
     Write-Host "Installing oneAPI toolkit silently..."
     try {
