@@ -11,24 +11,49 @@ function Install-Chocolatey {
 }
 
 
-# Install necessary dependencies if not already installed
 function Install-Dependencies {
     Write-Host "Ensuring dependencies are installed..."
 
-    $dependencies = @(
-        "mingw",
-        "curl"
-    )
+    # Check if 'curl' is already installed
+    $curlAvailable = Get-Command curl -ErrorAction SilentlyContinue
+    if ($curlAvailable) {
+        Write-Host "curl is already available."
+    } else {
+        Write-Host "curl is not found. Installing..."
+        choco install curl -y --force
+    }
 
-    foreach ($dep in $dependencies) {
-        if (-not (choco list --local-only | Select-String $dep)) {
-            Write-Host "Installing $dep..."
-            choco install $dep -y --force
+    # Check if 'g++' is already in the PATH
+    $gppAvailable = Get-Command g++ -ErrorAction SilentlyContinue
+    if ($gppAvailable) {
+        Write-Host "g++ is already in the PATH."
+    } else {
+        Write-Host "g++ is not found in the PATH. Checking for MinGW installation..."
+
+        # Check if MinGW is installed via Chocolatey
+        $mingwInstalled = choco list --local-only | Select-String "mingw"
+        
+        if ($mingwInstalled) {
+            Write-Host "MinGW is installed via Chocolatey."
         } else {
-            Write-Host "$dep is already installed."
+            Write-Host "MinGW is not found. Installing MinGW..."
+            choco install mingw -y --force
+        }
+
+        # Check if MinGW's 'bin' directory exists at the expected location
+        $mingwBinDir = "C:\ProgramData\mingw64\mingw64\bin"
+        if (Test-Path $mingwBinDir) {
+            Write-Host "MinGW's bin directory found at: $mingwBinDir"
+            # Add MinGW's 'bin' directory to the PATH if it's not already there
+            $env:Path += ";$mingwBinDir"
+            Write-Host "Added MinGW's bin directory to the PATH."
+        } else {
+            Write-Host "MinGW's bin directory not found at $mingwBinDir. Something went wrong during installation."
+            exit 1
         }
     }
 
+    # Set up directories
     $downloadDir = [System.IO.Path]::Combine((Get-Location).Path, "../include")
     if (-not (Test-Path $downloadDir)) {
         New-Item -ItemType Directory -Path $downloadDir
