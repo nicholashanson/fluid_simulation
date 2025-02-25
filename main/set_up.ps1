@@ -195,48 +195,22 @@ function Download-GLM {
 }
 
 function Install-OneAPI {
-    param (
-        [string]$GoogleFileId = "1nG1jNbm798FZW85qo3dPbFVoFwMTSpn5",
-        [string]$installerPath = "C:\Intel\oneapi_installer.exe"
-    )
-    
-    Write-Host "Downloading oneAPI installer..."
+    $icpxCommand = 'icpx'
+    $url = 'https://fluidsim.s3.amazonaws.com/intel-oneapi-base-toolkit-2025.0.1.47_offline.exe'
+    $localPath = 'C:\intel-oneapi\intel-oneapi-base-toolkit-2025.0.1.47_offline.exe'
 
-    # Set protocol to TLS version 1.2
-    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-
-    # Step 1: Initial request to get the confirmation code
-    $response = Invoke-WebRequest -Uri "https://drive.google.com/uc?export=download&id=$GoogleFileId" -SessionVariable googleDriveSession
-
-    # Step 2: Extract the confirmation code
-    $confirmCode = ($response.Content -match 'confirm=([a-zA-Z0-9_-]+)') ? $matches[1] : $null
-
-    if (-not $confirmCode) {
-        Write-Host "Failed to retrieve confirmation code. The file may be too large or restricted."
-        exit 1
-    }
-
-    # Step 3: Construct the download URL
-    $downloadUrl = "https://drive.google.com/uc?export=download&confirm=$confirmCode&id=$GoogleFileId"
-
-    # Step 4: Create a BITS transfer job
-    $bitsJob = Start-BitsTransfer -Source $downloadUrl -Destination $installerPath -Asynchronous
-
-    # Step 5: Monitor the transfer job
-    $bitsJob | Wait-BitsTransfer
-
-    # Step 6: Check the transfer job status
-    $bitsJob | Get-BitsTransfer
-
-    Write-Host "Successfully downloaded oneAPI installer."
-
-    Write-Host "Installing oneAPI toolkit silently..."
-    try {
-        Start-Process -FilePath $installerPath -ArgumentList "/quiet", "/norestart" -Wait -NoNewWindow
-        Write-Host "oneAPI toolkit installed successfully."
-    } catch {
-        Write-Host "Failed to install oneAPI toolkit. Exiting."
-        exit 1
+    # Check if the 'icpx' command exists
+    if (Get-Command -Name $icpxCommand -ErrorAction SilentlyContinue) {
+        Write-Host "Intel oneAPI is already installed. Skipping installation."
+    } else {
+        # Check if the installer file already exists
+        if (Test-Path -Path $localPath) {
+            Write-Host "The installer file already exists. Skipping download."
+        } else {
+            Write-Host "Downloading oneAPI installer..."
+            Invoke-WebRequest -Uri $url -OutFile $localPath
+            Write-Host "Successfully downloaded oneAPI installer."
+        }
     }
 }
 
