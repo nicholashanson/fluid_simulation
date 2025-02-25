@@ -313,6 +313,7 @@ function Compile-Code {
 
 Install-Chocolatey
 Install-Dependencies
+Install-OpenCV
 Download-Files
 Download-mdspan
 Download-GLM
