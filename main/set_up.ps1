@@ -96,7 +96,7 @@ function Install-OpenCV {
     # Set OpenCV environment variables
     $opencvDir = "C:\tools\opencv\build"
     $opencvInclude = "$opencvDir\include"
-    $opencvLib = "$opencvDir\x64\vc15\lib"
+    $opencvLib = "$opencvDir\x64\vc16\lib"
 
     if ( (Test-Path $opencvInclude) -and (Test-Path $opencvLib) ) {
         Write-Host "OpenCV directories found. Adding to environment variables..."
@@ -303,7 +303,7 @@ function Compile-Code {
     $outputFile = "fs.exe"
 
     # Build command
-    $compileCommand = "g++ $gppArgs -o $outputFile " + ($files | ForEach-Object { $_ }) + " " + ($includes | ForEach-Object { "-I" + (Join-Path (Get-Location) $_) }) + " " + " -lfs_dpcxx -lopengl32 -lglfw3 -lgdi32 -ltbb12 -lopencv_core -lopencv_imgproc -lopencv_highgui -lopencv_imgcodecs"
+    $compileCommand = "g++ $gppArgs -o $outputFile " + ($files | ForEach-Object { $_ }) + " " + ($includes | ForEach-Object { "-I" + (Join-Path (Get-Location) $_) }) + " " + " -lfs_dpcxx -lopengl32 -lglfw3 -lgdi32 -ltbb12 -lopencv_world4110"
 
     # Execute the build
     Invoke-Expression $compileCommand
