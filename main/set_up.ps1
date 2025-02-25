@@ -203,10 +203,20 @@ function Install-OneAPI {
     if (Get-Command -Name $icpxCommand -ErrorAction SilentlyContinue) {
         Write-Host "Intel oneAPI is already installed. Skipping installation."
     } else {
+
         # Check if the installer file already exists
         if (Test-Path -Path $localPath) {
             Write-Host "The installer file already exists. Skipping download."
         } else {
+
+            # Check if the directory exists; if not, create it
+            $directory = [System.IO.Path]::GetDirectoryName($localPath)
+
+            if (-not (Test-Path -Path $directory)) {
+                Write-Host "Directory does not exist. Creating directory: $directory"
+                New-Item -Path $directory -ItemType Directory -Force
+            }
+
             Write-Host "Downloading oneAPI installer..."
             Invoke-WebRequest -Uri $url -OutFile $localPath
             Write-Host "Successfully downloaded oneAPI installer."
