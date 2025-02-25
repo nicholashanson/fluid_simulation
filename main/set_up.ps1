@@ -98,7 +98,7 @@ function Install-OpenCV {
     $opencvInclude = "$opencvDir\include"
     $opencvLib = "$opencvDir\x64\vc15\lib"
 
-    if (Test-Path $opencvInclude -and Test-Path $opencvLib) {
+    if ( (Test-Path $opencvInclude) -and (Test-Path $opencvLib) ) {
         Write-Host "OpenCV directories found. Adding to environment variables..."
         [System.Environment]::SetEnvironmentVariable("OpenCV_DIR", $opencvDir, [System.EnvironmentVariableTarget]::Machine)
         [System.Environment]::SetEnvironmentVariable("PATH", "$env:Path;$opencvLib", [System.EnvironmentVariableTarget]::Machine)
