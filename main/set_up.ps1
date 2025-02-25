@@ -80,6 +80,34 @@ function Install-Dependencies {
     }
 }
 
+# Function to install and configure OpenCV
+function Install-OpenCV {
+    Write-Host "Checking OpenCV installation..."
+
+    # Check if OpenCV is installed via Chocolatey
+    $opencvInstalled = choco list --local-only | Select-String "opencv"
+    if ($opencvInstalled) {
+        Write-Host "OpenCV is already installed."
+    } else {
+        Write-Host "OpenCV is not found. Installing..."
+        choco install opencv -y --force
+    }
+
+    # Set OpenCV environment variables
+    $opencvDir = "C:\tools\opencv\build"
+    $opencvInclude = "$opencvDir\include"
+    $opencvLib = "$opencvDir\x64\vc15\lib"
+
+    if (Test-Path $opencvInclude -and Test-Path $opencvLib) {
+        Write-Host "OpenCV directories found. Adding to environment variables..."
+        [System.Environment]::SetEnvironmentVariable("OpenCV_DIR", $opencvDir, [System.EnvironmentVariableTarget]::Machine)
+        [System.Environment]::SetEnvironmentVariable("PATH", "$env:Path;$opencvLib", [System.EnvironmentVariableTarget]::Machine)
+    } else {
+        Write-Host "Error: OpenCV directories not found. Installation may have failed."
+        exit 1
+    }
+}
+
 # Function to download the necessary files
 function Download-Files {
     Write-Host "Downloading necessary files..."
