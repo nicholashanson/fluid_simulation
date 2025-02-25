@@ -275,6 +275,11 @@ function Install-OneAPI {
             Write-Host "Successfully downloaded oneAPI installer."
         }
     }
+
+    # Silently install oneAPI using the installer
+    Write-Host "Starting silent installation of Intel oneAPI..."
+    Start-Process -FilePath $localPath -ArgumentList '/s' -Wait -NoNewWindow
+    Write-Host "Intel oneAPI installation completed."
 }
 
 function Compile-Code {
