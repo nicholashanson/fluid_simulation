@@ -47,6 +47,7 @@ namespace fs {
                 state->gpu_queue = sycl::queue( *gpu );
 
                 state->d_A = sycl::malloc_device<T>( state->vec_len * 9, state->gpu_queue );
+                state->d_A_n = sycl::malloc_device<T>( state->vec_len * 9, state->gpu_queue );
 
                 return state;
             } 
@@ -58,9 +59,7 @@ namespace fs {
                 const T omega = 1 / ( 3 * viscosity + 0.5 );
 
                 const size_t ydim = fs::settings::ydim;
-
                 const size_t xdim = fs::settings::xdim;
-
                 const size_t vec_len = ydim * xdim;
 
                 std::optional<sycl::device> gpu = get_gpu();
@@ -68,19 +67,14 @@ namespace fs {
                 sycl::queue gpu_queue( *gpu );
             
                 T* d_D2Q9 = sycl::malloc_device<T>( vec_len * 9, gpu_queue );
-            
                 T* d_D2Q9_n = sycl::malloc_device<T>( vec_len * 9, gpu_queue ); 
 
                 unsigned char* d_obstacle = sycl::malloc_device<unsigned char>( vec_len, gpu_queue );
 
                 gpu_queue.memcpy( d_obstacle, obstacle, vec_len * sizeof( unsigned char ) );
-            
                 gpu_queue.memcpy( d_D2Q9, D2Q9, vec_len * 9 * sizeof( T ) );
-            
                 gpu_queue.wait();
-
                 gpu_queue.memcpy( d_D2Q9_n, d_D2Q9, vec_len * 9 * sizeof( T ) );
-
                 gpu_queue.wait();
             
                 for ( size_t z = 0; z < steps; ++z ) {
@@ -249,9 +243,7 @@ namespace fs {
                 gpu_queue.memcpy( D2Q9, d_D2Q9, vec_len * 9 * sizeof( T ) );
             
                 sycl::free( d_D2Q9, gpu_queue );
-
                 sycl::free( d_D2Q9_n, gpu_queue );
-
                 sycl::free( d_obstacle, gpu_queue );
             }
 
