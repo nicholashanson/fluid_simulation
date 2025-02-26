@@ -247,14 +247,14 @@ function Download-GLM {
     }
 }
 
-function Install-OneAPI {
+function Install-DPCPP {
     $icpxCommand = 'icpx'
-    $url = 'https://fluidsim.s3.amazonaws.com/intel-oneapi-base-toolkit-2025.0.1.47_offline.exe'
-    $localPath = 'C:\intel-oneapi\intel-oneapi-base-toolkit-2025.0.1.47_offline.exe'
+    $url = 's3://fluidsim/intel-dpcpp-cpp-compiler-2025.0.4.21_offline.exe'
+    $localPath = 'C:\intel-dpcpp\intel-dpcpp-cpp-compiler-2025.0.4.21_offline.exe'
 
     # Check if the 'icpx' command exists
     if (Get-Command -Name $icpxCommand -ErrorAction SilentlyContinue) {
-        Write-Host "Intel oneAPI is already installed. Skipping installation."
+        Write-Host "DPC++ compiler is already installed. Skipping installation."
     } else {
 
         # Check if the installer file already exists
@@ -270,16 +270,16 @@ function Install-OneAPI {
                 New-Item -Path $directory -ItemType Directory -Force
             }
 
-            Write-Host "Downloading oneAPI installer..."
+            Write-Host "Downloading DPC++ installer..."
             Invoke-WebRequest -Uri $url -OutFile $localPath
-            Write-Host "Successfully downloaded oneAPI installer."
+            Write-Host "Successfully downloaded DPC++ installer."
         }
     }
 
-    # Silently install oneAPI using the installer
-    Write-Host "Starting silent installation of Intel oneAPI..."
+    # Silently install DPC++ using the installer
+    Write-Host "Starting silent installation of Intel DPC++..."
     Start-Process -FilePath $localPath -ArgumentList '/s' -Wait -NoNewWindow
-    Write-Host "Intel oneAPI installation completed."
+    Write-Host "Intel DPC++ installation completed."
 }
 
 function Compile-Code {
@@ -323,6 +323,6 @@ Download-Files
 Download-mdspan
 Download-GLM
 
-Install-OneAPI
+Install-DPCPP
 
 Compile-Code -buildType $buildType
