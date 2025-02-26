@@ -278,7 +278,7 @@ function Install-DPCPP {
 
     # Silently install DPC++ using the installer
     Write-Host "Starting silent installation of Intel DPC++..."
-    Start-Process -FilePath $localPath -ArgumentList '/s' -Wait -NoNewWindow
+    Start-Process -FilePath $localPath -ArgumentList "--silent --eula accept" -Wait -NoNewWindow
     Write-Host "Intel DPC++ installation completed."
 }
 
