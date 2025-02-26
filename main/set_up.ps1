@@ -249,7 +249,7 @@ function Download-GLM {
 
 function Install-DPCPP {
     $icpxCommand = 'icpx'
-    $url = 's3://fluidsim/intel-dpcpp-cpp-compiler-2025.0.4.21_offline.exe'
+    $url = 'https://fluidsim.s3.us-east-1.amazonaws.com/intel-oneapi-base-toolkit-2025.0.1.47_offline.exe'
     $localPath = 'C:\intel-dpcpp\intel-dpcpp-cpp-compiler-2025.0.4.21_offline.exe'
 
     # Check if the 'icpx' command exists
