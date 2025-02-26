@@ -259,7 +259,7 @@ function Install-VisualStudio {
         $installedVersion = & $vswherePath -latest -products * -requires Microsoft.VisualStudio.Workload.VCTools -property installationPath
         if ($installedVersion) {
             Write-Host "Visual Studio Build Tools 2022 is already installed at $installedVersion. Skipping installation."
-            exit 0
+            return
         }
     }
 
