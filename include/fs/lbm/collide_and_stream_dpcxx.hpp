@@ -102,11 +102,9 @@ namespace fs {
                         h.parallel_for( sycl::nd_range<1>{ { vec_len }, { 32 } }, [=]( sycl::nd_item<1> item ) {
                             
                             const size_t i = item.get_group().get_group_id();
-                            
                             const size_t k = item.get_local_id();
             
-                            const size_t d_D2Q9_offset = ( i * 32 + k ) * 9;
-                            
+                            const size_t d_D2Q9_offset = ( i * 32 + k ) * 9; 
                             const size_t local_Q9_offset = k * 9;
             
                             for ( size_t z = 0; z < 9; ++z ) 
@@ -118,28 +116,24 @@ namespace fs {
                                 rho += local_Q9[ local_Q9_offset + z ]; 
             
                             T u_x{};
-            
                             u_x = ( local_Q9[ local_Q9_offset + 1 ] + local_Q9[ local_Q9_offset + 5 ] +
                                     local_Q9[ local_Q9_offset + 8 ] - local_Q9[ local_Q9_offset + 3 ] -
                                     local_Q9[ local_Q9_offset + 6 ] - local_Q9[ local_Q9_offset + 7 ] ) / rho;
             
                             T u_y{};
-            
                             u_y = ( local_Q9[ local_Q9_offset + 2 ] + local_Q9[ local_Q9_offset + 5 ] +
                                     local_Q9[ local_Q9_offset + 6 ] - local_Q9[ local_Q9_offset + 4 ] -
                                     local_Q9[ local_Q9_offset + 7 ] - local_Q9[ local_Q9_offset + 8 ] ) / rho;
             
                             const T ux_2 = u_x * u_x;
-            
                             const T uy_2 = u_y * u_y;
-            
                             const T u_215 = 1.5 * ( ( ux_2 ) + ( uy_2 ) );
-            
                             const T ux_3 = 3 * u_x;
-            
                             const T uy_3 = 3 * u_y;
             
-                            local_Q9[ local_Q9_offset ] += omega * ( ( 4.0 / 9.0 ) * rho * ( 1 - u_215 ) - local_Q9[ local_Q9_offset ] );
+                            local_Q9[ local_Q9_offset ] += omega * 
+                                                           ( ( 4.0 / 9.0 ) * rho * ( 1 - u_215 ) 
+                                                           - local_Q9[ local_Q9_offset ] );
                             d_D2Q9[ d_D2Q9_offset ] = local_Q9[ local_Q9_offset ];
             
                             local_Q9[ local_Q9_offset + 1 ] += omega * ( ( 1.0 / 9.0 ) * rho * ( 1 + ux_3 + 4.5 * ux_2 - u_215 ) - local_Q9[ local_Q9_offset + 1 ] );
