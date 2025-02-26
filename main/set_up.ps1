@@ -283,9 +283,6 @@ function Install-DPCPP {
 }
 
 function Compile-Code {
-    param (
-        [string]$buildType = "--db"
-    )
 
     Write-Host "Compiling program..."
 
@@ -325,4 +322,4 @@ Download-GLM
 
 Install-DPCPP
 
-Compile-Code -buildType $buildType
+Compile-Code
