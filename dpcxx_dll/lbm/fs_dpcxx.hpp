@@ -34,7 +34,9 @@ namespace fs {
 
                 DLL_API void collide_and_stream_tbb_c( T* A, unsigned char* obstacle, size_t steps );
 
-                DLL_API void* init_cs_c( size_t ydim, size_t xdim, float viscosity );
+                DLL_API void* init_cs_c( double* D2Q9, unsigned char* obstacle, size_t ydim, size_t xdim, float viscosity );
+
+                DLL_API void terminate_cs_c( void* state );
 
                 DLL_API size_t get_size_of_cs_state();
             }

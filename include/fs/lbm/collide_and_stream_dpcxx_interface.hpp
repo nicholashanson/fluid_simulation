@@ -16,9 +16,17 @@ namespace fs {
 
             extern "C" void collide_and_stream_c( double* gd_states, unsigned char* obstacle, size_t steps );
 
-            extern "C" void* init_cs_c( size_t ydim, size_t xdim, float viscosity );
+            extern "C" void* init_cs_c( double* D2Q9, unsigned char* obstacle, size_t ydim, size_t xdim, float viscosity );
+
+            extern "C" void terminate_cs_c( void* state );
 
             extern "C" size_t get_size_of_cs_state();
+
+            template<typename Array, typename MDSpan>
+            void* init_cs( sim::grid<Array, MDSpan>& gd, std::vector<unsigned char>& obstacle, double viscosity ) {
+
+                return init_cs_c( gd.get_data_handle(), obstacle.data(), gd.get_dim( 0), gd.get_dim( 1 ), viscosity );
+            }
 
             template<typename Array, typename MDSpan>
             void collide_and_stream_tbb( sim::grid<Array, MDSpan>& gd, unsigned char* obstacle, size_t steps ) {

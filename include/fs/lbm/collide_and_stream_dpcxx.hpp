@@ -20,8 +20,8 @@ namespace fs {
             struct cs_state {
 
                 sycl::queue gpu_queue;
-                T* d_A;
-                T* d_A_n;
+                T* d_D2Q9;
+                T* d_D2Q9_n;
                 unsigned char * d_obstacle;
                 size_t ydim;
                 size_t xdim;
@@ -29,7 +29,7 @@ namespace fs {
                 T omega;
             };
 
-            void* init_cs( size_t ydim, size_t xdim, T viscosity ) {
+            void* init_cs( double* D2Q9, unsigned char* obstacle, size_t ydim, size_t xdim, T viscosity ) {
 
                 cs_state* state = ( cs_state* )std::malloc( sizeof( cs_state ) );
 
@@ -46,11 +46,27 @@ namespace fs {
                 state->omega = 1.0 / ( 3.0 * viscosity + 0.5 );
                 state->gpu_queue = sycl::queue( *gpu );
 
-                state->d_A = sycl::malloc_device<T>( state->vec_len * 9, state->gpu_queue );
-                state->d_A_n = sycl::malloc_device<T>( state->vec_len * 9, state->gpu_queue );
+                state->d_D2Q9 = sycl::malloc_device<T>( state->vec_len * 9, state->gpu_queue );
+                state->d_D2Q9_n = sycl::malloc_device<T>( state->vec_len * 9, state->gpu_queue );
+                state->d_obstacle = sycl::malloc_device<unsigned char>( state->vec_len, state->gpu_queue );
 
+                state->gpu_queue.memcpy( state->d_obstacle, obstacle, state->vec_len * sizeof( unsigned char ) );
+                state->gpu_queue.memcpy( state->d_D2Q9, D2Q9, state->vec_len * 9 * sizeof( T ) );
+                state->gpu_queue.wait();
+                state->gpu_queue.memcpy( state->d_D2Q9_n, state->d_D2Q9, state->vec_len * 9 * sizeof( T ) );
+                state->gpu_queue.wait();
+                
                 return state;
-            } 
+            }
+            
+            void terminate_cs( void* state ) {
+
+                cs_state* cs = ( cs_state* )state;
+
+                sycl::free( cs->d_D2Q9, cs->gpu_queue );
+                sycl::free( cs->d_D2Q9_n, cs->gpu_queue );
+                sycl::free( cs->d_obstacle, cs->gpu_queue );
+            }
 
             void collide_and_stream( T* D2Q9, unsigned char* obstacle, size_t steps ) {
 
