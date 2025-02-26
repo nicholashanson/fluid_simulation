@@ -247,6 +247,49 @@ function Download-GLM {
     }
 }
 
+function Install-VisualStudio {
+    # Define the installer URL for VS Build Tools 2022
+    $vsInstallerUrl = "https://aka.ms/vs/17/release/vs_BuildTools.exe"
+    $vsInstallerPath = "C:\vs_BuildTools.exe"
+
+    # Check if Visual Studio Build Tools 2022 is installed
+    $vswherePath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+
+    if (Test-Path $vswherePath) {
+        $installedVersion = & $vswherePath -latest -products * -requires Microsoft.VisualStudio.Workload.VCTools -property installationPath
+        if ($installedVersion) {
+            Write-Host "Visual Studio Build Tools 2022 is already installed at $installedVersion. Skipping installation."
+            exit 0
+        }
+    }
+
+    Write-Host "VS Build Tools not found. Proceeding with installation."
+
+    # Download the installer if not already present
+    if (-not (Test-Path $vsInstallerPath)) {
+        Write-Host "Downloading Visual Studio Build Tools installer..."
+        Invoke-WebRequest -Uri $vsInstallerUrl -OutFile $vsInstallerPath
+    }
+
+    # Install only the minimal required components
+    Write-Host "Installing Visual Studio Build Tools..."
+    Start-Process -FilePath $vsInstallerPath -ArgumentList `
+        "--quiet", `
+        "--wait", `
+        "--norestart", `
+        "--nocache", `
+        "--installPath C:\BuildTools", `
+        "--add Microsoft.VisualStudio.Workload.VCTools", `
+        "--add Microsoft.VisualStudio.Component.VC.Tools.x86.x64", `
+        "--add Microsoft.VisualStudio.Component.Windows10SDK", `
+        "--add Microsoft.VisualStudio.Component.CMake", `
+        "--add Microsoft.VisualStudio.Component.VC.CoreIde", `
+        "--add Microsoft.VisualStudio.Component.VC.Redist.14.Latest" `
+        -NoNewWindow -Wait
+
+    Write-Host "Installation completed."
+}
+
 function Install-DPCPP {
     $icpxCommand = 'icpx'
     $url = 'https://fluidsim.s3.us-east-1.amazonaws.com/intel-oneapi-base-toolkit-2025.0.1.47_offline.exe'
@@ -320,6 +363,7 @@ Download-Files
 Download-mdspan
 Download-GLM
 
+Install-VisualStudio
 Install-DPCPP
 
 Compile-Code
