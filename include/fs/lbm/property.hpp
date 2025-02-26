@@ -91,8 +91,8 @@ namespace fs {
         std::tuple<double, sim::grid<std::vector<double>, property_view>>
         calculate_curl_with_max( const sim::grid<DataStorage, View>& gd, const std::vector<double>& property_states ) {
 
-            sim::grid<std::vector<double>, property_view> u_x = calculate_property_v( gd, property_states, calculate_u_x );
-            sim::grid<std::vector<double>, property_view> u_y = calculate_property_v( gd, property_states, calculate_u_y );
+            auto u_x = calculate_property_v( gd, property_states, calculate_u_x );
+            auto u_y = calculate_property_v( gd, property_states, calculate_u_y );
 
             sim::grid<std::vector<double>, property_view> curl( property_states );
 
@@ -100,8 +100,6 @@ namespace fs {
             const size_t xdim = gd.get_dim( 1 );
 
             double max_curl{};
-
-            std::cout << "about to enter loop" << std::endl;
 
             for ( size_t y = 1; y < ydim - 1; ++y ) {
                 for ( size_t x = 1; x < xdim - 1; ++x ) {
