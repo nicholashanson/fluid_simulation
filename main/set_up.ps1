@@ -41,7 +41,7 @@ function Install-MSYS2 {
         }
 
         Write-Host "Running MSYS2 installer..."
-        Start-Process -FilePath $msys2InstallerPath -ArgumentList "/S" -Wait
+        Start-Process -FilePath $msys2InstallerPath -Wait
 
         # Ensure MSYS2 is up to date
         Write-Host "Updating MSYS2..."
@@ -78,10 +78,11 @@ function Install-MSYS2 {
     }
 }
 
-function Check-GXX {
+function MSYS2-Checks {
     # Define the MSYS2 g++ path (adjust this path based on your MSYS2 installation)
     $msys2GppPath = "C:\msys64\mingw64\bin\g++.exe"
-
+    $msys2PacmanPath = "C:\msys64\usr\bin\pacman.exe"
+    
     # Check if 'g++' is in the PATH
     $gppLocation = (Get-Command g++ -ErrorAction SilentlyContinue).Source
 
@@ -108,6 +109,34 @@ function Check-GXX {
     # Optionally, verify where g++ is after modification
     $finalGppLocation = (Get-Command g++).Source
     Write-Host "Final 'g++' location: $finalGppLocation"
+
+    # Now check if pacman can be run from MSYS2 bash
+    Write-Host "Checking if 'pacman' can be run inside MSYS2 bash..."
+    
+    try {
+        # Attempt to run pacman using MSYS2's bash
+        $pacmanOutput = & "C:\msys64\usr\bin\bash.exe" -c "pacman -V" 2>&1
+        
+        if ($pacmanOutput -match "pacman") {
+            Write-Host "'pacman' is available inside MSYS2 bash."
+        } else {
+            Write-Host "'pacman' could not be run. Adding MSYS2 'pacman' to the PATH."
+            
+            # Add MSYS2's 'pacman' directory to the PATH if it's not already available
+            $env:PATH = "C:\msys64\usr\bin;" + $env:PATH
+            Write-Host "MSYS2 'pacman' added to the PATH."
+        }
+    }
+    catch {
+        Write-Host "'pacman' could not be run. Adding MSYS2 'pacman' to the PATH."
+        # Add MSYS2's 'pacman' directory to the PATH if the command fails
+        $env:PATH = "C:\msys64\usr\bin;" + $env:PATH
+        Write-Host "MSYS2 'pacman' added to the PATH."
+    }
+
+    # Optionally, verify where pacman is after modification
+    $finalPacmanLocation = (Get-Command pacman -ErrorAction SilentlyContinue).Source
+    Write-Host "Final 'pacman' location: $finalPacmanLocation"
 }
 
 function Install-GLFW {
@@ -449,7 +478,7 @@ function Compile-Code {
 Install-Chocolatey
 Install-Curl
 Install-MSYS2
-Check-GXX
+MSYS2-Checks
 Install-OpenCV
 Download-Files
 Download-mdspan
