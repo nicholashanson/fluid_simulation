@@ -494,6 +494,39 @@ function Install-DPCPP {
     }
 }
 
+function Install-ImGui {
+    # Get the parent directory path
+    $parentDirectory = (Get-Item ..).FullName
+
+    # Define the path for the zip file to download
+    $imguiZipFile = "$parentDirectory\imgui-master.zip"
+    $imguiRepoZipUrl = "https://github.com/ocornut/imgui/archive/refs/heads/master.zip" 
+    
+    # Check if imgui-master exists in the parent directory
+    if (Test-Path "$parentDirectory\imgui-master") {
+        Write-Host "imgui-master already exists in the parent directory. Skipping installation."
+    } else {
+        Write-Host "imgui-master not found. Installing ImGui..."
+
+        # Check if the zip file already exists in the parent directory
+        if (-not (Test-Path $imguiZipFile)) {
+            Write-Host "Downloading imgui-master.zip from GitHub..."
+            Invoke-WebRequest -Uri $imguiRepoZipUrl -OutFile $imguiZipFile
+            Write-Host "Download completed."
+        }
+
+        # Unzip the contents into the parent directory
+        Expand-Archive -Path $imguiZipFile -DestinationPath $parentDirectory -Force
+        Write-Host "Unzipped imgui-master.zip to the parent directory."
+
+        # Remove the zip file after extraction
+        Remove-Item -Path $imguiZipFile -Force
+        Write-Host "Removed the downloaded zip file."
+
+        Write-Host "ImGui installation completed."
+    }
+}
+
 function Compile-Code {
 
     Write-Host "Compiling program..."
@@ -501,6 +534,12 @@ function Compile-Code {
     $gppArgs = "-g -O0 -v -std=c++23"
 
     $files = @(
+        "../imgui-master/imgui.cpp",
+        "../imgui-master/imgui_draw.cpp",
+        "../imgui-master/imgui_widgets.cpp",
+        "../imgui-master/imgui_tables.cpp",
+        "../imgui-master/backends/imgui_impl_opengl3.cpp",
+        "../imgui-master/backends/imgui_impl_glfw.cpp",
         "main.cpp",
         "gl.cpp",
         "../src/lbm/common.cpp",
@@ -511,7 +550,9 @@ function Compile-Code {
 
     $includes = @(
         "../include",
-        "../inline"
+        "../inline",
+        "../imgui-master" ^
+        "../imgui-master/backends" ^
     )
 
     # Output file name
@@ -532,6 +573,52 @@ function Compile-Code {
     Write-Host "Compilation complete."
 }
 
+function Check-NvidiaGPU {
+    # Use Get-CimInstance to query the video controller (GPU) information
+    $gpu = Get-CimInstance -ClassName Win32_VideoController | Where-Object { $_.Name -like "*NVIDIA*" }
+
+    # If a GPU with "NVIDIA" in the name is found, return $true, otherwise return $false
+    if ($gpu) {
+        return $true
+    } else {
+        return $false
+    }
+}
+
+function Install-CUDA {
+
+    $CUDAPath = "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.0"
+    $CUDAInstallerUrl = "https://developer.download.nvidia.com/compute/cuda/12.0.0/local_installers/cuda_12.0.0_527.41_windows.exe"  
+    $CUDAInstallerPath = "C:\CUDA_Installer\cuda_install.exe"
+
+    if (Test-Path $CUDAPath) {
+        Write-Host "CUDA toolkit found at $CUDAPath."
+        return
+    } else {
+        Write-Host "CUDA toolkit not found."
+    }
+
+    # Check if CUDA installer already exists
+    if (-not (Test-Path $CUDAInstallerPath)) {
+        Write-Host "Downloading CUDA installer..."
+        Invoke-WebRequest -Uri $CUDAInstallerUrl -OutFile $CUDAInstallerPath
+        Write-Host "CUDA installer downloaded."
+    }
+
+    # Install the bare minimum components for SYCL
+    Write-Host "Installing CUDA toolkit (minimal install)..."
+    Start-Process -FilePath $CUDAInstallerPath -ArgumentList "/silent /install /components=compiler,driver" -Wait
+    Write-Host "CUDA installation completed."
+}
+
+# Check if there is an NVIDIA GPU
+if (Check-NvidiaGPU) {
+    Write-Host "NVIDIA GPU found..."
+    Install-CUDA
+} else {
+    Write-Host "No NVIDIA GPU found."
+}
+
 Install-Chocolatey
 Install-Curl
 Install-MSYS2
@@ -541,6 +628,7 @@ Install-GLFW
 Download-Files
 Download-mdspan
 Download-GLM
+Install-ImGui
 
 Install-VisualStudio
 Install-DPCPP
