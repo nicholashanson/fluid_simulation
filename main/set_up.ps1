@@ -487,7 +487,8 @@ function Compile-Code {
         ($includes | ForEach-Object { "-I" + (Join-Path (Get-Location) $_) }) + " " +
         "-IC:\tools\opencv\build\include " +
         "-I`"C:\Program Files (x86)\Intel\oneAPI\tbb\2022.0\include`" " +
-        "-lfs_dpcxx -lopengl32 -lglfw3 -lgdi32 -ltbb12 -lopencv_world4110"
+        "-L`"C:\Program Files (x86)\Intel\oneAPI\tbb\2022.0\lib`" " +
+        "-lfs_dpcxx -lopengl32 -lglfw3 -lgdi32 -ltbb12"
 
     # Execute the build
     Invoke-Expression $compileCommand
