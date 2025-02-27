@@ -79,64 +79,59 @@ function Install-MSYS2 {
 }
 
 function MSYS2-Checks {
-    # Define the MSYS2 g++ path (adjust this path based on your MSYS2 installation)
-    $msys2GppPath = "C:\msys64\mingw64\bin\g++.exe"
-    $msys2PacmanPath = "C:\msys64\usr\bin\pacman.exe"
-    
+    # Define expected paths
+    $msys2Base = "C:\msys64"
+    $msys2MingwBin = "$msys2Base\mingw64\bin"
+    $msys2UsrBin = "$msys2Base\usr\bin"
+    $msys2Lib = "$msys2Base\mingw64\lib"
+
     # Check if 'g++' is in the PATH
     $gppLocation = (Get-Command g++ -ErrorAction SilentlyContinue).Source
 
-    # Check if 'g++' is not found
-    if (-not $gppLocation) {
-        Write-Host "'g++' not found in the PATH."
-        Write-Host "Adding MSYS2 'g++' to the PATH."
-        
-        # Add MSYS2's 'g++' to the front of the PATH
-        $env:PATH = "C:\msys64\mingw64\bin;" + $env:PATH
-        Write-Host "MSYS2 'g++' added to the PATH."
-    }
-    elseif ($gppLocation -notlike "$msys2GppPath*") {
-        Write-Host "'g++' found at: $gppLocation"
-        Write-Host "This is not the MSYS2 'g++'. Adding MSYS2 'g++' to the front of the PATH."
-        
-        # Add MSYS2's 'g++' to the front of the PATH
-        $env:PATH = "C:\msys64\mingw64\bin;" + $env:PATH
-        Write-Host "MSYS2 'g++' added to the PATH."
+    if (-not $gppLocation -or $gppLocation -notlike "$msys2MingwBin*") {
+        Write-Host "'g++' not found or not using MSYS2. Adding MSYS2 'g++' to the PATH."
+        $env:PATH = "$msys2MingwBin;$env:PATH"
     } else {
         Write-Host "MSYS2 'g++' is already in the PATH."
     }
 
-    # Optionally, verify where g++ is after modification
-    $finalGppLocation = (Get-Command g++).Source
+    # Verify 'g++' update
+    $finalGppLocation = (Get-Command g++ -ErrorAction SilentlyContinue).Source
     Write-Host "Final 'g++' location: $finalGppLocation"
 
-    # Now check if pacman can be run from MSYS2 bash
+    # Check if 'pacman' can be run inside MSYS2 bash
     Write-Host "Checking if 'pacman' can be run inside MSYS2 bash..."
-    
     try {
-        # Attempt to run pacman using MSYS2's bash
-        $pacmanOutput = & "C:\msys64\usr\bin\bash.exe" -c "pacman -V" 2>&1
-        
+        $pacmanOutput = & "$msys2UsrBin\bash.exe" -c "pacman -V" 2>&1
         if ($pacmanOutput -match "pacman") {
             Write-Host "'pacman' is available inside MSYS2 bash."
         } else {
-            Write-Host "'pacman' could not be run. Adding MSYS2 'pacman' to the PATH."
-            
-            # Add MSYS2's 'pacman' directory to the PATH if it's not already available
-            $env:PATH = "C:\msys64\usr\bin;" + $env:PATH
-            Write-Host "MSYS2 'pacman' added to the PATH."
+            Write-Host "'pacman' not found in bash. Adding MSYS2 to PATH."
+            $env:PATH = "$msys2UsrBin;$env:PATH"
         }
-    }
-    catch {
-        Write-Host "'pacman' could not be run. Adding MSYS2 'pacman' to the PATH."
-        # Add MSYS2's 'pacman' directory to the PATH if the command fails
-        $env:PATH = "C:\msys64\usr\bin;" + $env:PATH
-        Write-Host "MSYS2 'pacman' added to the PATH."
+    } catch {
+        Write-Host "Error running 'pacman'. Adding MSYS2 to PATH."
+        $env:PATH = "$msys2UsrBin;$env:PATH"
     }
 
-    # Optionally, verify where pacman is after modification
+    # Verify 'pacman' update
     $finalPacmanLocation = (Get-Command pacman -ErrorAction SilentlyContinue).Source
     Write-Host "Final 'pacman' location: $finalPacmanLocation"
+
+    # Check if LIBRARY_PATH contains MSYS2 lib directory
+    Write-Host "Checking LIBRARY_PATH..."
+    $libraryPath = [System.Environment]::GetEnvironmentVariable("LIBRARY_PATH", "Machine")
+
+    if ($libraryPath -notlike "*$msys2Lib*") {
+        Write-Host "Adding MSYS2 lib directory to LIBRARY_PATH."
+        [System.Environment]::SetEnvironmentVariable("LIBRARY_PATH", "$msys2Lib;$libraryPath", "Machine")
+    } else {
+        Write-Host "MSYS2 lib directory is already in LIBRARY_PATH."
+    }
+
+    # Verify LIBRARY_PATH update
+    $finalLibraryPath = [System.Environment]::GetEnvironmentVariable("LIBRARY_PATH", "Machine")
+    Write-Host "Final LIBRARY_PATH: $finalLibraryPath"
 }
 
 function Install-OpenCV {
