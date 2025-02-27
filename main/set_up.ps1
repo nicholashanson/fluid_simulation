@@ -14,6 +14,19 @@ function Install-Chocolatey {
     }
 }
 
+function Install-Curl {
+    Write-Host "Ensuring dependencies are installed..."
+
+    # Check if 'curl' is already installed
+    $curlAvailable = Get-Command curl -ErrorAction SilentlyContinue
+    if ($curlAvailable) {
+        Write-Host "curl is already available."
+    } else {
+        Write-Host "curl is not found. Installing..."
+        choco install curl -y --force
+    }
+}
+
 function Install-MSYS2 {
     # Save the original directory
     $originalDir = Get-Location
