@@ -523,6 +523,7 @@ Install-Curl
 Install-MSYS2
 MSYS2-Checks
 Install-OpenCV
+Install-GLFW
 Download-Files
 Download-mdspan
 Download-GLM
