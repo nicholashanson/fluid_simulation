@@ -501,6 +501,7 @@ function Compile-Code {
     $gppArgs = "-g -O0 -v -std=c++23"
 
     $files = @(
+        "main.cpp",
         "gl.cpp",
         "../src/lbm/common.cpp",
         "../src/grid_renderer.cpp",
