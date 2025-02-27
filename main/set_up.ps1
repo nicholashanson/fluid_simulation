@@ -289,6 +289,16 @@ function Download-GLM {
         [string]$destination = "../include/glm-0.9.9.8.zip"
     )
 
+    # Define the include directory path where 'glm' should be located
+    $includeDir = Join-Path (Get-Location).Path "../include"
+    $glmDestinationPath = Join-Path $includeDir "glm"
+
+    # Check if GLM directory already exists in the include folder
+    if (Test-Path $glmDestinationPath) {
+        Write-Host "'glm' directory already exists in $includeDir. Skipping GLM download and installation."
+        return
+    }
+
     # Determine the full path for the destination zip file and destination directory (i.e. the include directory)
     $destinationFullPath = [System.IO.Path]::GetFullPath($destination)
     $destinationDir = [System.IO.Path]::GetDirectoryName($destinationFullPath)
@@ -317,9 +327,6 @@ function Download-GLM {
 
     # Path to the 'glm' subdirectory within the extracted folder
     $glmSourcePath = Join-Path $extractedFolderPath "glm"
-    # Destination for the glm directory in the include folder
-    $includeDir = Join-Path (Get-Location).Path "../include"
-    $glmDestinationPath = Join-Path $includeDir "glm"
 
     # If the destination exists, remove it
     if (Test-Path $glmDestinationPath) {
