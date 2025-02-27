@@ -662,7 +662,7 @@ if (Check-NvidiaGPU) {
 
 Install-Chocolatey
 Install-Curl
-Install-MSYS2
+Install-MSYS2 -Action $Action
 MSYS2-Checks
 Install-OpenCV
 Install-TBB
