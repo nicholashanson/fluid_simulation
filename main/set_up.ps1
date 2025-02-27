@@ -28,6 +28,10 @@ function Install-Curl {
 }
 
 function Install-MSYS2 {
+    # Save the original directory
+    $originalDir = Get-Location
+
+    Set-Location -Path "C:\"
 
     if ($Action -eq "reset") {
         Write-Host "Resetting MSYS2 installation..."
@@ -122,6 +126,9 @@ function Install-MSYS2 {
         Write-Host "Failed to retrieve g++ version. Something went wrong with the installation."
         exit 1
     }
+
+    # Restore the original directory
+    Set-Location -Path $originalDir
 }
 
 function MSYS2-Checks {
