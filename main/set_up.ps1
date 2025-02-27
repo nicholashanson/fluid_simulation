@@ -14,19 +14,6 @@ function Install-Chocolatey {
     }
 }
 
-function Install-Curl {
-    Write-Host "Ensuring dependencies are installed..."
-
-    # Check if 'curl' is already installed
-    $curlAvailable = Get-Command curl -ErrorAction SilentlyContinue
-    if ($curlAvailable) {
-        Write-Host "curl is already available."
-    } else {
-        Write-Host "curl is not found. Installing..."
-        choco install curl -y --force
-    }
-}
-
 function Install-MSYS2 {
     # Save the original directory
     $originalDir = Get-Location
@@ -81,11 +68,11 @@ function Install-MSYS2 {
         Write-Host "Running MSYS2 installer..."
         Start-Process -FilePath $msys2InstallerPath -Wait
 
-        $keyringCheck = & "C:\msys64\usr\bin\bash.exe" -c "pacman-key --init"
-        if ($keyringCheck -match "error") {
-            Write-Host "Initializing pacman keyring..."
-            & "C:\msys64\usr\bin\bash.exe" -c "pacman-key --init"
-        }
+        # Initialize pacman keyring and populate with the default MSYS2 keys
+        Write-Host "Initializing pacman keyring..."
+        & "C:\msys64\usr\bin\bash.exe" -c "pacman-key --init"
+        Write-Host "Populating pacman keyring..."
+        & "C:\msys64\usr\bin\bash.exe" -c "pacman-key --populate msys2"
 
         # Ensure MSYS2 is up to date
         Write-Host "Updating MSYS2..."
