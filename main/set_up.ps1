@@ -170,7 +170,7 @@ function Install-GLFW {
 function Install-OpenCV {
 
     $env:PATH = "C:\msys64\usr\bin;C:\msys64\bin;" + $env:PATH
-    
+
     Write-Host "Checking OpenCV installation..."
 
     # Check if OpenCV is installed via MSYS2
@@ -179,6 +179,16 @@ function Install-OpenCV {
         Write-Host "OpenCV is already installed via MSYS2."
     } else {
         Write-Host "OpenCV is not found. Installing OpenCV via MSYS2..."
+
+        # Initialize pacman keyring if needed
+        $keyringCheck = & "C:\msys64\usr\bin\bash.exe" -c "pacman-key --init"
+        if ($keyringCheck -match "error") {
+            Write-Host "Initializing pacman keyring..."
+            & "C:\msys64\usr\bin\bash.exe" -c "pacman-key --init"
+        }
+
+        Write-Host "Populating pacman keyring..."
+        & "C:\msys64\usr\bin\bash.exe" -c "pacman-key --populate msys2"
         
         # Install OpenCV using pacman in MSYS2
         & "C:\msys64\usr\bin\bash.exe" -c "pacman -S mingw-w64-x86_64-opencv --noconfirm"
