@@ -38,8 +38,6 @@ const size_t steps_per_frame = 20;
 
 int main() {
 
-    void* cs_state = fs::dpcxx::lbm::init_cs_c( fs::settings::ydim, fs::settings::xdim, 0.05 );
-
     sim::grid<std::vector<double>, fs::lbm::D2Q9_view> D2Q9_grid( fs::lbm::D2Q9_states );
 
     sim::grid<std::vector<double>, fs::property_view> property_grid( fs::lbm::property_states );
@@ -53,6 +51,10 @@ int main() {
 	for ( auto xy : fs::lbm::obstacle_coords ) {
 	    barrier[ xy.second + xy.first * fs::settings::xdim ] = 1;
     }
+
+#ifdef GPU
+    void* cs_state = fs::dpcxx::lbm::init_cs( D2Q9_grid, barrier, 0.05 );
+#endif
 
     // initialize GLFW and OpenGL context
     GLFWwindow* window = initialize_window();
@@ -111,7 +113,11 @@ int main() {
 
             fs::lbm::set_boundaries( D2Q9_grid );
 
+#ifndef GPU
+            fs::lbm::collide_and_stream_tbb( D2Q9_grid.get_data_handle(), barrier.data(), steps_per_frame );
+#else
             fs::dpcxx::lbm::collide_and_stream( D2Q9_grid, barrier.data(), steps_per_frame );
+#endif
 
             vertices = app::property_grid_to_vertex_data_cv( D2Q9_grid, fs::lbm::property_states, fs::lbm::calculate_u_y );
 
@@ -163,6 +169,10 @@ int main() {
     glDeleteProgram( shader_program );
 
     glfwTerminate();
+
+#ifdef GPU
+    fs::dpcxx::lbm::terminate_cs_c( cs_state );
+#endif
 
     return 0;
 }

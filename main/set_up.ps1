@@ -440,17 +440,16 @@ function Install-DPCPP {
     $icpxCommand = 'icpx'
     $url = 'https://fluidsim.s3.us-east-1.amazonaws.com/intel-oneapi-base-toolkit-2025.0.1.47_offline.exe'
     $localPath = 'C:\intel-dpcpp\intel-dpcpp-cpp-compiler-2025.0.4.21_offline.exe'
+    $oneAPIPath = 'C:\Program Files (x86)\Intel\oneAPI\2025.0\bin'
 
-    # Check if the 'icpx' command exists
+    # Check if the 'icpx' command exists in the PATH
     if (Get-Command -Name $icpxCommand -ErrorAction SilentlyContinue) {
         Write-Host "DPC++ compiler is already installed. Skipping installation."
     } else {
-
         # Check if the installer file already exists
         if (Test-Path -Path $localPath) {
             Write-Host "The installer file already exists. Skipping download."
         } else {
-
             # Check if the directory exists; if not, create it
             $directory = [System.IO.Path]::GetDirectoryName($localPath)
 
@@ -463,18 +462,17 @@ function Install-DPCPP {
             Invoke-WebRequest -Uri $url -OutFile $localPath
             Write-Host "Successfully downloaded DPC++ installer."
         }
+
+        # Silently install DPC++ using the installer
+        Write-Host "Starting silent installation of Intel DPC++..."
+        Start-Process -FilePath $localPath -ArgumentList "--silent --eula accept" -Wait -NoNewWindow
+        Write-Host "Intel DPC++ installation completed."
     }
 
-    # Silently install DPC++ using the installer
-    Write-Host "Starting silent installation of Intel DPC++..."
-    Start-Process -FilePath $localPath -ArgumentList "--silent --eula accept" -Wait -NoNewWindow
-    Write-Host "Intel DPC++ installation completed."
-
-    # Add to the system PATH
-    Write-Host "Adding DPC++ to the system PATH..."
-    
+    # Check if the oneAPI directory is in the system PATH
     $currentPath = [System.Environment]::GetEnvironmentVariable("Path", [System.EnvironmentVariableTarget]::Machine)
-    
+
+    # If the DPC++ bin directory is not in the PATH, add it
     if ($currentPath -notlike "*$oneAPIPath*") {
         $newPath = "$currentPath;$oneAPIPath"
         [System.Environment]::SetEnvironmentVariable("Path", $newPath, [System.EnvironmentVariableTarget]::Machine)
@@ -486,6 +484,14 @@ function Install-DPCPP {
     # Add to the current session PATH (immediate effect)
     $env:Path += ";$oneAPIPath"
     Write-Host "DPC++ is now available in the current session."
+
+    # Final check to see if "icpx" is runnable after installation and PATH modification
+    $icpxAvailable = Get-Command -Name $icpxCommand -ErrorAction SilentlyContinue
+    if ($icpxAvailable) {
+        Write-Host "'icpx' command is now available and runnable."
+    } else {
+        Write-Host "'icpx' command is still not available. Please check the installation."
+    }
 }
 
 function Compile-Code {
@@ -517,7 +523,7 @@ function Compile-Code {
         "-IC:\tools\opencv\build\include " +
         "-I`"C:\Program Files (x86)\Intel\oneAPI\tbb\2022.0\include`" " +
         "-L`"C:\Program Files (x86)\Intel\oneAPI\tbb\2022.0\lib`" " +
-        "-lfs_dpcxx -lopengl32 -lglfw3 -lgdi32 -ltbb12"
+        "-lopengl32 -lglfw3 -lgdi32 -ltbb12 -lopencv_core -lopencv_imgproc -lopencv_highgui -lopencv_imgcodecs"
 
     # Execute the build
     Invoke-Expression $compileCommand
