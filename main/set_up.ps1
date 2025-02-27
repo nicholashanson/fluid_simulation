@@ -565,7 +565,7 @@ function Compile-Code {
         "-IC:\tools\opencv\build\include " +
         "-I`"C:\Program Files (x86)\Intel\oneAPI\tbb\2022.0\include`" " +
         "-L`"C:\Program Files (x86)\Intel\oneAPI\tbb\2022.0\lib`" " +
-        "-lopengl32 -lglfw3 -lgdi32 -ltbb12 -lopencv_core -lopencv_imgproc -lopencv_highgui -lopencv_imgcodecs"
+        "-lopengl32 -lglfw3 -lgdi32 -ltbb -lopencv_core -lopencv_imgproc -lopencv_highgui -lopencv_imgcodecs"
 
     # Execute the build
     Invoke-Expression $compileCommand
