@@ -1,5 +1,9 @@
 [Environment]::CurrentDirectory = (Get-Location -PSProvider FileSystem).ProviderPath
 
+param(
+    [string]$Action 
+)
+
 function Install-Chocolatey {
     if (-not (Get-Command choco -ErrorAction SilentlyContinue)) {
         Write-Host "Chocolatey not found. Installing..."
@@ -24,6 +28,37 @@ function Install-Curl {
 }
 
 function Install-MSYS2 {
+
+    if ($Action -eq "reset") {
+        Write-Host "Resetting MSYS2 installation..."
+
+        # Remove MSYS2 directory
+        $msys2Path = "C:\msys64"
+        if (Test-Path $msys2Path) {
+            Write-Host "Removing MSYS2 from $msys2Path..."
+            Remove-Item -Recurse -Force $msys2Path
+        } else {
+            Write-Host "MSYS2 not found at $msys2Path."
+        }
+
+        # Remove the MSYS2 installer if it exists
+        $msys2InstallerPath = "C:\msys2-base-x86_64-20250221.sfx.exe"
+        if (Test-Path $msys2InstallerPath) {
+            Write-Host "Deleting MSYS2 installer..."
+            Remove-Item $msys2InstallerPath
+        } else {
+            Write-Host "MSYS2 installer not found."
+        }
+
+        # Remove MSYS2-related paths from the PATH environment variable
+        Write-Host "Removing MSYS2-related paths from environment variables..."
+        $mingwPath = "C:\msys64\mingw64\bin"
+        $env:Path = $env:Path -replace [regex]::Escape($mingwPath), ""
+
+        Write-Host "MSYS2 has been reset successfully."
+        return
+    }
+
     # Check if MSYS2 is installed
     $msys2Path = "C:\msys64\usr\bin\bash.exe"
     if (Test-Path $msys2Path) {
