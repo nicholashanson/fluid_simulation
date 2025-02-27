@@ -323,6 +323,23 @@ function Install-DPCPP {
     Write-Host "Starting silent installation of Intel DPC++..."
     Start-Process -FilePath $localPath -ArgumentList "--silent --eula accept" -Wait -NoNewWindow
     Write-Host "Intel DPC++ installation completed."
+
+    # Add to the system PATH
+    Write-Host "Adding DPC++ to the system PATH..."
+    
+    $currentPath = [System.Environment]::GetEnvironmentVariable("Path", [System.EnvironmentVariableTarget]::Machine)
+    
+    if ($currentPath -notlike "*$oneAPIPath*") {
+        $newPath = "$currentPath;$oneAPIPath"
+        [System.Environment]::SetEnvironmentVariable("Path", $newPath, [System.EnvironmentVariableTarget]::Machine)
+        Write-Host "Successfully added $oneAPIPath to the system PATH."
+    } else {
+        Write-Host "DPC++ path is already in the system PATH."
+    }
+
+    # Add to the current session PATH (immediate effect)
+    $env:Path += ";$oneAPIPath"
+    Write-Host "DPC++ is now available in the current session."
 }
 
 function Compile-Code {
