@@ -81,6 +81,12 @@ function Install-MSYS2 {
         Write-Host "Running MSYS2 installer..."
         Start-Process -FilePath $msys2InstallerPath -Wait
 
+        $keyringCheck = & "C:\msys64\usr\bin\bash.exe" -c "pacman-key --init"
+        if ($keyringCheck -match "error") {
+            Write-Host "Initializing pacman keyring..."
+            & "C:\msys64\usr\bin\bash.exe" -c "pacman-key --init"
+        }
+
         # Ensure MSYS2 is up to date
         Write-Host "Updating MSYS2..."
         & "C:\msys64\usr\bin\bash.exe" -c "pacman -Syu --noconfirm"
