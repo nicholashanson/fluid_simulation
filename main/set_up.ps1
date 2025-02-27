@@ -56,7 +56,6 @@ function Install-MSYS2 {
         $env:Path = $env:Path -replace [regex]::Escape($mingwPath), ""
 
         Write-Host "MSYS2 has been reset successfully."
-        return
     }
 
     # Check if MSYS2 is installed
