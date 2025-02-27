@@ -168,6 +168,9 @@ function Install-GLFW {
 }
 
 function Install-OpenCV {
+
+    $env:PATH = "C:\msys64\usr\bin;C:\msys64\bin;" + $env:PATH
+    
     Write-Host "Checking OpenCV installation..."
 
     # Check if OpenCV is installed via MSYS2
