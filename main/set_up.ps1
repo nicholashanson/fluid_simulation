@@ -565,7 +565,7 @@ function Compile-Code {
         "-IC:\tools\opencv\build\include " +
         "-I`"C:\Program Files (x86)\Intel\oneAPI\tbb\2022.0\include`" " +
         "-L`"C:\Program Files (x86)\Intel\oneAPI\tbb\2022.0\lib`" " +
-        "-lopengl32 -lglfw3 -lgdi32 -ltbb -lopencv_core -lopencv_imgproc -lopencv_highgui -lopencv_imgcodecs"
+        "-lopengl32 -lglfw3 -lgdi32 -ltbb12 -lopencv_core -lopencv_imgproc -lopencv_highgui -lopencv_imgcodecs"
 
     # Execute the build
     Invoke-Expression $compileCommand
@@ -583,6 +583,14 @@ function Check-NvidiaGPU {
     } else {
         return $false
     }
+}
+
+function Install-TBB {
+
+    # Install TBB (Threading Building Blocks)
+    Write-Host "Installing TBB using pacman..."
+    & "C:\msys64\usr\bin\bash.exe" -c "pacman -S mingw-w64-x86_64-tbb --noconfirm"
+    Write-Host "TBB installation completed."
 }
 
 function Install-CUDA {
@@ -624,6 +632,7 @@ Install-Curl
 Install-MSYS2
 MSYS2-Checks
 Install-OpenCV
+Install-TBB
 Install-GLFW
 Download-Files
 Download-mdspan
