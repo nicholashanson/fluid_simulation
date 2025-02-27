@@ -348,7 +348,7 @@ function Compile-Code {
     $outputFile = "fs.exe"
 
     # Build command
-    $compileCommand = "g++ $gppArgs -o $outputFile " + ($files | ForEach-Object { $_ }) + " " + ($includes | ForEach-Object { "-I" + (Join-Path (Get-Location) $_) }) + " -IC:\tools\opencv\build\include" + " -IC:\Program Files (x86)\Intel\oneAPI\tbb\2022.0\include\tbb" + " -lfs_dpcxx -lopengl32 -lglfw3 -lgdi32 -ltbb12 -lopencv_world4110"
+    $compileCommand = "g++ $gppArgs -o $outputFile " + ($files | ForEach-Object { $_ }) + " " + ($includes | ForEach-Object { "-I" + (Join-Path (Get-Location) $_) }) + " -IC:\tools\opencv\build\include" + " -I`"C:\Program Files (x86)\Intel\oneAPI\tbb\2022.0\include\tbb`"" + " -lfs_dpcxx -lopengl32 -lglfw3 -lgdi32 -ltbb12 -lopencv_world4110"
 
     # Execute the build
     Invoke-Expression $compileCommand
