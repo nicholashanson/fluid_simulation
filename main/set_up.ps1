@@ -47,33 +47,45 @@ function Install-MSYS2 {
         Write-Host "Updating MSYS2..."
         & "C:\msys64\usr\bin\bash.exe" -c "pacman -Syu --noconfirm"
 
-        # Install MinGW (64-bit) and base-devel package
+        # Install MinGW (64-bit) and development tools
         Write-Host "Installing MinGW and development tools..."
         & "C:\msys64\usr\bin\bash.exe" -c "pacman -S mingw-w64-x86_64-gcc mingw-w64-x86_64-toolchain --noconfirm"
 
         Write-Host "MSYS2 and MinGW toolchain installed successfully."
     }
 
-    # Check if g++ is available in the MSYS2 environment
-    $gppAvailable = & "C:\msys64\usr\bin\bash.exe" -c "g++ --version"
-    if ($gppAvailable) {
-        Write-Host "g++ is available in MSYS2."
+    # Check if MinGW64's g++ is available in the correct directory
+    $mingwGppAvailable = Test-Path "C:\msys64\mingw64\bin\g++.exe"
+    if ($mingwGppAvailable) {
+        Write-Host "MinGW64's g++ is available in C:\msys64\mingw64\bin."
     } else {
-        Write-Host "g++ is not available. Something went wrong with the MSYS2 installation."
+        Write-Host "MinGW64's g++ is not available in C:\msys64\mingw64\bin. Installing the toolchain..."
+        
+        # Install MinGW64's toolchain (if not already done)
+        & "C:\msys64\usr\bin\bash.exe" -c "pacman -S mingw-w64-x86_64-gcc --noconfirm"
+        Write-Host "MinGW64 g++ installed."
+    }
+
+    # Add MinGW64's bin directory to the PATH if it's not already there
+    $mingwBinDir = "C:\msys64\mingw64\bin"
+    if (Test-Path $mingwBinDir) {
+        Write-Host "MSYS2's MinGW64 bin directory found at: $mingwBinDir"
+        # Add MinGW64's 'bin' directory to the PATH if it's not already there
+        if ($env:Path -notlike "*$mingwBinDir*") {
+            $env:Path += ";$mingwBinDir"
+            Write-Host "Added MSYS2's MinGW64 bin directory to the PATH."
+        }
+    } else {
+        Write-Host "MSYS2's MinGW64 bin directory not found at $mingwBinDir. Something went wrong during installation."
         exit 1
     }
 
-    # Add MSYS2's MinGW bin directory to the PATH
-    $mingwBinDir = "C:\msys64\mingw64\bin"
-    if (Test-Path $mingwBinDir) {
-        Write-Host "MSYS2's MinGW bin directory found at: $mingwBinDir"
-        # Add MinGW's 'bin' directory to the PATH if it's not already there
-        if ($env:Path -notlike "*$mingwBinDir*") {
-            $env:Path += ";$mingwBinDir"
-            Write-Host "Added MSYS2's MinGW bin directory to the PATH."
-        }
+    # Verify if the g++ in the MinGW64 bin is working properly
+    $gppVersion = & "C:\msys64\mingw64\bin\g++" --version
+    if ($gppVersion) {
+        Write-Host "g++ version: $gppVersion"
     } else {
-        Write-Host "MSYS2's MinGW bin directory not found at $mingwBinDir. Something went wrong during installation."
+        Write-Host "Failed to retrieve g++ version. Something went wrong with the installation."
         exit 1
     }
 }
