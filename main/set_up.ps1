@@ -10,8 +10,7 @@ function Install-Chocolatey {
     }
 }
 
-
-function Install-Dependencies {
+function Install-Curl {
     Write-Host "Ensuring dependencies are installed..."
 
     # Check if 'curl' is already installed
@@ -22,37 +21,96 @@ function Install-Dependencies {
         Write-Host "curl is not found. Installing..."
         choco install curl -y --force
     }
+}
 
-    # Check if 'g++' is already in the PATH
-    $gppAvailable = Get-Command g++ -ErrorAction SilentlyContinue
-    if ($gppAvailable) {
-        Write-Host "g++ is already in the PATH."
+function Install-MSYS2 {
+    # Check if MSYS2 is installed
+    $msys2Path = "C:\msys64\usr\bin\bash.exe"
+    if (Test-Path $msys2Path) {
+        Write-Host "MSYS2 is already installed at $msys2Path."
     } else {
-        Write-Host "g++ is not found in the PATH. Checking for MinGW installation..."
+        Write-Host "MSYS2 is not installed. Installing MSYS2..."
 
-        # Check if MinGW is installed via Chocolatey
-        $mingwInstalled = choco list --local-only | Select-String "mingw"
-        
-        if ($mingwInstalled) {
-            Write-Host "MinGW is installed via Chocolatey."
-        } else {
-            Write-Host "MinGW is not found. Installing MinGW..."
-            choco install mingw -y --force
+        # Download and install MSYS2
+        $msys2InstallerUrl = "https://repo.msys2.org/distrib/x86_64/msys2-base-x86_64-20250221.sfx.exe"
+        $msys2InstallerPath = "C:\msys2-base-x86_64-20250221.sfx.exe"
+
+        if (-not (Test-Path $msys2InstallerPath)) {
+            Write-Host "Downloading MSYS2 installer..."
+            Invoke-WebRequest -Uri $msys2InstallerUrl -OutFile $msys2InstallerPath
         }
 
-        # Check if MinGW's 'bin' directory exists at the expected location
-        $mingwBinDir = "C:\ProgramData\mingw64\mingw64\bin"
-        if (Test-Path $mingwBinDir) {
-            Write-Host "MinGW's bin directory found at: $mingwBinDir"
-            # Add MinGW's 'bin' directory to the PATH if it's not already there
-            $env:Path += ";$mingwBinDir"
-            Write-Host "Added MinGW's bin directory to the PATH."
-        } else {
-            Write-Host "MinGW's bin directory not found at $mingwBinDir. Something went wrong during installation."
-            exit 1
-        }
+        Write-Host "Running MSYS2 installer..."
+        Start-Process -FilePath $msys2InstallerPath -ArgumentList "/S" -Wait
+
+        # Ensure MSYS2 is up to date
+        Write-Host "Updating MSYS2..."
+        & "C:\msys64\usr\bin\bash.exe" -c "pacman -Syu --noconfirm"
+
+        # Install MinGW (64-bit) and base-devel package
+        Write-Host "Installing MinGW and development tools..."
+        & "C:\msys64\usr\bin\bash.exe" -c "pacman -S mingw-w64-x86_64-gcc mingw-w64-x86_64-toolchain --noconfirm"
+
+        Write-Host "MSYS2 and MinGW toolchain installed successfully."
     }
 
+    # Check if g++ is available in the MSYS2 environment
+    $gppAvailable = & "C:\msys64\usr\bin\bash.exe" -c "g++ --version"
+    if ($gppAvailable) {
+        Write-Host "g++ is available in MSYS2."
+    } else {
+        Write-Host "g++ is not available. Something went wrong with the MSYS2 installation."
+        exit 1
+    }
+
+    # Add MSYS2's MinGW bin directory to the PATH
+    $mingwBinDir = "C:\msys64\mingw64\bin"
+    if (Test-Path $mingwBinDir) {
+        Write-Host "MSYS2's MinGW bin directory found at: $mingwBinDir"
+        # Add MinGW's 'bin' directory to the PATH if it's not already there
+        if ($env:Path -notlike "*$mingwBinDir*") {
+            $env:Path += ";$mingwBinDir"
+            Write-Host "Added MSYS2's MinGW bin directory to the PATH."
+        }
+    } else {
+        Write-Host "MSYS2's MinGW bin directory not found at $mingwBinDir. Something went wrong during installation."
+        exit 1
+    }
+}
+
+function Check-GXX {
+    # Define the MSYS2 g++ path (adjust this path based on your MSYS2 installation)
+    $msys2GppPath = "C:\msys64\mingw64\bin\g++.exe"
+
+    # Check if 'g++' is in the PATH
+    $gppLocation = (Get-Command g++ -ErrorAction SilentlyContinue).Source
+
+    # Check if 'g++' is not found
+    if (-not $gppLocation) {
+        Write-Host "'g++' not found in the PATH."
+        Write-Host "Adding MSYS2 'g++' to the PATH."
+        
+        # Add MSYS2's 'g++' to the front of the PATH
+        $env:PATH = "C:\msys64\mingw64\bin;" + $env:PATH
+        Write-Host "MSYS2 'g++' added to the PATH."
+    }
+    elseif ($gppLocation -notlike "$msys2GppPath*") {
+        Write-Host "'g++' found at: $gppLocation"
+        Write-Host "This is not the MSYS2 'g++'. Adding MSYS2 'g++' to the front of the PATH."
+        
+        # Add MSYS2's 'g++' to the front of the PATH
+        $env:PATH = "C:\msys64\mingw64\bin;" + $env:PATH
+        Write-Host "MSYS2 'g++' added to the PATH."
+    } else {
+        Write-Host "MSYS2 'g++' is already in the PATH."
+    }
+
+    # Optionally, verify where g++ is after modification
+    $finalGppLocation = (Get-Command g++).Source
+    Write-Host "Final 'g++' location: $finalGppLocation"
+}
+
+function Install-GLFW {
     # Set up directories
     $downloadDir = [System.IO.Path]::Combine((Get-Location).Path, "../include")
     if (-not (Test-Path $downloadDir)) {
@@ -80,28 +138,38 @@ function Install-Dependencies {
     }
 }
 
-# Function to install and configure OpenCV
 function Install-OpenCV {
     Write-Host "Checking OpenCV installation..."
 
-    # Check if OpenCV is installed via Chocolatey
-    $opencvInstalled = choco list --local-only | Select-String "opencv"
-    if ($opencvInstalled) {
-        Write-Host "OpenCV is already installed."
+    # Check if OpenCV is installed via MSYS2
+    $opencvInstalled = & "C:\msys64\usr\bin\bash.exe" -c "pacman -Qs opencv"
+    if ($opencvInstalled -match "opencv") {
+        Write-Host "OpenCV is already installed via MSYS2."
     } else {
-        Write-Host "OpenCV is not found. Installing..."
-        choco install opencv -y --force
+        Write-Host "OpenCV is not found. Installing OpenCV via MSYS2..."
+        
+        # Install OpenCV using pacman in MSYS2
+        & "C:\msys64\usr\bin\bash.exe" -c "pacman -S mingw-w64-x86_64-opencv --noconfirm"
     }
 
     # Set OpenCV environment variables
-    $opencvDir = "C:\tools\opencv\build"
+    $opencvDir = "C:\msys64\mingw64"
     $opencvInclude = "$opencvDir\include"
-    $opencvLib = "$opencvDir\x64\vc16\lib"
+    $opencvLib = "$opencvDir\lib"
 
     if ( (Test-Path $opencvInclude) -and (Test-Path $opencvLib) ) {
         Write-Host "OpenCV directories found. Adding to environment variables..."
+
+        # Set OpenCV_DIR environment variable
         [System.Environment]::SetEnvironmentVariable("OpenCV_DIR", $opencvDir, [System.EnvironmentVariableTarget]::Machine)
-        [System.Environment]::SetEnvironmentVariable("PATH", "$env:Path;$opencvLib", [System.EnvironmentVariableTarget]::Machine)
+
+        # Add OpenCV libraries to PATH
+        $opencvBin = "$opencvDir\bin"
+        if (-not ($env:PATH -contains $opencvBin)) {
+            [System.Environment]::SetEnvironmentVariable("PATH", "$env:Path;$opencvBin", [System.EnvironmentVariableTarget]::Machine)
+        }
+
+        Write-Host "OpenCV environment variables set successfully."
     } else {
         Write-Host "Error: OpenCV directories not found. Installation may have failed."
         exit 1
@@ -370,7 +438,6 @@ function Compile-Code {
         ($includes | ForEach-Object { "-I" + (Join-Path (Get-Location) $_) }) + " " +
         "-IC:\tools\opencv\build\include " +
         "-I`"C:\Program Files (x86)\Intel\oneAPI\tbb\2022.0\include`" " +
-        "-LC:\tools\opencv\build\x64\vc16\lib" +
         "-lfs_dpcxx -lopengl32 -lglfw3 -lgdi32 -ltbb12 -lopencv_world4110"
 
     # Execute the build
@@ -380,7 +447,9 @@ function Compile-Code {
 }
 
 Install-Chocolatey
-Install-Dependencies
+Install-Curl
+Install-MSYS2
+Check-GXX
 Install-OpenCV
 Download-Files
 Download-mdspan
