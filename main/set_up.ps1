@@ -1,8 +1,8 @@
-[Environment]::CurrentDirectory = (Get-Location -PSProvider FileSystem).ProviderPath
-
 param(
     [string]$Action 
 )
+
+[Environment]::CurrentDirectory = (Get-Location -PSProvider FileSystem).ProviderPath
 
 function Install-Chocolatey {
     if (-not (Get-Command choco -ErrorAction SilentlyContinue)) {
