@@ -551,8 +551,8 @@ function Compile-Code {
     $includes = @(
         "../include",
         "../inline",
-        "../imgui-master" ^
-        "../imgui-master/backends" ^
+        "../imgui-master",
+        "../imgui-master/backends"
     )
 
     # Output file name
