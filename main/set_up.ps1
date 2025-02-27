@@ -139,34 +139,6 @@ function MSYS2-Checks {
     Write-Host "Final 'pacman' location: $finalPacmanLocation"
 }
 
-function Install-GLFW {
-    # Set up directories
-    $downloadDir = [System.IO.Path]::Combine((Get-Location).Path, "../include")
-    if (-not (Test-Path $downloadDir)) {
-        New-Item -ItemType Directory -Path $downloadDir
-    }
-
-    # Create the 'glfw' subdirectory
-    $glfwDir = Join-Path $downloadDir "GLFW"
-    if (-not (Test-Path $glfwDir)) {
-        New-Item -ItemType Directory -Path $glfwDir
-    }
-
-    # Download glfw3.h from GLFW official repository
-    $glfwUrl = "https://raw.githubusercontent.com/glfw/glfw/master/include/GLFW/glfw3.h"
-    $glfwFileName = "glfw3.h"
-    $glfwFilePath = Join-Path $glfwDir $glfwFileName
-
-    Write-Host "Downloading $glfwFileName from GLFW official repository..."
-    try {
-        Invoke-WebRequest -Uri $glfwUrl -OutFile $glfwFilePath
-        Write-Host "Successfully downloaded $glfwFileName."
-    } catch {
-        Write-Host "Failed to download $glfwFileName. Exiting."
-        exit 1
-    }
-}
-
 function Install-OpenCV {
 
     $env:PATH = "C:\msys64\usr\bin;C:\msys64\bin;" + $env:PATH
@@ -215,6 +187,56 @@ function Install-OpenCV {
     } else {
         Write-Host "Error: OpenCV directories not found. Installation may have failed."
         exit 1
+    }
+}
+
+function Install-GLFW {
+    # Set up directories
+    $downloadDir = [System.IO.Path]::Combine((Get-Location).Path, "../include")
+    if (-not (Test-Path $downloadDir)) {
+        New-Item -ItemType Directory -Path $downloadDir
+    }
+
+    # Create the 'glfw' subdirectory
+    $glfwDir = Join-Path $downloadDir "GLFW"
+    if (-not (Test-Path $glfwDir)) {
+        New-Item -ItemType Directory -Path $glfwDir
+    }
+
+    # Download glfw3.h from GLFW official repository
+    $glfwUrl = "https://raw.githubusercontent.com/glfw/glfw/master/include/GLFW/glfw3.h"
+    $glfwFileName = "glfw3.h"
+    $glfwFilePath = Join-Path $glfwDir $glfwFileName
+
+    Write-Host "Downloading $glfwFileName from GLFW official repository..."
+    try {
+        Invoke-WebRequest -Uri $glfwUrl -OutFile $glfwFilePath
+        Write-Host "Successfully downloaded $glfwFileName."
+    } catch {
+        Write-Host "Failed to download $glfwFileName. Exiting."
+        exit 1
+    }
+
+    # Check if GLFW 3 is installed using pacman
+    Write-Host "Checking if GLFW 3 is installed..."
+
+    # Run pacman to check if glfw is installed
+    $glfwInstalled = & "C:\msys64\usr\bin\bash.exe" -c "pacman -Qs glfw"
+    
+    if ($glfwInstalled -match "mingw-w64-x86_64-glfw") {
+        Write-Host "GLFW 3 is already installed."
+    } else {
+        Write-Host "GLFW 3 is not found. Installing GLFW 3..."
+
+        # Install GLFW 3 using pacman in MSYS2
+        & "C:\msys64\usr\bin\bash.exe" -c "pacman -S mingw-w64-x86_64-glfw --noconfirm"
+    }
+
+    # Ensure the correct path is set for linking with GLFW
+    $mingwBinPath = "C:\msys64\mingw64\bin"
+    if (-not ($env:PATH -contains $mingwBinPath)) {
+        Write-Host "Adding MSYS2 MinGW bin directory to PATH."
+        $env:PATH = "$mingwBinPath;$env:PATH"
     }
 }
 
