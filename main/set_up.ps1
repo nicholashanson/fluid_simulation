@@ -605,12 +605,18 @@ function Compile-Code {
     # Output file name
     $outputFile = "fs.exe"
 
+    # Get the OpenCV include path using pkg-config (no need to modify)
+    $opencvIncludePath = $(pkg-config --cflags-only-I opencv4)
+
     # Build command
     $compileCommand = "g++ $gppArgs -o $outputFile " +
         ($files | ForEach-Object { $_ }) + " " +
         ($includes | ForEach-Object { "-I" + (Join-Path (Get-Location) $_) }) + " " +
-        "-IC:\tools\opencv\build\include " +
+        "$opencvIncludePath " +  # Use the include path directly from pkg-config
         "-lopengl32 -lglfw3 -lgdi32 -ltbb12 -lopencv_core -lopencv_imgproc -lopencv_highgui -lopencv_imgcodecs"
+
+    # Print the command for debugging
+    Write-Output "Compiling with: $compileCommand"
 
     # Execute the build
     Invoke-Expression $compileCommand
