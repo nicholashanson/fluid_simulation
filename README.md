@@ -44,6 +44,7 @@ process was tested on AWS using a clean EC2 instance and makes no assumptions ab
 ```cpp
 ./fs
 ```
+This build won't include GPU acceleration for now.
 
 ### Optimizations
 
