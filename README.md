@@ -25,7 +25,7 @@ Navigate to the "main" directory:
 ```cpp
 cd main
 ```
-Run "setup.ps1" in Powershell with Administrator access:
+Run "setup.ps1" in PowerShell with Administrator access:
 ```cpp
 ./set_up.ps1
 ```
