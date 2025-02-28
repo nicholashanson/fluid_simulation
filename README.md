@@ -11,6 +11,15 @@
   <span>top-left: curl, top-right: speed, bottom-left: ux, bottom-right: uy</span>
 </p>
 
+### Feautures
+
+* Visualization of multiple properties including speed, density, and curl
+* Rendering using OpenGL
+* CPU multi-threading using TBB
+* GPU acceleration using SYCL
+* OpenCV colormaps
+* UI using ImGui
+
 ### Building
 
 To build the project, clone the GitHub repo to your machine:
