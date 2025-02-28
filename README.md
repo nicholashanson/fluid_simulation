@@ -28,7 +28,7 @@ To build the project, clone the GitHub repo to your machine:
 ```cpp
 git clone https://github.com/nicholashanson/fluid_simulation
 ```
-Navigate to the directory:
+Navigate to the project directory:
 ```cpp
 cd fluid_simulation
 ```
