@@ -11,6 +11,31 @@
   <span>top-left: curl, top-right: speed, bottom-left: ux, bottom-right: uy</span>
 </p>
 
+### Building
+
+To build the project, clone the GitHub repo to your machine:
+```cpp
+git clone https://github.com/nicholashanson/fluid_simulation
+```
+Navigate to the directory:
+```cpp
+cd fluid_simulation
+```
+Navigate to the "main" directory:
+```cpp
+cd main
+```
+Run "setup.ps1" in Powershell with Administrator access:
+```cpp
+./set_up.ps1
+```
+This will handle the entire build process from downloading and managing dependencies to compilation and linking.
+This may take a while depending on which dependencies are already present on your machine. This build 
+process was tested on AWS using a clean EC2 instance and makes no assumptions about what is already installed on the system, except git. After the build is complete, you can run the program:
+```cpp
+./fs
+```
+
 ### Optimizations
 
 LBM is highly-parallelizable, which makes it a perfect candidate for GPU acceleration.
