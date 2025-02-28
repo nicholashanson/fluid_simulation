@@ -22,6 +22,8 @@
 
 ### Building
 
+At the moment, this project can only be built on Windows.
+
 To build the project, clone the GitHub repo to your machine:
 ```cpp
 git clone https://github.com/nicholashanson/fluid_simulation
