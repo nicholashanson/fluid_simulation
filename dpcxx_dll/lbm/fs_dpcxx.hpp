@@ -30,9 +30,9 @@ namespace fs {
 
                 DLL_API void free_device_list( char** device_list, int num_devices );
 
-                DLL_API void collide_and_stream_c( T* Af_32, unsigned char* obstacle, size_t steps );
+                DLL_API void collide_and_stream_c( T* D2Q9, unsigned char* obstacle, size_t steps );
 
-                DLL_API void collide_and_stream_tbb_c( T* A, unsigned char* obstacle, size_t steps );
+                DLL_API void collide_and_stream_tbb_c( T* D2Q9, unsigned char* obstacle, size_t steps );
 
                 DLL_API void* init_cs_c( double* D2Q9, unsigned char* obstacle, size_t ydim, size_t xdim, float viscosity );
 
