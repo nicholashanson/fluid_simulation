@@ -11,6 +11,43 @@
   <span>top-left: curl, top-right: speed, bottom-left: ux, bottom-right: uy</span>
 </p>
 
+### Feautures
+
+* Visualization of multiple properties including speed, density, and curl
+* Rendering using OpenGL
+* CPU multi-threading using TBB
+* GPU acceleration using SYCL
+* OpenCV colormaps
+* UI using ImGui
+
+### Building
+
+At the moment, this project can only be built on Windows.
+
+To build the project, clone the GitHub repo to your machine:
+```cpp
+git clone https://github.com/nicholashanson/fluid_simulation
+```
+Navigate to the project directory:
+```cpp
+cd fluid_simulation
+```
+Navigate to the "main" directory:
+```cpp
+cd main
+```
+Run "setup.ps1" in PowerShell with Administrator access:
+```cpp
+./set_up.ps1
+```
+This will handle the entire build process from downloading and managing dependencies to compilation and linking.
+This may take a while depending on which dependencies are already present on your machine. This build 
+process was tested on AWS using a clean EC2 instance and makes no assumptions about what is already installed on the system, except git. After the build is complete, you can run the program:
+```cpp
+./fs
+```
+This build won't include GPU acceleration for now.
+
 ### Optimizations
 
 LBM is highly-parallelizable, which makes it a perfect candidate for GPU acceleration.
