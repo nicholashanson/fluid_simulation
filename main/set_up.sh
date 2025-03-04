@@ -71,6 +71,62 @@ install_curl() {
     fi
 }
 
+install_opencv() {
+    echo "Ensuring OpenCV is installed..."
+
+    # Check if 'curl' is available (dependency for some package managers)
+    if ! command -v curl &> /dev/null; then
+        echo "curl is not installed. Installing curl first..."
+        sudo apt-get update && sudo apt-get install -y curl
+    fi
+
+    # Detect distribution and install OpenCV accordingly
+    if [[ -f /etc/os-release ]]; then
+        # Load distribution name from /etc/os-release
+        DISTRO_NAME=$(awk -F= '/^NAME/{print $2}' /etc/os-release | tr -d '"')
+
+        case $DISTRO_NAME in
+            *"Ubuntu"* | *"Debian"*)
+                # For Ubuntu/Debian-based systems
+                echo "Detected Ubuntu/Debian-based distribution"
+                sudo apt-get update
+                sudo apt-get install -y libopencv-dev
+                echo "OpenCV installed on Ubuntu/Debian."
+                ;;
+
+            *"Fedora"*)
+                # For Fedora
+                echo "Detected Fedora"
+                sudo dnf install -y opencv opencv-devel
+                echo "OpenCV installed on Fedora."
+                ;;
+
+            *"CentOS"* | *"Red Hat"*)
+                # For CentOS/RedHat
+                echo "Detected CentOS/Red Hat"
+                sudo yum install -y opencv opencv-devel
+                echo "OpenCV installed on CentOS/Red Hat."
+                ;;
+
+            *"Arch"* | *"Manjaro"*)
+                # For Arch/Manjaro
+                echo "Detected Arch-based system"
+                sudo pacman -S --noconfirm opencv
+                echo "OpenCV installed on Arch-based system."
+                ;;
+
+            *)
+                echo "Unsupported distribution: $DISTRO_NAME"
+                exit 1
+                ;;
+        esac
+    else
+        echo "Unable to detect Linux distribution. Exiting."
+        exit 1
+    fi
+}
+
 check_gpp_version
 download_and_unzip_mdspan
 install_curl
+install_opencv
