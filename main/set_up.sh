@@ -188,6 +188,56 @@ download_files() {
     echo "✅ All files downloaded."
 }
 
+download_glm() {
+    local url="https://github.com/g-truc/glm/archive/refs/tags/0.9.9.8.zip"
+    local destination="../include/glm-0.9.9.8.zip"
+
+    # Define the include directory where 'glm' should be installed
+    local include_dir="$(realpath ../include)"
+    local glm_destination_path="$include_dir/glm"
+
+    # Check if GLM directory already exists
+    if [ -d "$glm_destination_path" ]; then
+        echo "'glm' directory already exists in $include_dir. Skipping download and installation."
+        return
+    fi
+
+    # Ensure the include directory exists
+    mkdir -p "$include_dir"
+
+    echo "📥 Downloading GLM library to $destination..."
+    if curl -L "$url" -o "$destination"; then
+        echo "✅ Successfully downloaded GLM."
+    else
+        echo "❌ Failed to download GLM. Exiting."
+        return 1
+    fi
+
+    echo "📦 Extracting GLM..."
+    if unzip -q "$destination" -d "$include_dir"; then
+        echo "✅ Successfully extracted GLM."
+    else
+        echo "❌ Failed to extract GLM. Exiting."
+        return 1
+    fi
+
+    # Define the extracted folder name (based on the tag version)
+    local extracted_folder_name="glm-0.9.9.8"
+    local extracted_folder_path="$include_dir/$extracted_folder_name"
+
+    # Move the 'glm' subdirectory to the include directory
+    if [ -d "$extracted_folder_path/glm" ]; then
+        mv "$extracted_folder_path/glm" "$glm_destination_path"
+        echo "✅ Successfully moved 'glm' directory."
+    else
+        echo "❌ Could not find the 'glm' directory in the extracted folder. Exiting."
+        return 1
+    fi
+
+    # Clean up: remove the extracted folder and zip file
+    rm -rf "$extracted_folder_path" "$destination"
+    echo "🧹 Cleaned up extracted files."
+}
 
 check_gpp_version
 download_and_unzip_mdspan
@@ -195,3 +245,4 @@ install_curl
 install_opencv
 install_glfw
 download_files
+download_glm
