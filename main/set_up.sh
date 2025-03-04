@@ -153,8 +153,45 @@ install_glfw() {
     echo "✅ GLFW installation complete."
 }
 
+download_files() {
+    echo "📥 Downloading necessary files..."
+
+    # List of files to download
+    files=(
+        "https://raw.githubusercontent.com/nicholashanson/sim/refs/heads/main/grid.hpp"
+        "https://raw.githubusercontent.com/nicholashanson/performance_profiler/refs/heads/main/profiler.hpp"
+        "https://raw.githubusercontent.com/nicholashanson/performance_profiler/refs/heads/main/profile_manager.hpp"
+        "https://raw.githubusercontent.com/nicholashanson/performance_profiler/refs/heads/main/performance_profile.hpp"
+        "https://raw.githubusercontent.com/nicholashanson/performance_profiler/refs/heads/main/generate_graph.hpp"
+        "https://raw.githubusercontent.com/nicholashanson/performance_profiler/refs/heads/main/fixture.hpp"
+        "https://raw.githubusercontent.com/nicholashanson/performance_profiler/refs/heads/main/average_time_profiler.hpp"
+    )
+
+    # Set up the download directory
+    DOWNLOAD_DIR="$(realpath ../include)"
+    mkdir -p "$DOWNLOAD_DIR"
+
+    # Download each file
+    for file in "${files[@]}"; do
+        file_name=$(basename "$file")
+        file_path="$DOWNLOAD_DIR/$file_name"
+
+        echo "🔽 Downloading $file_name..."
+        if curl -fsSL "$file" -o "$file_path"; then
+            echo "✅ Successfully downloaded $file_name."
+        else
+            echo "❌ Failed to download $file_name. Exiting."
+            return 1
+        fi
+    done
+
+    echo "✅ All files downloaded."
+}
+
+
 check_gpp_version
 download_and_unzip_mdspan
 install_curl
 install_opencv
 install_glfw
+download_files
