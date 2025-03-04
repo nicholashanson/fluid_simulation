@@ -57,5 +57,20 @@ download_and_unzip_mdspan() {
     echo "Kokkos mdspan has been downloaded and extracted into $INCLUDE_DIR."
 }
 
+install_curl() {
+    echo "Ensuring dependencies are installed..."
+
+    # Check if 'curl' is already installed
+    if command -v curl &> /dev/null; then
+        echo "curl is already available."
+    else
+        echo "curl is not found. Installing..."
+        
+        # Install curl using apt (for Debian/Ubuntu systems)
+        sudo apt update && sudo apt install -y curl
+    fi
+}
+
 check_gpp_version
 download_and_unzip_mdspan
+install_curl
