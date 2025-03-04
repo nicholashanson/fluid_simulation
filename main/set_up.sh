@@ -276,6 +276,88 @@ install_imgui() {
     echo "🎨 ImGui installation completed."
 }
 
+install_tbb() {
+    echo "🔄 Installing TBB (Threading Building Blocks)..."
+
+    if command -v tbb >/dev/null 2>&1; then
+        echo "✅ TBB is already installed."
+        return
+    fi
+
+    # Detect package manager and install TBB accordingly
+    if command -v apt >/dev/null 2>&1; then
+        sudo apt update && sudo apt install -y libtbb-dev
+    elif command -v pacman >/dev/null 2>&1; then
+        sudo pacman -S --noconfirm tbb
+    elif command -v dnf >/dev/null 2>&1; then
+        sudo dnf install -y tbb-devel
+    elif command -v zypper >/dev/null 2>&1; then
+        sudo zypper install -y tbb-devel
+    else
+        echo "❌ Unsupported package manager. Install TBB manually."
+        return 1
+    fi
+
+    echo "✅ TBB installation complete."
+}
+
+compile_code() {
+    echo "🚀 Compiling program..."
+
+    # Compiler flags
+    local gpp_args="-g -O0 -v -std=c++23"
+
+    # Source files
+    local files=(
+        "../imgui-master/imgui.cpp"
+        "../imgui-master/imgui_draw.cpp"
+        "../imgui-master/imgui_widgets.cpp"
+        "../imgui-master/imgui_tables.cpp"
+        "../imgui-master/backends/imgui_impl_opengl3.cpp"
+        "../imgui-master/backends/imgui_impl_glfw.cpp"
+        "main.cpp"
+        "gl.cpp"
+        "../src/lbm/common.cpp"
+        "../src/grid_renderer.cpp"
+        "../src/shader.cpp"
+        "../src/glad.c"
+    )
+
+    # Include directories
+    local includes=(
+        "../include"
+        "../inline"
+        "../imgui-master"
+        "../imgui-master/backends"
+    )
+
+    # Output file name
+    local output_file="fs"
+
+    # Get OpenCV include and linker flags using pkg-config
+    local opencv_cflags=$(pkg-config --cflags opencv4)
+    local opencv_libs=$(pkg-config --libs opencv4)
+
+    # Build command
+    local compile_command="g++ $gpp_args -o $output_file ${files[*]}"
+
+    # Add include directories
+    for include in "${includes[@]}"; do
+        compile_command+=" -I$(realpath "$include")"
+    done
+
+    # Add required libraries
+    compile_command+=" $opencv_cflags $opencv_libs -lGL -lglfw -ltbb"
+
+    # Print command for debugging
+    echo "🛠️ Compiling with: $compile_command"
+
+    # Execute the build
+    eval $compile_command
+
+    echo "✅ Compilation complete."
+}
+
 check_gpp_version
 download_and_unzip_mdspan
 install_curl
@@ -284,3 +366,5 @@ install_glfw
 download_files
 download_glm
 install_imgui
+install_tbb
+compile_code
