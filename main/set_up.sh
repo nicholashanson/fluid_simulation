@@ -239,6 +239,43 @@ download_glm() {
     echo "🧹 Cleaned up extracted files."
 }
 
+install_imgui() {
+    # Get the parent directory of the current script
+    local parent_directory="$(realpath ..)"
+
+    # Define the zip file path and the repository URL
+    local imgui_zip_file="$parent_directory/imgui-master.zip"
+    local imgui_repo_zip_url="https://github.com/ocornut/imgui/archive/refs/heads/master.zip"
+
+    # Check if imgui-master already exists
+    if [ -d "$parent_directory/imgui-master" ]; then
+        echo "✅ imgui-master already exists in the parent directory. Skipping installation."
+        return
+    fi
+
+    echo "📥 Downloading imgui-master.zip from GitHub..."
+    if curl -L "$imgui_repo_zip_url" -o "$imgui_zip_file"; then
+        echo "✅ Download completed."
+    else
+        echo "❌ Failed to download imgui-master.zip. Exiting."
+        return 1
+    fi
+
+    echo "📦 Extracting imgui-master.zip..."
+    if unzip -q "$imgui_zip_file" -d "$parent_directory"; then
+        echo "✅ Successfully extracted ImGui."
+    else
+        echo "❌ Failed to extract ImGui. Exiting."
+        return 1
+    fi
+
+    # Remove the zip file after extraction
+    rm -f "$imgui_zip_file"
+    echo "🧹 Removed the downloaded zip file."
+
+    echo "🎨 ImGui installation completed."
+}
+
 check_gpp_version
 download_and_unzip_mdspan
 install_curl
@@ -246,3 +283,4 @@ install_opencv
 install_glfw
 download_files
 download_glm
+install_imgui
