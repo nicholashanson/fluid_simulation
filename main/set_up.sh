@@ -6,23 +6,14 @@ check_gpp_version() {
         echo "❌ g++ is not installed."
         install_gpp
         return
-    fi
-
-    # Get g++ version
-    GPP_VERSION=$(g++ -dumpversion)
-    echo "✅ Found g++ version: $GPP_VERSION"
-
-    # Check if g++ supports C++23
-    if echo '#include <version>' | g++ -std=c++23 -x c++ -E - 2>/dev/null | grep -q "cplusplus=2023"; then
-        echo "✅ g++ supports C++23"
-    else
-        echo "⚠️ g++ does not support C++23. Updating..."
-        install_gpp
+    else 
+        echo "✅ g++ is already installed."
+        return
     fi
 }
 
 install_gpp() {
-    echo "🔄 Installing or updating g++..."
+    echo "🔄 Installing g++..."
     
     # Detect package manager
     if command -v apt &> /dev/null; then
@@ -38,8 +29,33 @@ install_gpp() {
         exit 1
     fi
 
-    echo "✅ g++ installation/update complete."
+    echo "✅ g++ installation complete."
 }
 
-# Run the check
+# download and unzip the Kokkos mdspan zip file into the include directory
+download_and_unzip_mdspan() {
+
+    # URL for the Kokkos mdspan zip file from GitHub 
+    ZIP_URL="https://codeload.github.com/kokkos/mdspan/zip/refs/heads/stable"
+
+    # Get the parent directory of the current directory
+    PARENT_DIR=$(dirname "$PWD")
+
+    # Define the include directory path
+    INCLUDE_DIR="$PARENT_DIR/include"
+
+    # Download the zip file to a temporary location
+    TEMP_ZIP="/tmp/mdspan.zip"
+    wget -O "$TEMP_ZIP" "$ZIP_URL"
+
+    # Unzip the downloaded zip file into the include directory
+    unzip -q "$TEMP_ZIP" -d "$INCLUDE_DIR"
+
+    # Clean up the temporary zip file
+    rm "$TEMP_ZIP"
+
+    echo "Kokkos mdspan has been downloaded and extracted into $INCLUDE_DIR."
+}
+
 check_gpp_version
+download_and_unzip_mdspan
