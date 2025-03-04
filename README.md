@@ -41,7 +41,7 @@ On Windows, run "set_up.ps1" in PowerShell with Administrator access:
 ```
 On Linux, run "set_up.sh":
 ```cpp
-./set_up.ps1
+./set_up.sh
 ```
 This will handle the entire build process from downloading and managing dependencies to compilation and linking.
 This may take a while depending on which dependencies are already present on your machine. This build 
