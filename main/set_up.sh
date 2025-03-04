@@ -72,58 +72,26 @@ install_curl() {
 }
 
 install_opencv() {
-    echo "Ensuring OpenCV is installed..."
-
-    # Check if 'curl' is available (dependency for some package managers)
-    if ! command -v curl &> /dev/null; then
-        echo "curl is not installed. Installing curl first..."
-        sudo apt-get update && sudo apt-get install -y curl
-    fi
-
-    # Detect distribution and install OpenCV accordingly
-    if [[ -f /etc/os-release ]]; then
-        # Load distribution name from /etc/os-release
-        DISTRO_NAME=$(awk -F= '/^NAME/{print $2}' /etc/os-release | tr -d '"')
-
-        case $DISTRO_NAME in
-            *"Ubuntu"* | *"Debian"*)
-                # For Ubuntu/Debian-based systems
-                echo "Detected Ubuntu/Debian-based distribution"
-                sudo apt-get update
-                sudo apt-get install -y libopencv-dev
-                echo "OpenCV installed on Ubuntu/Debian."
-                ;;
-
-            *"Fedora"*)
-                # For Fedora
-                echo "Detected Fedora"
-                sudo dnf install -y opencv opencv-devel
-                echo "OpenCV installed on Fedora."
-                ;;
-
-            *"CentOS"* | *"Red Hat"*)
-                # For CentOS/RedHat
-                echo "Detected CentOS/Red Hat"
-                sudo yum install -y opencv opencv-devel
-                echo "OpenCV installed on CentOS/Red Hat."
-                ;;
-
-            *"Arch"* | *"Manjaro"*)
-                # For Arch/Manjaro
-                echo "Detected Arch-based system"
-                sudo pacman -S --noconfirm opencv
-                echo "OpenCV installed on Arch-based system."
-                ;;
-
-            *)
-                echo "Unsupported distribution: $DISTRO_NAME"
-                exit 1
-                ;;
-        esac
+    echo "🔄 Detecting Linux distribution..."
+    
+    if command -v apt &> /dev/null; then
+        echo "📦 Installing OpenCV on Debian/Ubuntu-based system..."
+        sudo apt update && sudo apt install -y libopencv-dev
+    elif command -v dnf &> /dev/null; then
+        echo "📦 Installing OpenCV on Fedora..."
+        sudo dnf install -y opencv opencv-devel
+    elif command -v pacman &> /dev/null; then
+        echo "📦 Installing OpenCV on Arch Linux..."
+        sudo pacman -Sy --noconfirm opencv
+    elif command -v zypper &> /dev/null; then
+        echo "📦 Installing OpenCV on OpenSUSE..."
+        sudo zypper install -y opencv-devel
     else
-        echo "Unable to detect Linux distribution. Exiting."
-        exit 1
+        echo "❌ Unsupported package manager. Install OpenCV manually."
+        return 1
     fi
+
+    echo "✅ OpenCV installation complete."
 }
 
 check_gpp_version
