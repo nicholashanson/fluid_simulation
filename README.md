@@ -44,8 +44,7 @@ On Linux, run "set_up.sh":
 ./set_up.sh
 ```
 This will handle the entire build process from downloading and managing dependencies to compilation and linking.
-This may take a while depending on which dependencies are already present on your machine. This build 
-process was tested on AWS using a clean EC2 instance and makes no assumptions about what is already installed on the system, except git. After the build is complete, you can run the program:
+This may take a while depending on which dependencies are already present on your machine. This build makes no assumptions about what is already installed on the system, except git. After the build is complete, you can run the program:
 ```cpp
 ./fs
 ```
