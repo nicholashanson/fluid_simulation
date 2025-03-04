@@ -94,7 +94,67 @@ install_opencv() {
     echo "✅ OpenCV installation complete."
 }
 
+install_glfw() {
+    # Set up directories
+    DOWNLOAD_DIR="$(realpath ../include)"
+    GLFW_DIR="$DOWNLOAD_DIR/GLFW"
+
+    mkdir -p "$GLFW_DIR"
+
+    # Download glfw3.h from the official repository
+    GLFW_URL="https://raw.githubusercontent.com/glfw/glfw/master/include/GLFW/glfw3.h"
+    GLFW_FILE_PATH="$GLFW_DIR/glfw3.h"
+
+    echo "📥 Downloading glfw3.h from GLFW official repository..."
+    if curl -fsSL "$GLFW_URL" -o "$GLFW_FILE_PATH"; then
+        echo "✅ Successfully downloaded glfw3.h."
+    else
+        echo "❌ Failed to download glfw3.h. Exiting."
+        return 1
+    fi
+
+    # Detect package manager and install GLFW
+    echo "🔄 Checking if GLFW is installed..."
+
+    if command -v pacman &> /dev/null; then
+        GLFW_INSTALLED=$(pacman -Qs glfw | grep -i "glfw")
+        if [[ -n "$GLFW_INSTALLED" ]]; then
+            echo "✅ GLFW is already installed."
+        else
+            echo "📦 Installing GLFW with pacman..."
+            sudo pacman -S --noconfirm glfw-wayland
+        fi
+    elif command -v apt &> /dev/null; then
+        if dpkg -l | grep -q libglfw3-dev; then
+            echo "✅ GLFW is already installed."
+        else
+            echo "📦 Installing GLFW with apt..."
+            sudo apt update && sudo apt install -y libglfw3-dev
+        fi
+    elif command -v dnf &> /dev/null; then
+        if dnf list --installed | grep -q glfw; then
+            echo "✅ GLFW is already installed."
+        else
+            echo "📦 Installing GLFW with dnf..."
+            sudo dnf install -y glfw glfw-devel
+        fi
+    elif command -v zypper &> /dev/null; then
+        if zypper se --installed-only glfw | grep -q glfw; then
+            echo "✅ GLFW is already installed."
+        else
+            echo "📦 Installing GLFW with zypper..."
+            sudo zypper install -y glfw-devel
+        fi
+    else
+        echo "❌ Unsupported package manager. Install GLFW manually."
+        return 1
+    fi
+
+    echo "✅ GLFW installation complete."
+}
+
 check_gpp_version
 download_and_unzip_mdspan
 install_curl
 install_opencv
+install_glfw
