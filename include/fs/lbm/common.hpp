@@ -1,20 +1,22 @@
 #ifndef LBM_COMMON_HPP
 #define LBM_COMMON_HPP
 
-#include <cstddef>
 #include <cmath>
+#include <cstddef>
+
+#include <set>
 #include <array>
 #include <vector>
 
 #include <settings.hpp>
-#include <set>
-#include <iostream>
 
 #ifdef DPCPP_COMPILER
 #include <sycl/sycl.hpp>
 #endif
 
+#ifndef M_PI
 #define M_PI ( 4.0 * std::atan( 1.0 ) )
+#endif
 
 namespace fs {
 
@@ -85,9 +87,6 @@ namespace fs {
                 coords.insert( { edge_cell_y, edge_cell_x } );
             } 
 
-            for ( auto p: coords )
-                std::cout << p.first << ", " << p.second << std::endl;
-
             return coords;
         }
 
@@ -103,6 +102,7 @@ namespace fs {
         inline const std::vector<double> property_states( fs::settings::ydim * fs::settings::xdim, 0.0 );
 
 #ifdef DPCPP_COMPILER
+
         // speed of sound
         constexpr double c_s = 0.57735;
 
@@ -113,34 +113,6 @@ namespace fs {
         constexpr double c_s = 1 / std::sqrt( 3 );
 
         double calculate_f_eq( size_t q, double rho, double u_x, double u_y );
-
-        /*
-        template<typename DataStorage, typename View> 
-        void set_equil( sim::grid<DataStorage, View>& gd, size_t x, size_t y, double u_x, double u_y, double rho ) {
-
-            double ux_3 = 3 * u_x;              // ux_3     ->      3u_x
-            double uy_3 = 3 * u_y;              // uy_3     ->      3u_y
-            double ux_2 = u_x * u_x;            // ux_2     ->      u_x^2
-            double uy_2 = u_y * u_y;            // uy_2     ->      u_y^2
-            double uxuy2 = 2 * u_x * u_y;       // uxuy2    ->      2u_xu_y
-            double u_2 = ux_2 + uy_2;           // u_2      ->      u_x^2 + u_y^2
-            double u_215 = ( 1.5 ) * u_2;       // u_215    ->      ( 3 / 2 ) ( u_x^2 + u_y^2 )
-
-            std::array<typename DataStorage::value_type, 9> f;
-
-            f[0] = w[0] * rho * ( 1                                             - u_215 );
-            f[1] = w[1] * rho * ( 1 + ux_3          + 4.5 * ux_2                - u_215 );
-            f[2] = w[2] * rho * ( 1 + uy_3          + 4.5 * uy_2                - u_215 );
-            f[3] = w[3] * rho * ( 1 - ux_3          + 4.5 * ux_2                - u_215 );
-            f[4] = w[4] * rho * ( 1 - uy_3          + 4.5 * uy_2                - u_215 );
-            f[5] = w[5] * rho * ( 1 + ux_3 + uy_3   + 4.5 * ( u_2 + uxuy2 )     - u_215 );
-            f[6] = w[6] * rho * ( 1 - ux_3 + uy_3   + 4.5 * ( u_2 - uxuy2 )     - u_215 );
-            f[7] = w[7] * rho * ( 1 - ux_3 - uy_3   + 4.5 * ( u_2 + uxuy2 )     - u_215 );
-            f[8] = w[8] * rho * ( 1 + ux_3 - uy_3   + 4.5 * ( u_2 - uxuy2 )     - u_215 );
-
-            gd.set_cell_state_array( f, y, x );
-        }
-        */
 #endif
 
         /*

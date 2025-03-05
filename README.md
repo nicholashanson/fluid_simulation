@@ -14,6 +14,7 @@
 ### Feautures
 
 * Visualization of multiple properties including speed, density, and curl
+* Cross-platform: Linux and Windows
 * Rendering using OpenGL
 * CPU multi-threading using TBB
 * GPU acceleration using SYCL
@@ -21,8 +22,6 @@
 * UI using ImGui
 
 ### Building
-
-At the moment, this project can only be built on Windows.
 
 To build the project, clone the GitHub repo to your machine:
 ```cpp
@@ -36,13 +35,16 @@ Navigate to the "main" directory:
 ```cpp
 cd main
 ```
-Run "setup.ps1" in PowerShell with Administrator access:
+On Windows, run "set_up.ps1" in PowerShell with Administrator access:
 ```cpp
 ./set_up.ps1
 ```
+On Linux, run "set_up.sh":
+```cpp
+./set_up.sh
+```
 This will handle the entire build process from downloading and managing dependencies to compilation and linking.
-This may take a while depending on which dependencies are already present on your machine. This build 
-process was tested on AWS using a clean EC2 instance and makes no assumptions about what is already installed on the system, except git. After the build is complete, you can run the program:
+This may take a while depending on which dependencies are already present on your machine. This build makes no assumptions about what is already installed on the system, except git. After the build is complete, you can run the program:
 ```cpp
 ./fs
 ```
