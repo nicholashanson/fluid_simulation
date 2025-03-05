@@ -1,14 +1,14 @@
 #ifndef LBM_COMMON_HPP
 #define LBM_COMMON_HPP
 
-#include <cstddef>
 #include <cmath>
+#include <cstddef>
+
+#include <set>
 #include <array>
 #include <vector>
 
 #include <settings.hpp>
-#include <set>
-#include <iostream>
 
 #ifdef DPCPP_COMPILER
 #include <sycl/sycl.hpp>
