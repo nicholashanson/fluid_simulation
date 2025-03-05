@@ -1,11 +1,13 @@
-#ifndef PROPERTY_HPP
-#define PROPERTY_HPP
+#ifndef LBM_PROPERTY_HPP
+#define LBM_PROPERTY_HPP
 
-#include <vector>
 #include <numeric>
 #include <functional>
 
+#include <vector>
+
 #include <grid.hpp>
+
 #include <fs/global_aliases.hpp>
 #include <fs/lbm/common.hpp>
 
@@ -91,22 +93,28 @@ namespace fs {
         std::tuple<double, sim::grid<std::vector<double>, property_view>>
         calculate_curl_with_max( const sim::grid<DataStorage, View>& gd, const std::vector<double>& property_states ) {
 
+            // calculate velocities and store as grid objects
             auto u_x = calculate_property_v( gd, property_states, calculate_u_x );
             auto u_y = calculate_property_v( gd, property_states, calculate_u_y );
 
+            // grid for holding results
             sim::grid<std::vector<double>, property_view> curl( property_states );
 
+            // get grid dimensions
             const size_t ydim = gd.get_dim( 0 );
             const size_t xdim = gd.get_dim( 1 );
 
             double max_curl{};
 
+            // don't process edge cells
             for ( size_t y = 1; y < ydim - 1; ++y ) {
                 for ( size_t x = 1; x < xdim - 1; ++x ) {
 
+                    // use velocity values to calculate cul
                     double curl_ = u_x.get_cell_state( y, x + 1 ) - u_y.get_cell_state( y, x - 1 )
                                    - u_x.get_cell_state( y + 1, x ) + u_x.get_cell_state( y - 1, x );
 
+                    // new maximum curl found
                     if ( curl_ > max_curl )
                         max_curl = curl_;
 
@@ -117,9 +125,11 @@ namespace fs {
             return std::make_tuple( max_curl, std::move( curl ) );
         }
 
-        // takes a D2Q9 grid and outputs a grid of a certain property defined by calculate_property
-        // e.g. fs::lbm::calculate_property_v_with_max( ..., fs::lbm::calculate_rho ) will return a 
-        // a gird object of densities and the max density as a tuple
+        /*
+            takes a D2Q9 grid and outputs a grid of a certain property defined by calculate_property
+            e.g. fs::lbm::calculate_property_v_with_max( ..., fs::lbm::calculate_rho ) will return a 
+            grid object of density values and the max density as a tuple
+        */
         template<typename DataStorage, typename View>
         std::tuple<double, sim::grid<std::vector<double>, property_view>>
         calculate_property_v_with_max( const sim::grid<DataStorage, View>& gd, const std::vector<double>& property_states, 
