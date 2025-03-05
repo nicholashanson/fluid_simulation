@@ -88,7 +88,6 @@ TEST( LBMTests, CollideAndStreamEquivalence ) {
     for ( size_t z = 0; z < steps; ++z ) {
 
         js::collide();
-
         js::stream();
     }
 
