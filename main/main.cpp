@@ -59,11 +59,11 @@ int main() {
     // initialize GLFW and OpenGL context
     GLFWwindow* window = initialize_window();
 
-	unsigned int shader_program = setup_openGL();
+    unsigned int shader_program = setup_openGL();
 
-	std::vector<float> barrier_vertices = app::obstacle_to_vertex_data<fs::settings::ydim,fs::settings::xdim>( barrier );
+    std::vector<float> barrier_vertices = app::obstacle_to_vertex_data<fs::settings::ydim,fs::settings::xdim>( barrier );
 
-	projection( shader_program ); 
+    projection( shader_program ); 
 
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
