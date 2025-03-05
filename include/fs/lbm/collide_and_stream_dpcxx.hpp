@@ -17,6 +17,12 @@ namespace fs {
 
             typedef struct cs_state cs_state;
 
+            /*
+                this is a handle to the state of the simulation
+                on the GPU so we don't need to copy back and
+                forth between the host and the GPU each time 
+                we call collide and stream.
+            */
             struct cs_state {
 
                 sycl::queue gpu_queue;
