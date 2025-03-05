@@ -1,5 +1,6 @@
 #include "fs_dpcxx.hpp"
 #include <fs/lbm/collide_and_stream_dpcxx.hpp>
+#include <fs/lbm/collide_and_stream_tbb.hpp>
 
 namespace fs {
 
@@ -26,7 +27,7 @@ namespace fs {
 
                 void collide_and_stream_tbb_c( T* D2Q9, unsigned char* obstacle, size_t steps ) {
 
-                    collide_and_stream_tbb( D2Q9, obstacle, steps );
+                    fs::lbm::collide_and_stream_tbb( D2Q9, obstacle, steps );
                 } 
 
                 char** get_available_devices( int* num_devices ) {
