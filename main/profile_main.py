@@ -8,6 +8,10 @@ import subprocess
 import os
 import itertools
 
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+import numpy as np
+
 def insert_profiling( object_path, target_path ):
 
     profile_steps = 10
@@ -17,6 +21,10 @@ def insert_profiling( object_path, target_path ):
 
     sections = [ 'imgui set up', 
                  'grid buffer set up', 
+                 'boundary setting',
+                 'collide and stream',
+                 'vertex calculation',
+                 'render set up',
                  'render' ]
 
     profiled_content = []
@@ -139,7 +147,7 @@ def compile_and_run_windows():
     print("🚀 Compiling program...")
 
     # Compiler flags
-    gpp_args = ["-g", "-v", "-std=c++23"]
+    gpp_args = ["-g", "-v", "-std=c++23", "-DGPU"]
 
     # Source files
     files = [
@@ -186,10 +194,14 @@ def compile_and_run_windows():
     # Add OpenCV include path
     compile_command.append(opencv_include_path)
 
+    dpcxx = "../dpcxx_dll"
+
+    compile_command.append(f"-L{os.path.abspath(dpcxx)}")
+
     # Add required libraries
     compile_command.extend([
         "-lopengl32", "-lglfw3", "-lgdi32", "-ltbb12",
-        "-lopencv_core", "-lopencv_imgproc", "-lopencv_highgui", "-lopencv_imgcodecs"
+        "-lopencv_core", "-lopencv_imgproc", "-lopencv_highgui", "-lopencv_imgcodecs", "-lfs_dpcxx"
     ])
 
     # Print the command for debugging
@@ -200,9 +212,60 @@ def compile_and_run_windows():
 
     print("✅ Compilation complete.")
 
+    run_command = f"./{output_file}"
+    print(f"🚀 Running {run_command}...")
+    subprocess.run(run_command, shell=True)
+
+def plot_profiling_data(filename):
+    # Read data from the file
+    with open(filename, 'r') as file:
+        lines = file.readlines()
+
+    states = []
+    times = []
+    
+    for line in lines:
+        if line.strip():  # Skip empty lines
+            parts = line.split(':')
+            state = parts[0].strip()
+            time = int(parts[1].strip())
+            states.append(state)
+            times.append(time)
+
+    # Calculate cumulative times for stacking the bars end-to-end
+    cumulative_times = [sum(times[:i+1]) for i in range(len(times))]
+
+    # Create a figure with a wide aspect ratio (short in height, long in width)
+    fig, ax = plt.subplots(figsize=(14, 1))  # Adjusted height for more space horizontally
+
+    # Create the stacked bars with a minimal height to create a line-style appearance
+    bar_colors = plt.cm.get_cmap('tab10', len(states))  # Use a colormap
+    
+    # Create the bars sequentially using the cumulative times
+    for i, (state, time, cumulative_time) in enumerate(zip(states, times, cumulative_times)):
+        ax.barh(y=0, width=time, left=cumulative_time - time, color=bar_colors(i), height=0.3)  # Reduced height to 0.3 for thinner bars
+
+    # Remove Y-axis ticks and labels as we don't need them
+    ax.set_yticks([])
+
+    # Create a legend arranged in a grid
+    patches = [mpatches.Patch(color=bar_colors(i), label=f"{state}: {time} µs") for i, (state, time) in enumerate(zip(states, times))]
+    ax.legend(handles=patches, loc="upper center", bbox_to_anchor=(0.5, -0.8), ncol=3, fontsize=10, frameon=False)  # Moved legend further down
+
+    # Adjust the layout manually to ensure the chart and legend do not overlap
+    plt.subplots_adjust(bottom=0.5)  # Increased bottom margin for the legend
+
+    ax.spines['left'].set_visible(False)   # Remove the left spine
+    ax.spines['right'].set_visible(False)  # Remove the right spine
+    ax.spines['top'].set_visible(False)
+
+    # Save the plot to a PNG file
+    plt.savefig("profiling_data.png", bbox_inches='tight', dpi=300)  # Save with tight bounding box and high resolution
+    plt.close()  # Close the plot to prevent it from displaying interactively
+
 if __name__ == '__main__':
     insert_profiling( 'main.cpp', 'main_profiled.cpp' )
 
     compile_and_run_windows()
 
-        
+    plot_profiling_data( 'profile_output.txt' )
