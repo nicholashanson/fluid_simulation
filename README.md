@@ -50,6 +50,12 @@ This may take a while depending on which dependencies are already present on you
 ```
 This build won't include GPU acceleration for now.
 
+### Profiling
+
+<p align="center">
+  <img src="main/profiling_data.png" width="400">
+</p>
+
 ### Optimizations
 
 LBM is highly-parallelizable, which makes it a perfect candidate for GPU acceleration.
