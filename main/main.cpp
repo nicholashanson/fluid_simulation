@@ -1,3 +1,6 @@
+/*
+    all the // start ... and // end ... comments are used for profiling
+*/
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
@@ -90,6 +93,8 @@ int main() {
         if ( glfwGetKey( window, GLFW_KEY_ESCAPE ) == GLFW_PRESS )
             glfwSetWindowShouldClose( window, true );
 
+        // start imgui set up
+
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
@@ -107,21 +112,46 @@ int main() {
 
         ImGui::End();
 
+        // end imgui set up
+
         if ( simulation_running ) {
+
+            // start grid buffer setup
 
             app::setup_grid_buffers( vertices, VAO, VBO );
 
+            // end grid buffer setup
+
+            // start boundary setting
+
             fs::lbm::set_boundaries( D2Q9_grid );
 
+            // end boundary setting
+
 #ifndef GPU
+
+            // start collide and stream
+
             fs::lbm::collide_and_stream_tbb( D2Q9_grid.get_data_handle(), barrier.data(), steps_per_frame );
+
+            // end collide and stream
 #else
+            // start collide and stream
+
             fs::dpcxx::lbm::collide_and_stream( D2Q9_grid, barrier.data(), steps_per_frame );
+
+            // end collide and stream
 #endif
+
+            // start vertex calculation
 
             vertices = app::property_grid_to_vertex_data_cv( D2Q9_grid, fs::lbm::property_states, fs::lbm::calculate_u_y );
 
             vertices.insert( vertices.end(), barrier_vertices.begin(), barrier_vertices.end() );
+
+            // end vertex calculation
+
+            // start render set up
 
             GLint vbo_size;
             glBindBuffer( GL_ARRAY_BUFFER, VBO );
@@ -137,20 +167,30 @@ int main() {
             glClearColor( 0.0f, 0.0f, 0.0f, 1.0f );
             glClear( GL_COLOR_BUFFER_BIT );
 
+            // end render set up
+
+            // start render
+
             app::render_grid( VAO, vertices.size() );
+
+            // end render
         
             frame_counter++;
         }
 
+        // start imgui render
+
         ImGui::Render();
+
+        ImGui_ImplOpenGL3_RenderDrawData( ImGui::GetDrawData() );
+
+        // end imgui render
 
         int display_w;
         int display_h;
         glfwGetFramebufferSize( window, &display_w, &display_h );
 
         glViewport( 0, 0, display_w, display_h );
-
-        ImGui_ImplOpenGL3_RenderDrawData( ImGui::GetDrawData() );
 
         // swap buffers and poll events
         glfwSwapBuffers( window );
