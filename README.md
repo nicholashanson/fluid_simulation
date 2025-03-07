@@ -56,6 +56,9 @@ This build won't include GPU acceleration for now.
   <img src="main/profiling_data.png" width="800">
 </p>
 
+* In OpenGL, the CPU offloads rendering to the GPU asynchronously, so calling "render_grid" is negligible.
+* Most time at the moment is spent calculating the vertex data. 
+
 ### Optimizations
 
 LBM is highly-parallelizable, which makes it a perfect candidate for GPU acceleration.
