@@ -59,12 +59,3 @@ This build won't include GPU acceleration for now.
 * In OpenGL, the CPU offloads rendering to the GPU asynchronously, so calling "render_grid" is negligible.
 * Most time at the moment is spent calculating the vertex data. 
 
-### Optimizations
-
-LBM is highly-parallelizable, which makes it a perfect candidate for GPU acceleration.
-
-<p align="center">
-  <img src="main/performance_profiling/graphs/performance_collide_and_stream.png" width="400">
-</p>
-
-
