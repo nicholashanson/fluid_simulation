@@ -53,7 +53,7 @@ This build won't include GPU acceleration for now.
 ### Profiling
 
 <p align="center">
-  <img src="main/profiling_data.png" width="400">
+  <img src="main/profiling_data.png" width="800">
 </p>
 
 ### Optimizations
