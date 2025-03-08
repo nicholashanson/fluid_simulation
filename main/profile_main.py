@@ -2,6 +2,7 @@
 # take main.cpp and create a new file called main_profiled.cpp
 # that is copy of main.cpp with code for profiling added in.
 #
+# this script won't work without running set_up first
 
 # for compiling and running main_profiled.cpp
 import subprocess
@@ -25,7 +26,8 @@ def insert_profiling( object_path, target_path ):
                  'collide and stream',
                  'vertex calculation',
                  'render set up',
-                 'render' ]
+                 'render',
+                 'imgui render' ]
 
     profiled_content = []
 
@@ -46,45 +48,31 @@ def insert_profiling( object_path, target_path ):
         for section in sections:
 
             if stripped_line == 'while ( !glfwWindowShouldClose( window ) ) {':
-
                 profiled_content.append(f'{ indent }for ( size_t i = 0; i < { profile_steps }; ++i ) {{\n' )
-
                 matched = True
-
                 break
 
-            if stripped_line == 'bool simulation_running = false;':
-
+            elif stripped_line == 'bool simulation_running = false;':
                 profiled_content.append( f'{ indent }bool simulation_running = true;\n' )
-
                 matched = True
-
                 break
 
             elif stripped_line == f"// start { section }":
-
                 cpp_var = section.replace( ' ', '_' )
-
                 profiled_content.append( f"{ indent }auto start_{ cpp_var } = std::chrono::high_resolution_clock::now();\n"  )
-
                 matched = True
-
                 break
 
             elif stripped_line == f"// end { section }":
-
                 cpp_var = section.replace( ' ', '_' )
-
                 profiled_content.append( f"{ indent }auto end_{ cpp_var } = std::chrono::high_resolution_clock::now();\n" )
-
+                
                 if ofstream_defined == False:
                     profiled_content.append( f"{ indent }std::ofstream file(\"profile_output.txt\");\n" )
                     ofstream_defined = True
 
                 profiled_content.append( f"{ indent }file << \"{ section }: \" <<  std::chrono::duration_cast<std::chrono::microseconds>( end_{ cpp_var } - start_{ cpp_var } ).count() << std::endl; \n" ) 
-                
                 matched = True
-                
                 break
         
         if matched == False:
@@ -212,7 +200,7 @@ def compile_and_run_windows():
 
     print("✅ Compilation complete.")
 
-    run_command = f"./{output_file}"
+    run_command = f".\{output_file}"
     print(f"🚀 Running {run_command}...")
     subprocess.run(run_command, shell=True)
 
