@@ -26,12 +26,39 @@ const int target_fps = 6;
 const auto frame_duration = std::chrono::milliseconds( 1000 / target_fps );
 
 const int opencv_colormaps[] = {
-    cv::COLORMAP_PLASMA,  
-    cv::COLORMAP_VIRIDIS,  
-    cv::COLORMAP_JET,     
+    cv::COLORMAP_PLASMA,
+    cv::COLORMAP_VIRIDIS,
+    cv::COLORMAP_JET,
+    cv::COLORMAP_INFERNO,
+    cv::COLORMAP_MAGMA,
+    cv::COLORMAP_HOT,
+    cv::COLORMAP_COOL,
+    cv::COLORMAP_SPRING,
+    cv::COLORMAP_SUMMER,
+    cv::COLORMAP_AUTUMN,
+    cv::COLORMAP_WINTER,
+    cv::COLORMAP_RAINBOW,
+    cv::COLORMAP_OCEAN,
+    cv::COLORMAP_PARULA,
 };
 
-const char* colormaps[] = { "Plasma", "Viridis", "Jet" };
+const char* colormaps[] = {
+    "Plasma",
+    "Viridis",
+    "Jet",
+    "Inferno",
+    "Magma",
+    "Hot",
+    "Cool",
+    "Spring",
+    "Summer",
+    "Autumn",
+    "Winter",
+    "Rainbow",
+    "Ocean",
+    "Parula",
+};
+
 int selected_colormap = 0;
 
 size_t frame_counter = 0;
@@ -145,7 +172,7 @@ int main() {
 
             // start vertex calculation
 
-            vertices = app::property_grid_to_vertex_data_cv( D2Q9_grid, fs::lbm::property_states, fs::lbm::calculate_u_y );
+            vertices = app::property_grid_to_vertex_data_cv_tbb_copy( D2Q9_grid, fs::lbm::property_states, fs::lbm::calculate_u_x );
 
             vertices.insert( vertices.end(), barrier_vertices.begin(), barrier_vertices.end() );
 
