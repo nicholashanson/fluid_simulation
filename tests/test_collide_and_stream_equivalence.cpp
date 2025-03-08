@@ -93,7 +93,7 @@ TEST( LBMTests, CollideAndStreamEquivalence ) {
 
     js::setBoundaries();
 
-    fs::dpcxx::lbm::collide_and_stream_tbb( grid_tbb, obstacle, steps );
+    fs::lbm::collide_and_stream_tbb( grid_tbb.get_data_handle(), obstacle, steps );
     fs::dpcxx::lbm::collide_and_stream( grid_dpcxx, obstacle, steps );
 
     fs::lbm::set_boundaries( grid_tbb );
