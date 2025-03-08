@@ -332,14 +332,13 @@ compile_code() {
     )
 
     # Output file name
-    local output_file="fs"
+    local output_file = "fs"
 
-    # Get OpenCV include and linker flags using pkg-config
-    local opencv_cflags=$(pkg-config --cflags opencv4)
-    local opencv_libs=$(pkg-config --libs opencv4)
+    local opencv_cflags = $( pkg-config --cflags opencv4 )
+    local opencv_libs = " -lopencv_core -lopencv_imgproc -lopencv_highgui -lopencv_imgcodecs"
 
     # Build command
-    local compile_command="g++ $gpp_args -o $output_file ${files[*]}"
+    local compile_command = "g++ $gpp_args -o $output_file ${ files[ * ] }"
 
     # Add include directories
     for include in "${includes[@]}"; do
