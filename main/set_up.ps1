@@ -574,6 +574,135 @@ function Install-ImGui {
     }
 }
 
+function Download-Googletest {
+    param (
+        [string]$url = "https://github.com/google/googletest/archive/refs/heads/main.zip",
+        [string]$destination = "../include/googletest-main.zip"
+    )
+
+    $destinationFullPath = [System.IO.Path]::GetFullPath($destination)
+    $destinationDir = [System.IO.Path]::GetDirectoryName($destinationFullPath)
+
+    Write-Host "Downloading GoogleTest library to $destinationFullPath ..."
+    try {
+        Invoke-WebRequest -Uri $url -OutFile $destinationFullPath
+        Write-Host "Successfully downloaded GoogleTest."
+    } catch {
+        Write-Host "Failed to download GoogleTest. Exiting."
+        exit 1
+    }
+
+    Write-Host "Extracting GoogleTest..."
+    try {
+        Expand-Archive -Path $destinationFullPath -DestinationPath $destinationDir -Force
+        Write-Host "Successfully extracted GoogleTest."
+    } catch {
+        Write-Host "Failed to extract GoogleTest. Exiting."
+        exit 1
+    }
+
+    # Define source and destination paths
+    $googletestSource = Join-Path $destinationDir "googletest-main/googletest/include/gtest"
+    $googletestDestination = Join-Path $destinationDir "../include/gtest"
+
+    Write-Host "Checking if source path exists: $googletestSource"
+    if (-not (Test-Path $googletestSource)) {
+        Write-Host "GoogleTest source path does not exist. Exiting."
+        exit 1
+    }
+
+    # Remove the destination folder if it already exists
+    if (Test-Path $googletestDestination) {
+        Write-Host "Destination folder $googletestDestination exists. Removing it..."
+        Remove-Item $googletestDestination -Recurse -Force
+    }
+
+    # Create a fresh destination folder
+    New-Item -Path $googletestDestination -ItemType Directory | Out-Null
+
+    Write-Host "Copying contents from $googletestSource to $googletestDestination..."
+    try {
+        # Copy all items from the source into the destination folder
+        Copy-Item -Path (Join-Path $googletestSource "*") -Destination $googletestDestination -Recurse -Force
+        Write-Host "Successfully copied GoogleTest headers."
+    } catch {
+        Write-Host "Failed to copy GoogleTest headers. Exiting."
+        exit 1
+    }
+
+    # Clean up: Remove the zip file and the extracted folder
+    Write-Host "Cleaning up extracted files..."
+    Remove-Item $destinationFullPath -Force
+    Remove-Item (Join-Path $destinationDir "googletest-main") -Recurse -Force
+
+    Write-Host "GoogleTest setup complete."
+}
+
+function Compile-And-Run-Tests {
+
+    Write-Host "Compiling tests..."
+
+    $gppArgs = "-g -O0 -v -std=c++23 -DGPU"
+
+    $files = @(
+        "../imgui-master/imgui.cpp",
+        "../imgui-master/imgui_draw.cpp",
+        "../imgui-master/imgui_widgets.cpp",
+        "../imgui-master/imgui_tables.cpp",
+        "../imgui-master/backends/imgui_impl_opengl3.cpp",
+        "../imgui-master/backends/imgui_impl_glfw.cpp",
+        "../tests/test_collide_and_stream_equivalence.cpp",
+        "../tests/test_vertex_data_equivalence.cpp",
+        "gl.cpp",
+        "../src/lbm/common.cpp",
+        "../src/grid_renderer.cpp",
+        "../src/shader.cpp",
+        "../src/glad.c"
+    )
+
+    $includes = @(
+        "../include",
+        "../inline",
+        "../imgui-master",
+        "../imgui-master/backends"
+    )
+
+    # Output file name
+    $outputFile = "fs_test.exe"
+
+    $dpcxx = "../dpcxx_dll"
+
+    # Get the OpenCV include path using pkg-config (no need to modify)
+    $opencvIncludePath = $(pkg-config --cflags-only-I opencv4)
+
+    # Build command
+    $compileCommand = "g++ $gppArgs -o $outputFile " +
+        ($files | ForEach-Object { $_ + " " }) +
+        ($includes | ForEach-Object { "-I" + (Join-Path (Get-Location) $_) + " " }) +
+        "$opencvIncludePath " +  
+        "-L" + ( Join-Path ( Get-Location ) $dpcxx ) + " " +
+        "-lopengl32 -lglfw3 -lgdi32 -ltbb12 -lopencv_core -lopencv_imgproc -lopencv_highgui -lopencv_imgcodecs -lfs_dpcxx -lgtest -lgtest_main"
+
+    # Print the command for debugging
+    Write-Output "Compiling with: $compileCommand"
+
+    # Execute the build
+    Invoke-Expression $compileCommand
+
+    Write-Host "Compilation complete."
+
+    Write-Host "Running fs_test.exe..."
+    & .\fs_test.exe
+
+    # Check the exit code of the test executable.
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "Tests failed with exit code $LASTEXITCODE. Terminating script."
+        exit $LASTEXITCODE
+    } else {
+        Write-Host "All tests passed."
+    }
+}
+
 function Compile-Code {
 
     Write-Host "Compiling program..."
@@ -612,7 +741,7 @@ function Compile-Code {
     $compileCommand = "g++ $gppArgs -o $outputFile " +
         ($files | ForEach-Object { $_ }) + " " +
         ($includes | ForEach-Object { "-I" + (Join-Path (Get-Location) $_) }) + " " +
-        "$opencvIncludePath " +  # Use the include path directly from pkg-config
+        "$opencvIncludePath " +  
         "-lopengl32 -lglfw3 -lgdi32 -ltbb12 -lopencv_core -lopencv_imgproc -lopencv_highgui -lopencv_imgcodecs"
 
     # Print the command for debugging
@@ -692,5 +821,9 @@ Install-ImGui
 
 Install-VisualStudio
 Install-DPCPP
+
+Download-Googletest
+
+Compile-And-Run-Tests
 
 Compile-Code
