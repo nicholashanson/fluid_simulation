@@ -1,8 +1,6 @@
 /*
     this interface just provides a thin layer to the DPC++ DLL for a cleaner and more consistent API
 */
-
-
 #ifndef LBM_COLLIDE_AND_STREAM_DPCXX_INTERFACE_HPP
 #define LBM_COLLIDE_AND_STREAM_DPCXX_INTERFACE_HPP
 
