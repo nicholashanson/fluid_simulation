@@ -23,6 +23,8 @@ namespace fs {
 
             extern "C" void* init_cs_c( double* D2Q9, unsigned char* obstacle, size_t ydim, size_t xdim, float viscosity );
 
+            extern "C" void stateful_collide_and_stream_c( void* cs_state, const size_t );
+
             extern "C" void terminate_cs_c( void* state );
 
             extern "C" size_t get_size_of_cs_state();
