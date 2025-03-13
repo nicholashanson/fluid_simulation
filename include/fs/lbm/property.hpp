@@ -126,17 +126,20 @@ namespace fs {
         }
 
         /*
-            takes a D2Q9 grid and outputs a grid of a certain property defined by calculate_property
+            takes a D2Q9 grid and outputs a grid of a property values defined by calculate_property
             e.g. fs::lbm::calculate_property_v_with_max( ..., fs::lbm::calculate_rho ) will return a 
-            grid object of density values and the max density as a tuple
+            two-element tuple containing a grid object of density values and the max density as a real
+            number.
         */
         template<typename DataStorage, typename View>
         std::tuple<double, sim::grid<std::vector<double>, property_view>>
         calculate_property_v_with_max( const sim::grid<DataStorage, View>& gd, const std::vector<double>& property_states, 
                                        std::function<double( std::array<double,9>& )> calculate_property ) {
 
+            // grid to return
             sim::grid<std::vector<double>, property_view> property_grid( property_states );
-            
+
+            // get grid dimensions
             const size_t ydim = gd.get_dim( 0 );
             const size_t xdim = gd.get_dim( 1 );
 
