@@ -2,6 +2,8 @@ param(
     [string]$Action 
 )
 
+Import-Module ".\scripts\windows\compile_program.psm1"
+
 [Environment]::CurrentDirectory = (Get-Location -PSProvider FileSystem).ProviderPath
 
 New-Variable -Name "includeDir" -Value (Join-Path (Get-Location).Path "../include") -Option Constant
@@ -1220,56 +1222,6 @@ function Compile-And-Run-DPCPP-Tests {
     }
 }
 
-function Compile-Code {
-
-    Write-Host "Compiling program..."
-
-    $gppArgs = "-g -O0 -v -std=c++23"
-
-    $files = @(
-        "../imgui-master/imgui.cpp",
-        "../imgui-master/imgui_draw.cpp",
-        "../imgui-master/imgui_widgets.cpp",
-        "../imgui-master/imgui_tables.cpp",
-        "../imgui-master/backends/imgui_impl_opengl3.cpp",
-        "../imgui-master/backends/imgui_impl_glfw.cpp",
-        "main.cpp",
-        "gl.cpp",
-        "../src/lbm/common.cpp",
-        "../src/grid_renderer.cpp",
-        "../src/shader.cpp",
-        "../src/glad.c"
-    )
-
-    $includes = @(
-        "../include",
-        "../inline",
-        "../imgui-master",
-        "../imgui-master/backends"
-    )
-
-    # Output file name
-    $outputFile = "fs.exe"
-
-    # Get the OpenCV include path using pkg-config (no need to modify)
-    $opencvIncludePath = $(pkg-config --cflags-only-I opencv4)
-
-    # Build command
-    $compileCommand = "g++ $gppArgs -o $outputFile " +
-        ($files | ForEach-Object { $_ }) + " " +
-        ($includes | ForEach-Object { "-I" + (Join-Path (Get-Location) $_) }) + " " +
-        "$opencvIncludePath " +  
-        "-lopengl32 -lglfw3 -lgdi32 -ltbb12 -lopencv_core -lopencv_imgproc -lopencv_highgui -lopencv_imgcodecs"
-
-    # Print the command for debugging
-    Write-Output "Compiling with: $compileCommand"
-
-    # Execute the build
-    Invoke-Expression $compileCommand
-
-    Write-Host "Compilation complete."
-}
-
 function Check-NvidiaGPU {
     # Use Get-CimInstance to query the video controller (GPU) information
     $gpu = Get-CimInstance -ClassName Win32_VideoController | Where-Object { $_.Name -like "*NVIDIA*" }
@@ -1356,6 +1308,6 @@ Install-ImGui
 
 # Build-DPCPP-DLL
 # Compile-And-Run-Tests
-Compile-And-Run-DPCPP-Tests
+# Compile-And-Run-DPCPP-Tests
 
-# Compile-Code
+Compile-Program
