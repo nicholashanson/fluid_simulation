@@ -305,8 +305,6 @@ function Install-GLFW {
 
     # Check if GLFW 3 is installed using pacman
     Write-Host "Checking if GLFW 3 is installed..."
-
-    # Run pacman to check if glfw is installed
     $glfwInstalled = & "C:\msys64\usr\bin\bash.exe" -c "pacman -Qs glfw"
     
     if ($glfwInstalled -match "mingw-w64-x86_64-glfw") {
