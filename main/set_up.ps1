@@ -4,6 +4,45 @@ param(
 
 [Environment]::CurrentDirectory = (Get-Location -PSProvider FileSystem).ProviderPath
 
+New-Variable -Name "includeDir" -Value (Join-Path (Get-Location).Path "../include") -Option Constant
+
+# Function to add a path to an environment variable if it's not already present
+function Add-PathToEnvVar {
+    param (
+        [string]$envVarName,
+        [string]$pathToAdd
+    )
+    $currentValue = [System.Environment]::GetEnvironmentVariable($envVarName, [System.EnvironmentVariableTarget]::User)
+
+    if (-not $currentValue) {
+        $currentValue = ""
+    }
+    if ($currentValue -notmatch [regex]::Escape($pathToAdd)) {
+        $newValue = if ($currentValue) { "$currentValue;$pathToAdd" } else { $pathToAdd }
+        [System.Environment]::SetEnvironmentVariable($envVarName, $newValue, [System.EnvironmentVariableTarget]::User)
+        Write-Host "Added $pathToAdd to $envVarName."
+    }
+}
+
+function Setup-VSEnvironment {
+    param (
+        [string]$ucrtPath = "C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\ucrt",
+        [string]$umPath = "C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\um",
+        [string]$sharedPath = "C:\Program Files (x86)\Windows Kits\10\Include\10.0.26100.0\shared",
+        [string]$stlPath = "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.43.34808\include",
+        [string]$libPath = "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.43.34808\lib\x64"
+    )
+
+    # Add paths to INCLUDE
+    Add-PathToEnvVar -envVarName "INCLUDE" -pathToAdd $ucrtPath
+    Add-PathToEnvVar -envVarName "INCLUDE" -pathToAdd $umPath
+    Add-PathToEnvVar -envVarName "INCLUDE" -pathToAdd $sharedPath
+    Add-PathToEnvVar -envVarName "INCLUDE" -pathToAdd $stlPath
+
+    # Add paths to LIB
+    Add-PathToEnvVar -envVarName "LIB" -pathToAdd $libPath
+}
+
 function Install-Chocolatey {
     if (-not (Get-Command choco -ErrorAction SilentlyContinue)) {
         Write-Host "Chocolatey not found. Installing..."
@@ -114,14 +153,13 @@ function Install-MSYS2 {
     $mingwBinDir = "C:\msys64\mingw64\bin"
     if (Test-Path $mingwBinDir) {
         Write-Host "MSYS2's MinGW64 bin directory found at: $mingwBinDir"
-        # Add MinGW64's 'bin' directory to the PATH if it's not already there
-        if ($env:Path -notlike "*$mingwBinDir*") {
+        # Prevent duplicate entries in PATH
+        if (-not ($env:Path -split ";" -contains $mingwBinDir)) {
             $env:Path += ";$mingwBinDir"
             Write-Host "Added MSYS2's MinGW64 bin directory to the PATH."
+        } else {
+            Write-Host "MSYS2's MinGW64 bin directory is already in the PATH."
         }
-    } else {
-        Write-Host "MSYS2's MinGW64 bin directory not found at $mingwBinDir. Something went wrong during installation."
-        exit 1
     }
 
     # Verify if the g++ in the MinGW64 bin is working properly
@@ -195,7 +233,29 @@ function MSYS2-Checks {
 
 function Install-OpenCV {
 
-    $env:PATH = "C:\msys64\usr\bin;C:\msys64\bin;" + $env:PATH
+    $msysUsr = "C:\msys64\usr\bin"
+    if (Test-Path $msysUsr) {
+        Write-Host "MSYS2's MinGW64 bin directory found at: $msysUsr"
+        # Prevent duplicate entries in PATH
+        if (-not ($env:Path -split ";" -contains $msysUsr)) {
+            $env:Path += ";$msysUsr"
+            Write-Host "Added MSYS2's MinGW64 bin directory to the PATH."
+        } else {
+            Write-Host "MSYS2's MinGW64 bin directory is already in the PATH."
+        }
+    }
+
+    $msysBin = "C:\msys64\bin"
+    if (Test-Path $msysBin) {
+        Write-Host "MSYS2's MinGW64 bin directory found at: $msysBin"
+        # Prevent duplicate entries in PATH
+        if (-not ($env:Path -split ";" -contains $msysBin)) {
+            $env:Path += ";$msysBin"
+            Write-Host "Added MSYS2's MinGW64 bin directory to the PATH."
+        } else {
+            Write-Host "MSYS2's MinGW64 bin directory is already in the PATH."
+        }
+    }
 
     Write-Host "Checking OpenCV installation..."
 
@@ -219,40 +279,12 @@ function Install-OpenCV {
         # Install OpenCV using pacman in MSYS2
         & "C:\msys64\usr\bin\bash.exe" -c "pacman -S mingw-w64-x86_64-opencv --noconfirm"
     }
-
-    # Set OpenCV environment variables
-    $opencvDir = "C:\msys64\mingw64"
-    $opencvInclude = "$opencvDir\include"
-    $opencvLib = "$opencvDir\lib"
-
-    if ( (Test-Path $opencvInclude) -and (Test-Path $opencvLib) ) {
-        Write-Host "OpenCV directories found. Adding to environment variables..."
-
-        # Set OpenCV_DIR environment variable
-        [System.Environment]::SetEnvironmentVariable("OpenCV_DIR", $opencvDir, [System.EnvironmentVariableTarget]::Machine)
-
-        # Add OpenCV libraries to PATH
-        $opencvBin = "$opencvDir\bin"
-        if (-not ($env:PATH -contains $opencvBin)) {
-            [System.Environment]::SetEnvironmentVariable("PATH", "$env:Path;$opencvBin", [System.EnvironmentVariableTarget]::Machine)
-        }
-
-        Write-Host "OpenCV environment variables set successfully."
-    } else {
-        Write-Host "Error: OpenCV directories not found. Installation may have failed."
-        exit 1
-    }
 }
 
 function Install-GLFW {
-    # Set up directories
-    $downloadDir = [System.IO.Path]::Combine((Get-Location).Path, "../include")
-    if (-not (Test-Path $downloadDir)) {
-        New-Item -ItemType Directory -Path $downloadDir
-    }
 
     # Create the 'glfw' subdirectory
-    $glfwDir = Join-Path $downloadDir "GLFW"
+    $glfwDir = Join-Path $includeDir "GLFW"
     if (-not (Test-Path $glfwDir)) {
         New-Item -ItemType Directory -Path $glfwDir
     }
@@ -308,14 +340,9 @@ function Download-Files {
         "https://raw.githubusercontent.com/nicholashanson/performance_profiler/refs/heads/main/average_time_profiler.hpp"
     )
 
-    $downloadDir = [System.IO.Path]::Combine((Get-Location).Path, "../include")
-    if (-not (Test-Path $downloadDir)) {
-        New-Item -ItemType Directory -Path $downloadDir
-    }
-
     foreach ($file in $files) {
         $fileName = [System.IO.Path]::GetFileName($file)
-        $filePath = Join-Path $downloadDir $fileName
+        $filePath = Join-Path $includeDir $fileName
 
         Write-Host "Downloading $file..."
         try {
@@ -333,6 +360,13 @@ function Download-mdspan {
         [string]$url = "https://github.com/kokkos/mdspan/archive/refs/heads/stable.zip",
         [string]$destination = "../include/mdspan-stable.zip"
     )
+
+    $mdSpanDestinationPath = Join-Path $includeDir "mdspan-stable"
+
+    if (Test-Path $mdSpanDestinationPath) {
+        Write-Host "'mdspan-stable' directory already exists in $includeDir. Skipping mdspan download and installation."
+        return
+    }
 
     $destinationFullPath = [System.IO.Path]::GetFullPath($destination)
     $destinationDir = [System.IO.Path]::GetDirectoryName($destinationFullPath)
@@ -365,8 +399,6 @@ function Download-GLM {
         [string]$destination = "../include/glm-0.9.9.8.zip"
     )
 
-    # Define the include directory path where 'glm' should be located
-    $includeDir = Join-Path (Get-Location).Path "../include"
     $glmDestinationPath = Join-Path $includeDir "glm"
 
     # Check if GLM directory already exists in the include folder
@@ -440,54 +472,180 @@ function Download-GLM {
     }
 }
 
+function Install-Handle {
+    Write-Host "Downloading Handle tool..."
+    
+    # Correct URL for Handle tool
+    $handleUrl = "https://download.sysinternals.com/files/Handle.zip"
+    $handleZip = "C:\Handle.zip"
+    $handleExtractPath = "C:\Sysinternals"
+
+    try {
+        # Download the Handle tool
+        Invoke-WebRequest -Uri $handleUrl -OutFile $handleZip -ErrorAction Stop
+
+        # Extract the Handle tool
+        Write-Host "Extracting Handle.zip..."
+        Expand-Archive -Path $handleZip -DestinationPath $handleExtractPath -Force
+
+        Write-Host "Handle tool installed to $handleExtractPath"
+    } catch {
+        Write-Host "Error occurred while downloading or extracting the Handle tool: $_"
+    }
+}
+
 function Install-VisualStudio {
-    # Define the installer URL for VS Build Tools 2022
-    $vsInstallerUrl = "https://aka.ms/vs/17/release/vs_BuildTools.exe"
-    $vsInstallerPath = "C:\vs_BuildTools.exe"
+    $originalDir = Get-Location
+    Set-Location -Path "C:\"
 
-    # Check if Visual Studio Build Tools 2022 is installed
-    $vswherePath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+    # Define paths
+    $vsInstallerPath = "C:\vs_installer.exe"
+    $vsUninstallerPath = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vs_installer.exe"
+    $vcVarsAllPath = "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvarsall.bat"
+    $buildToolsPath = "C:\BuildTools"
+    
+    # Ensure log file directory exists
+    if (-not (Test-Path "C:\Logs")) {
+        New-Item -Path "C:\" -Name "Logs" -ItemType Directory
+    }
 
-    if (Test-Path $vswherePath) {
-        $installedVersion = & $vswherePath -latest -products * -requires Microsoft.VisualStudio.Workload.VCTools -property installationPath
-        if ($installedVersion) {
-            Write-Host "Visual Studio Build Tools 2022 is already installed at $installedVersion. Skipping installation."
-            return
+    # Function to set environment variables
+    function Set-EnvironmentVariables {
+        # Update paths based on your installation directory
+        $env:PATH += ";C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.43.34808\bin\Hostx64\x64"
+        $env:INCLUDE += ";C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.43.34808\include"
+        $env:LIB += ";C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.43.34808\lib\x64"
+    }
+
+    # Check for full Visual Studio installation in default path
+    if (Test-Path "C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\devenv.exe") {
+        $installedVersion = "C:\Program Files\Microsoft Visual Studio\2022\Community"
+        Write-Host "Full Visual Studio installation found at $installedVersion. Checking for MSVC..."
+        
+        # Check if MSVC is installed in full Visual Studio installation
+        $msvcPath = "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC"
+        if (-not (Test-Path $msvcPath)) {
+            Write-Host "MSVC is missing. Installing MSVC tools..."
+            Start-Process -FilePath $vsUninstallerPath -ArgumentList "modify --quiet --norestart --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64" -NoNewWindow -Wait
+            Write-Host "MSVC tools installed."
         }
+        else {
+            Write-Host "MSVC is already installed. Repairing MSVC tools..."
+            Start-Process -FilePath $vsUninstallerPath -ArgumentList "modify --installPath `"$installedVersion`" --quiet --norestart --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64" -NoNewWindow -Wait
+            Write-Host "MSVC tools repaired."
+        }
+
+        # Set environment variables
+        Set-EnvironmentVariables
+
+        # Proceed with the compilation test
+    }
+    # Check for Visual Studio Build Tools
+    elseif (Test-Path $buildToolsPath) {
+        Write-Host "Visual Studio Build Tools installation found at $buildToolsPath. Checking for MSVC..."
+        
+        # Check for MSVC in Build Tools
+        $msvcPath = Join-Path $buildToolsPath "Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC"
+        if (-not (Test-Path $msvcPath)) {
+            Write-Host "MSVC is missing in Build Tools. Installing MSVC tools..."
+            Start-Process -FilePath $vsUninstallerPath -ArgumentList "modify --quiet --norestart --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64" -NoNewWindow -Wait
+            Write-Host "MSVC tools installed in Build Tools."
+        }
+        else {
+            Write-Host "MSVC is already installed in Build Tools. Repairing MSVC tools..."
+            Start-Process -FilePath $vsUninstallerPath -ArgumentList "modify --installPath `"$installedVersion`" --quiet --norestart --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64" -NoNewWindow -Wait
+            Write-Host "MSVC tools repaired in Build Tools."
+        }
+
+        # Set environment variables
+        Set-EnvironmentVariables
+    }
+    else {
+        Write-Host "No Visual Studio or Build Tools installation found. Proceeding with Build Tools installation."
+
+        # Download the installer if not already present
+        if (-not (Test-Path $vsInstallerPath)) {
+            Write-Host "Downloading Visual Studio Build Tools installer..."
+            Invoke-WebRequest -Uri "https://aka.ms/vs/17/release/vs_BuildTools.exe" -OutFile $vsInstallerPath
+        }
+
+        # Install Visual Studio Build Tools (including MSVC)
+        Write-Host "Installing Visual Studio Build Tools..."
+        $arguments = '--passive --norestart --force --installPath "C:\BuildTools" --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64'
+
+        # Start the installer and wait for completion
+        $process = Start-Process -FilePath $vsInstallerPath -ArgumentList $arguments -NoNewWindow -PassThru -Wait
+        Write-Host "Waiting for installation to complete..."
+        $process.WaitForExit()
+
+        # Check the exit code and log any relevant errors
+        if ($process.ExitCode -eq 0) {
+            Write-Host "Installation completed successfully."
+        } else {
+            Write-Host "Installation failed with exit code $($process.ExitCode)."
+        }
+
+        # Set environment variables after installation
+        Set-EnvironmentVariables
     }
 
-    Write-Host "VS Build Tools not found. Proceeding with installation."
-
-    # Download the installer if not already present
-    if (-not (Test-Path $vsInstallerPath)) {
-        Write-Host "Downloading Visual Studio Build Tools installer..."
-        Invoke-WebRequest -Uri $vsInstallerUrl -OutFile $vsInstallerPath
+    # Optional: Run vcvarsall.bat to ensure the environment is fully configured
+    if (Test-Path $vcVarsAllPath) {
+        Write-Host "Running vcvarsall.bat to finalize the environment setup..."
+        & $vcVarsAllPath x64
+    } else {
+        Write-Host "Error: vcvarsall.bat not found. Visual Studio or Build Tools may not be fully installed."
     }
 
-    # Install only the minimal required components
-    Write-Host "Installing Visual Studio Build Tools..."
-    Start-Process -FilePath $vsInstallerPath -ArgumentList `
-        "--quiet", `
-        "--wait", `
-        "--norestart", `
-        "--nocache", `
-        "--installPath C:\BuildTools", `
-        "--add Microsoft.VisualStudio.Workload.VCTools", `
-        "--add Microsoft.VisualStudio.Component.VC.Tools.x86.x64", `
-        "--add Microsoft.VisualStudio.Component.Windows10SDK", `
-        "--add Microsoft.VisualStudio.Component.CMake", `
-        "--add Microsoft.VisualStudio.Component.VC.CoreIde", `
-        "--add Microsoft.VisualStudio.Component.VC.Redist.14.Latest" `
-        -NoNewWindow -Wait
+    # Create a simple Hello World program to test compilation
+    $cppSource = @"
+#include <iostream>
 
-    Write-Host "Installation completed."
+int main() {
+    std::cout << "Hello, World!" << std::endl;
+    return 0;
+}
+"@
+    $cppFilePath = "C:\temp\test.cpp"
+    $exeFilePath = "C:\temp\test.exe"
+
+    # Save the C++ source to a file
+    $cppSource | Out-File -FilePath $cppFilePath
+
+    Write-Host "Compiling test C++ program..."
+
+    # Determine correct compiler path based on Visual Studio or Build Tools
+    $clExePath = ""
+    if (Test-Path "C:\Program Files\Microsoft Visual Studio\2022\Community") {
+        # Visual Studio full installation
+        $clExePath = "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.43.34808\bin\Hostx64\x64\cl.exe"
+    }
+    elseif (Test-Path $buildToolsPath) {
+        # Visual Studio Build Tools
+        $clExePath = "C:\BuildTools\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.43.34808\bin\Hostx64\x64\cl.exe"
+    }
+
+    # Compile the C++ program using cl.exe and capture both standard output and error output
+    $compileOutput = & $clExePath $cppFilePath 2>&1
+
+    # Check if compilation was successful by looking for the expected output (e.g., .exe file creation)
+    if (Test-Path $exeFilePath) {
+        Write-Host "Compilation successful. Running the program..."
+        & $exeFilePath
+    } else {
+        Write-Host "Compilation failed. Output:"
+        Write-Host $compileOutput
+    }
+
+    # Restore the original directory
+    Set-Location -Path $originalDir
 }
 
 function Install-DPCPP {
     $icpxCommand = 'icpx'
-    $url = 'https://fluidsim.s3.us-east-1.amazonaws.com/intel-oneapi-base-toolkit-2025.0.1.47_offline.exe'
+    $url = 'https://fluidsim.s3.us-east-1.amazonaws.com/intel-dpcpp-cpp-compiler-2025.0.4.21_offline.exe'
     $localPath = 'C:\intel-dpcpp\intel-dpcpp-cpp-compiler-2025.0.4.21_offline.exe'
-    $oneAPIPath = 'C:\Program Files (x86)\Intel\oneAPI\2025.0\bin'
+    $oneAPIPath = 'C:\Program Files (x86)\Intel\oneAPI\compiler\2025.0\bin'
 
     # Check if the 'icpx' command exists in the PATH
     if (Get-Command -Name $icpxCommand -ErrorAction SilentlyContinue) {
@@ -541,6 +699,62 @@ function Install-DPCPP {
     }
 }
 
+function Install-TBBINTEL {
+    $tbbCommand = 'tbbmalloc.dll'
+    $url = 'https://fluidsim.s3.us-east-1.amazonaws.com/intel-onetbb-2022.0.0.397_offline.exe'
+    $localPath = 'C:\intel-tbb\intel-onetbb-2022.0.0.397_offline.exe'
+    $tbbPath = 'C:\Program Files (x86)\Intel\oneAPI\tbb\latest\bin'
+
+    # Check if TBB is already installed
+    if (Test-Path "$tbbPath\$tbbCommand") {
+        Write-Host "Intel TBB is already installed. Skipping installation."
+    } else {
+        # Check if the installer file exists
+        if (Test-Path -Path $localPath) {
+            Write-Host "The installer file already exists. Skipping download."
+        } else {
+            # Ensure the directory exists
+            $directory = [System.IO.Path]::GetDirectoryName($localPath)
+
+            if (-not (Test-Path -Path $directory)) {
+                Write-Host "Creating directory: $directory"
+                New-Item -Path $directory -ItemType Directory -Force
+            }
+
+            Write-Host "Downloading Intel TBB installer..."
+            Invoke-WebRequest -Uri $url -OutFile $localPath
+            Write-Host "Successfully downloaded Intel TBB installer."
+        }
+
+        # Silently install Intel TBB
+        Write-Host "Starting silent installation of Intel TBB..."
+        Start-Process -FilePath $localPath -ArgumentList "--silent --eula accept" -Wait -NoNewWindow
+        Write-Host "Intel TBB installation completed."
+    }
+
+    # Update system PATH if TBB is not already included
+    $currentPath = [System.Environment]::GetEnvironmentVariable("Path", [System.EnvironmentVariableTarget]::Machine)
+
+    if ($currentPath -notlike "*$tbbPath*") {
+        $newPath = "$currentPath;$tbbPath"
+        [System.Environment]::SetEnvironmentVariable("Path", $newPath, [System.EnvironmentVariableTarget]::Machine)
+        Write-Host "Successfully added $tbbPath to the system PATH."
+    } else {
+        Write-Host "Intel TBB path is already in the system PATH."
+    }
+
+    # Add to current session PATH (immediate effect)
+    $env:Path += ";$tbbPath"
+    Write-Host "Intel TBB is now available in the current session."
+
+    # Final check to see if TBB is available
+    if (Test-Path "$tbbPath\$tbbCommand") {
+        Write-Host "Intel TBB is successfully installed and available."
+    } else {
+        Write-Host "Intel TBB is still not available. Please check the installation."
+    }
+}
+
 function Install-ImGui {
     # Get the parent directory path
     $parentDirectory = (Get-Item ..).FullName
@@ -580,8 +794,14 @@ function Download-Googletest {
         [string]$destination = "../include/googletest-main.zip"
     )
 
-    $destinationFullPath = [System.IO.Path]::GetFullPath($destination)
-    $destinationDir = [System.IO.Path]::GetDirectoryName($destinationFullPath)
+    $destinationFullPath = Join-Path $includeDir "googletest-main.zip"
+    $googletestDestination = Join-Path $includeDir "gtest"
+
+    # Check if the gtest directory already exists
+    if (Test-Path $googletestDestination) {
+        Write-Host "gtest directory already exists in the include folder. Skipping download and setup."
+        return
+    }
 
     Write-Host "Downloading GoogleTest library to $destinationFullPath ..."
     try {
@@ -594,7 +814,7 @@ function Download-Googletest {
 
     Write-Host "Extracting GoogleTest..."
     try {
-        Expand-Archive -Path $destinationFullPath -DestinationPath $destinationDir -Force
+        Expand-Archive -Path $destinationFullPath -DestinationPath $includeDir -Force
         Write-Host "Successfully extracted GoogleTest."
     } catch {
         Write-Host "Failed to extract GoogleTest. Exiting."
@@ -602,8 +822,8 @@ function Download-Googletest {
     }
 
     # Define source and destination paths
-    $googletestSource = Join-Path $destinationDir "googletest-main/googletest/include/gtest"
-    $googletestDestination = Join-Path $destinationDir "../include/gtest"
+    $googletestSource = Join-Path $includeDir "googletest-main/googletest/include/gtest"
+    $googletestDestination = Join-Path $includeDir "gtest"
 
     Write-Host "Checking if source path exists: $googletestSource"
     if (-not (Test-Path $googletestSource)) {
@@ -633,9 +853,234 @@ function Download-Googletest {
     # Clean up: Remove the zip file and the extracted folder
     Write-Host "Cleaning up extracted files..."
     Remove-Item $destinationFullPath -Force
-    Remove-Item (Join-Path $destinationDir "googletest-main") -Recurse -Force
+    Remove-Item (Join-Path $includeDir "googletest-main") -Recurse -Force
 
     Write-Host "GoogleTest setup complete."
+}
+
+function Setup-Googletest {
+    param (
+        [string]$url = "https://github.com/google/googletest/archive/refs/heads/main.zip",
+        [string]$destination = "../include/googletest-main.zip"
+    )
+
+    # Define lib directories relative to the script directory
+    $scriptRoot = $PSScriptRoot
+    $gppLibDir = Join-Path $scriptRoot "..\lib\g++_libs"
+    $dpcppLibDir = Join-Path $scriptRoot "..\lib\dpc++_libs"
+
+    $CCompilerPath = (Get-Command icx).Source
+    $CXXCompilerPath = (Get-Command icx).Source
+
+    $gccPath = (Get-Command gcc).Source
+    $gppPath = (Get-Command g++).Source
+
+    Write-Host "gcc found at $gccPath"
+    Write-Host "g++ found at $gppPath"
+
+
+    Write-Host "icpx found at $CCompilerPath"
+
+    $destinationFullPath = [System.IO.Path]::GetFullPath((Join-Path $scriptRoot $destination))
+    $destinationDir = [System.IO.Path]::GetDirectoryName($destinationFullPath)
+    $googletestExtractedDir = Join-Path $destinationDir "googletest-main"
+    $googletestBuildDir = Join-Path $googletestExtractedDir "build"
+    $googletestMinGWBuildDir = Join-Path $googletestExtractedDir "build_mingw"
+
+    # Ensure both lib directories exist
+    if (-not (Test-Path $gppLibDir)) {
+        New-Item -Path $gppLibDir -ItemType Directory | Out-Null
+    }
+
+    if (-not (Test-Path $dpcppLibDir)) {
+        New-Item -Path $dpcppLibDir -ItemType Directory | Out-Null
+    }
+
+    # Check if the gtest libraries already exist in ../lib relative to the script
+    if ((Test-Path (Join-Path $gppLibDir "libgtest.a")) -and 
+        (Test-Path (Join-Path $gppLibDir "libgtest_main.a")) -and
+        (Test-Path (Join-Path $dpcppLibDir "gtest.lib")) -and 
+        (Test-Path (Join-Path $dpcppLibDir "gtest_main.lib"))) {
+        Write-Host "gtest libraries already exist. Skipping download and build."
+        return
+    }
+
+    # Download GoogleTest if not already downloaded
+    if (-not (Test-Path $destinationFullPath)) {
+        Write-Host "Downloading GoogleTest library to $destinationFullPath ..."
+        try {
+            Invoke-WebRequest -Uri $url -OutFile $destinationFullPath
+            Write-Host "Successfully downloaded GoogleTest."
+        } catch {
+            Write-Host "Failed to download GoogleTest. Exiting."
+            exit 1
+        }
+    } else {
+        Write-Host "GoogleTest zip already exists. Skipping download."
+    }
+
+    # Extract GoogleTest
+    if (-not (Test-Path $googletestExtractedDir)) {
+        Write-Host "Extracting GoogleTest..."
+        try {
+            Expand-Archive -Path $destinationFullPath -DestinationPath $destinationDir -Force
+            Write-Host "Successfully extracted GoogleTest."
+        } catch {
+            Write-Host "Failed to extract GoogleTest. Exiting."
+            exit 1
+        }
+    } else {
+        Write-Host "GoogleTest source already exists. Skipping extraction."
+    }
+
+    # Build GoogleTest with G++
+    Write-Host "Building GoogleTest with MinGW..."
+    try {
+        # Define build directory
+        $mingwBuildDir = Join-Path $googletestExtractedDir "build_mingw"
+
+        # Ensure the build directory exists
+        if (-not (Test-Path $mingwBuildDir)) {
+            New-Item -Path $mingwBuildDir -ItemType Directory | Out-Null
+        }
+        Push-Location $mingwBuildDir
+
+        # Set the CMake generator to MinGW Makefiles
+        $env:CC = "gcc"
+        $env:CXX = "g++"
+
+        # Run CMake with the MinGW Makefiles generator
+        cmake .. -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release
+        mingw32-make
+        Pop-Location
+        Write-Host "Successfully built GoogleTest with MinGW."
+    } catch {
+        Write-Host "Failed to build GoogleTest with MinGW. Exiting."
+        exit 1
+    }
+
+    # Copy G++ libraries to g++_libs directory
+    Write-Host "Copying G++ libraries to $gppLibDir..."
+    try {
+        $gppBuiltLibs = Get-ChildItem -Path (Join-Path $googletestMinGWBuildDir "lib") -Filter "*.a"
+        foreach ($lib in $gppBuiltLibs) {
+            Copy-Item -Path $lib.FullName -Destination $gppLibDir -Force
+        }
+        Write-Host "Successfully copied G++ libraries."
+    } catch {
+        Write-Host "Failed to copy G++ libraries. Exiting."
+        exit 1
+    }
+
+    # Build GoogleTest with DPC++
+    Write-Host "Building GoogleTest with DPC++..."
+    try {
+
+        $env:CC = "$CCompilerPath"
+        $env:CXX = "$CXXCompilerPath"
+
+        if (-not (Test-Path $googletestBuildDir)) {
+            New-Item -Path $googletestBuildDir -ItemType Directory | Out-Null
+        }
+        Push-Location $googletestBuildDir
+        cmake .. -DCMAKE_C_COMPILER="$CCompilerPath" -DCMAKE_CXX_COMPILER="$CXXCompilerPath" -DCMAKE_BUILD_TYPE=Release
+        cmake --build . --config Release
+        Pop-Location
+        Write-Host "Successfully built GoogleTest with DPC++."
+    } catch {
+        Write-Host "Failed to build GoogleTest with DPC++. Exiting."
+        exit 1
+    }
+
+    # Copy DPC++ libraries to dpc++_libs directory
+    Write-Host "Copying DPC++ libraries to $dpcppLibDir..."
+    try {
+        $dpcppBuiltLibs = Get-ChildItem -Path (Join-Path $googletestBuildDir "lib/Release") -Filter "*.lib"
+        foreach ($lib in $dpcppBuiltLibs) {
+            Copy-Item -Path $lib.FullName -Destination $dpcppLibDir -Force
+        }
+        Write-Host "Successfully copied DPC++ libraries."
+    } catch {
+        Write-Host "Failed to copy DPC++ libraries. Exiting."
+        exit 1
+    }
+
+    Write-Host "Cleaning up extracted files..."
+    Remove-Item $destinationFullPath -Force
+    Remove-Item $googletestExtractedDir -Recurse -Force
+
+    Write-Host "GoogleTest setup complete."
+}
+
+function Build-DPCPP-DLL {
+    Write-Host "Compiling DPC++ DLL..."
+
+    # Set the compiler flags and arguments for debugging and optimizations
+    $icpxArgs = "-v -fsycl -fsycl-targets=nvptx64-nvidia-cuda -std=c++23 -DDPCPP_COMPILER -DGPU"
+    $cudaPath = "`"C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.0`""
+
+    # List of source files to compile
+    $files = @(
+        "../src/lbm/common.cpp",
+        "../dpcxx_dll/lbm/collide_and_stream.cpp"
+    )
+
+    # Include directories
+    $includes = @(
+        "../include"
+    )
+
+    $libs = @(
+        "../lib"
+    )
+
+    $dpcxx_includes = @(
+        "`"C:\Program Files (x86)\Intel\oneAPI\compiler\2025.0\include`"",
+        "`"C:\Program Files (x86)\Intel\oneAPI\tbb\2022.0\include`""
+    )
+
+    $dpcxx_libs = @(
+        "`"C:\Program Files (x86)\Intel\oneAPI\compiler\2025.0\lib`"",
+        "`"C:\Program Files (x86)\Intel\oneAPI\tbb\2022.0\lib`""
+    )
+
+    # Build command output file (DLL) path
+    $outputDLL = "fs_dpcxx.dll"
+
+    # Set the DPC++ compiler path, assuming `icpx` or its equivalent is available in your path
+    $dpcxx = "icpx"  # Use `icpx` for Intel DPC++ compiler
+
+    # Build command
+    $compileCommand = "$dpcxx -DDLL_EXPORTS $icpxArgs " +
+        ($files | ForEach-Object { "$_ " }) +
+        ($includes | ForEach-Object { "-I" + (Join-Path (Get-Location) $_) + " " }) +
+        ($libs | ForEach-Object { "-L" + (Join-Path (Get-Location) $_) + " " }) +
+        ($dpcxx_includes | ForEach-Object { "-I" + $_ + " " }) +
+        ($dpcxx_libs | ForEach-Object { "-L" + $_ + " " }) +
+        "-shared " +
+        "-o $outputDLL " +
+        "--cuda-path=" + $cudaPath + " " +
+        "-lsycl -lOpenCL " +
+        "-LD"
+
+    # Print the compile command for debugging
+    Write-Output "Compiling with: $compileCommand"
+
+    # Execute the build command
+    Invoke-Expression $compileCommand
+
+    Write-Host "Compilation complete."
+
+    # Resolve the full path for the DLL (relative to current location)
+    $dllPath = (Resolve-Path $outputDLL).Path
+
+    # Check if the DLL file exists
+    if (-Not (Test-Path $dllPath)) {
+        Write-Error "DLL not found at $dllPath. Exiting script."
+        exit 1
+    } else {
+        Write-Host "DLL found at $dllPath."
+    }
 }
 
 function Compile-And-Run-Tests {
@@ -667,10 +1112,12 @@ function Compile-And-Run-Tests {
         "../imgui-master/backends"
     )
 
+    $libs = @(
+        "../lib/g++_libs"
+    )
+
     # Output file name
     $outputFile = "fs_test.exe"
-
-    $dpcxx = "../dpcxx_dll"
 
     # Get the OpenCV include path using pkg-config (no need to modify)
     $opencvIncludePath = $(pkg-config --cflags-only-I opencv4)
@@ -679,9 +1126,9 @@ function Compile-And-Run-Tests {
     $compileCommand = "g++ $gppArgs -o $outputFile " +
         ($files | ForEach-Object { $_ + " " }) +
         ($includes | ForEach-Object { "-I" + (Join-Path (Get-Location) $_) + " " }) +
-        "$opencvIncludePath " +  
-        "-L" + ( Join-Path ( Get-Location ) $dpcxx ) + " " +
-        "-lopengl32 -lglfw3 -lgdi32 -ltbb12 -lopencv_core -lopencv_imgproc -lopencv_highgui -lopencv_imgcodecs -lfs_dpcxx -lgtest -lgtest_main"
+        "$opencvIncludePath " +
+        ($libs | ForEach-Object { "-L" + (Join-Path (Get-Location) $_) + " " }) +
+        "-lopengl32 -lglfw3 -lgdi32 -ltbb12 -lopencv_core -lopencv_imgproc -lopencv_highgui -lopencv_imgcodecs -lfs_dpcxx -lgtest -lgtest_main" 
 
     # Print the command for debugging
     Write-Output "Compiling with: $compileCommand"
@@ -693,6 +1140,78 @@ function Compile-And-Run-Tests {
 
     Write-Host "Running fs_test.exe..."
     & .\fs_test.exe
+
+    # Check the exit code of the test executable.
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "Tests failed with exit code $LASTEXITCODE. Terminating script."
+        exit $LASTEXITCODE
+    } else {
+        Write-Host "All tests passed."
+    }
+}
+
+function Compile-And-Run-DPCPP-Tests {
+
+    Write-Host "Compiling tests..."
+
+    # Set the compiler flags and arguments for debugging and optimizations
+    $icpxArgs = "-v -fsycl -fsycl-targets=nvptx64-nvidia-cuda -std=c++23 -DDPCPP_COMPILER -DGPU"
+
+    $cudaPath = "`"C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.0`""
+
+    # List of source files to compile
+    $files = @(
+        "../src/lbm/common.cpp",
+        "../tests/test_collide_and_stream_state.cpp"
+    )
+
+    # Include directories
+    $includes = @(
+        "../include"
+    )
+
+    $libs = @(
+        "../lib/dpc++_libs"
+    )
+
+    $dpcxx_includes = @(
+        "`"C:\Program Files (x86)\Intel\oneAPI\compiler\2025.0\include`"",
+        "`"C:\Program Files (x86)\Intel\oneAPI\tbb\2022.0\include`""
+    )
+
+    $dpcxx_libs = @(
+        "`"C:\Program Files (x86)\Intel\oneAPI\compiler\2025.0\lib`"",
+        "`"C:\Program Files (x86)\Intel\oneAPI\tbb\2022.0\lib`""
+    )
+
+    # Output file name for the compiled executable
+    $outputFile = "fs_dpcxx_test.exe"
+
+    # Set the DPC++ compiler path, assuming `icpx` or its equivalent is available in your path
+    $dpcxx = "icpx"  # Use `icpx` for Intel DPC++ compiler
+
+    # Build command
+    $compileCommand = "$dpcxx $icpxArgs -o $outputFile " +
+        ($files | ForEach-Object { $_ + " " }) +
+        ($includes | ForEach-Object { "-I" + (Join-Path (Get-Location) $_) + " " }) +
+        ($libs | ForEach-Object { "-L" + (Join-Path (Get-Location) $_) + " " }) +
+        ($dpcxx_includes | ForEach-Object { "-I" + $_ + " " }) +
+        ($dpcxx_libs | ForEach-Object { "-L" + $_ + " " }) +
+        "--cuda-path=" + $cudaPath + " " +
+        "-lsycl -lOpenCL -lgtest -lgtest_main"
+
+    # Print the compile command for debugging
+    Write-Output "Compiling with: $compileCommand"
+
+    # Execute the build command
+    Invoke-Expression $compileCommand
+
+    Write-Host "Compilation complete."
+
+    Write-Host "Running fs_dpcxx_test.exe..."
+
+    # Run the compiled test executable
+    & .\fs_dpcxx_test.exe
 
     # Check the exit code of the test executable.
     if ($LASTEXITCODE -ne 0) {
@@ -799,6 +1318,14 @@ function Install-CUDA {
     Write-Host "CUDA installation completed."
 }
 
+$vcVarsAllPath = "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvarsall.bat"
+if (Test-Path $vcVarsAllPath) {
+    Write-Host "Running vcvarsall.bat to finalize the environment setup..."
+    & $vcVarsAllPath x64
+} else {
+    Write-Host "Error: vcvarsall.bat not found. Visual Studio or Build Tools may not be fully installed."
+}
+
 # Check if there is an NVIDIA GPU
 if (Check-NvidiaGPU) {
     Write-Host "NVIDIA GPU found..."
@@ -807,23 +1334,30 @@ if (Check-NvidiaGPU) {
     Write-Host "No NVIDIA GPU found."
 }
 
+Setup-VSEnvironment
+
 Install-Chocolatey
 Install-Curl
 Install-MSYS2 -Action $Action
 MSYS2-Checks
 Install-OpenCV
 Install-TBB
+Install-TBBINTEL
 Install-GLFW
 Download-Files
 Download-mdspan
 Download-GLM
 Install-ImGui
 
-Install-VisualStudio
-Install-DPCPP
+# Install-VisualStudio -Action $Action
+# Install-Handle
+# Install-DPCPP -Action $Action
 
-Download-Googletest
+# Download-Googletest
+# Setup-GoogleTest
 
-Compile-And-Run-Tests
+# Build-DPCPP-DLL
+# Compile-And-Run-Tests
+Compile-And-Run-DPCPP-Tests
 
-Compile-Code
+# Compile-Code
