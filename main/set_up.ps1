@@ -1241,7 +1241,7 @@ Install-ImGui
 # Setup-GoogleTest
 
 # Build-DPCPP-DLL
-Compile-And-Run-Tests
+# Compile-And-Run-Tests
 # Compile-And-Run-DPCPP-Tests
 
-# Compile-Program
+Compile-Program

@@ -1,3 +1,5 @@
+Import-Module "./compile_vars.ps1"
+
 function Compile-Program {
 
     Write-Host "Compiling program..."
@@ -5,12 +7,6 @@ function Compile-Program {
     $gppArgs = "-g -O0 -v -std=c++23"
 
     $files = @(
-        "../imgui-master/imgui.cpp",
-        "../imgui-master/imgui_draw.cpp",
-        "../imgui-master/imgui_widgets.cpp",
-        "../imgui-master/imgui_tables.cpp",
-        "../imgui-master/backends/imgui_impl_opengl3.cpp",
-        "../imgui-master/backends/imgui_impl_glfw.cpp",
         "main.cpp",
         "gl.cpp",
         "../src/lbm/common.cpp",
@@ -18,6 +14,8 @@ function Compile-Program {
         "../src/shader.cpp",
         "../src/glad.c"
     )
+
+    $files += $imgui_src
 
     $includes = @(
         "../include",
