@@ -4,10 +4,10 @@ param(
 
 Import-Module ".\scripts\windows\compile_program.psm1"
 Import-Module ".\scripts\windows\compile_and_run_tests.psm1"
+Import-Module ".\scripts\windows\global_vars.psm1" 
+Import-Module ".\scripts\windows\setup_googletest.psm1" -Force
 
 [Environment]::CurrentDirectory = (Get-Location -PSProvider FileSystem).ProviderPath
-
-New-Variable -Name "includeDir" -Value (Join-Path (Get-Location).Path "../include") -Option Constant
 
 # Function to add a path to an environment variable if it's not already present
 function Add-PathToEnvVar {
@@ -859,160 +859,6 @@ function Download-Googletest {
     Write-Host "GoogleTest setup complete."
 }
 
-function Setup-Googletest {
-    param (
-        [string]$url = "https://github.com/google/googletest/archive/refs/heads/main.zip",
-        [string]$destination = "../include/googletest-main.zip"
-    )
-
-    # Define lib directories relative to the script directory
-    $scriptRoot = $PSScriptRoot
-    $gppLibDir = Join-Path $scriptRoot "..\lib\g++_libs"
-    $dpcppLibDir = Join-Path $scriptRoot "..\lib\dpc++_libs"
-
-    $CCompilerPath = (Get-Command icx).Source
-    $CXXCompilerPath = (Get-Command icx).Source
-
-    $gccPath = (Get-Command gcc).Source
-    $gppPath = (Get-Command g++).Source
-
-    Write-Host "gcc found at $gccPath"
-    Write-Host "g++ found at $gppPath"
-
-
-    Write-Host "icpx found at $CCompilerPath"
-
-    $destinationFullPath = [System.IO.Path]::GetFullPath((Join-Path $scriptRoot $destination))
-    $destinationDir = [System.IO.Path]::GetDirectoryName($destinationFullPath)
-    $googletestExtractedDir = Join-Path $destinationDir "googletest-main"
-    $googletestBuildDir = Join-Path $googletestExtractedDir "build"
-    $googletestMinGWBuildDir = Join-Path $googletestExtractedDir "build_mingw"
-
-    # Ensure both lib directories exist
-    if (-not (Test-Path $gppLibDir)) {
-        New-Item -Path $gppLibDir -ItemType Directory | Out-Null
-    }
-
-    if (-not (Test-Path $dpcppLibDir)) {
-        New-Item -Path $dpcppLibDir -ItemType Directory | Out-Null
-    }
-
-    # Check if the gtest libraries already exist in ../lib relative to the script
-    if ((Test-Path (Join-Path $gppLibDir "libgtest.a")) -and 
-        (Test-Path (Join-Path $gppLibDir "libgtest_main.a")) -and
-        (Test-Path (Join-Path $dpcppLibDir "gtest.lib")) -and 
-        (Test-Path (Join-Path $dpcppLibDir "gtest_main.lib"))) {
-        Write-Host "gtest libraries already exist. Skipping download and build."
-        return
-    }
-
-    # Download GoogleTest if not already downloaded
-    if (-not (Test-Path $destinationFullPath)) {
-        Write-Host "Downloading GoogleTest library to $destinationFullPath ..."
-        try {
-            Invoke-WebRequest -Uri $url -OutFile $destinationFullPath
-            Write-Host "Successfully downloaded GoogleTest."
-        } catch {
-            Write-Host "Failed to download GoogleTest. Exiting."
-            exit 1
-        }
-    } else {
-        Write-Host "GoogleTest zip already exists. Skipping download."
-    }
-
-    # Extract GoogleTest
-    if (-not (Test-Path $googletestExtractedDir)) {
-        Write-Host "Extracting GoogleTest..."
-        try {
-            Expand-Archive -Path $destinationFullPath -DestinationPath $destinationDir -Force
-            Write-Host "Successfully extracted GoogleTest."
-        } catch {
-            Write-Host "Failed to extract GoogleTest. Exiting."
-            exit 1
-        }
-    } else {
-        Write-Host "GoogleTest source already exists. Skipping extraction."
-    }
-
-    # Build GoogleTest with G++
-    Write-Host "Building GoogleTest with MinGW..."
-    try {
-        # Define build directory
-        $mingwBuildDir = Join-Path $googletestExtractedDir "build_mingw"
-
-        # Ensure the build directory exists
-        if (-not (Test-Path $mingwBuildDir)) {
-            New-Item -Path $mingwBuildDir -ItemType Directory | Out-Null
-        }
-        Push-Location $mingwBuildDir
-
-        # Set the CMake generator to MinGW Makefiles
-        $env:CC = "gcc"
-        $env:CXX = "g++"
-
-        # Run CMake with the MinGW Makefiles generator
-        cmake .. -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release
-        mingw32-make
-        Pop-Location
-        Write-Host "Successfully built GoogleTest with MinGW."
-    } catch {
-        Write-Host "Failed to build GoogleTest with MinGW. Exiting."
-        exit 1
-    }
-
-    # Copy G++ libraries to g++_libs directory
-    Write-Host "Copying G++ libraries to $gppLibDir..."
-    try {
-        $gppBuiltLibs = Get-ChildItem -Path (Join-Path $googletestMinGWBuildDir "lib") -Filter "*.a"
-        foreach ($lib in $gppBuiltLibs) {
-            Copy-Item -Path $lib.FullName -Destination $gppLibDir -Force
-        }
-        Write-Host "Successfully copied G++ libraries."
-    } catch {
-        Write-Host "Failed to copy G++ libraries. Exiting."
-        exit 1
-    }
-
-    # Build GoogleTest with DPC++
-    Write-Host "Building GoogleTest with DPC++..."
-    try {
-
-        $env:CC = "$CCompilerPath"
-        $env:CXX = "$CXXCompilerPath"
-
-        if (-not (Test-Path $googletestBuildDir)) {
-            New-Item -Path $googletestBuildDir -ItemType Directory | Out-Null
-        }
-        Push-Location $googletestBuildDir
-        cmake .. -DCMAKE_C_COMPILER="$CCompilerPath" -DCMAKE_CXX_COMPILER="$CXXCompilerPath" -DCMAKE_BUILD_TYPE=Release
-        cmake --build . --config Release
-        Pop-Location
-        Write-Host "Successfully built GoogleTest with DPC++."
-    } catch {
-        Write-Host "Failed to build GoogleTest with DPC++. Exiting."
-        exit 1
-    }
-
-    # Copy DPC++ libraries to dpc++_libs directory
-    Write-Host "Copying DPC++ libraries to $dpcppLibDir..."
-    try {
-        $dpcppBuiltLibs = Get-ChildItem -Path (Join-Path $googletestBuildDir "lib/Release") -Filter "*.lib"
-        foreach ($lib in $dpcppBuiltLibs) {
-            Copy-Item -Path $lib.FullName -Destination $dpcppLibDir -Force
-        }
-        Write-Host "Successfully copied DPC++ libraries."
-    } catch {
-        Write-Host "Failed to copy DPC++ libraries. Exiting."
-        exit 1
-    }
-
-    Write-Host "Cleaning up extracted files..."
-    Remove-Item $destinationFullPath -Force
-    Remove-Item $googletestExtractedDir -Recurse -Force
-
-    Write-Host "GoogleTest setup complete."
-}
-
 function Build-DPCPP-DLL {
     Write-Host "Compiling DPC++ DLL..."
 
@@ -1237,11 +1083,13 @@ Install-ImGui
 # Install-Handle
 # Install-DPCPP -Action $Action
 
+Write-Host "Current script root: $PSScriptRoot"
+$currentRoot = $PSScriptRoot
 # Download-Googletest
-# Setup-GoogleTest
+Setup-GoogleTest -scriptRoot $currentRoot
 
 # Build-DPCPP-DLL
 # Compile-And-Run-Tests
 # Compile-And-Run-DPCPP-Tests
 
-Compile-Program
+# Compile-Program
