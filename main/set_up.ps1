@@ -2,9 +2,9 @@ param(
     [string]$Action 
 )
 
-Import-Module ".\scripts\windows\compile_program.psm1"
-Import-Module ".\scripts\windows\compile_and_run_tests.psm1"
-Import-Module ".\scripts\windows\global_vars.psm1" 
+Import-Module ".\scripts\windows\compile_program.psm1" -Force
+Import-Module ".\scripts\windows\compile_and_run_tests.psm1" -Force
+Import-Module ".\scripts\windows\global_vars.psm1" -Force 
 Import-Module ".\scripts\windows\setup_googletest.psm1" -Force
 
 [Environment]::CurrentDirectory = (Get-Location -PSProvider FileSystem).ProviderPath
@@ -1079,17 +1079,17 @@ Download-mdspan
 Download-GLM
 Install-ImGui
 
-# Install-VisualStudio -Action $Action
+Install-VisualStudio -Action $Action
 # Install-Handle
-# Install-DPCPP -Action $Action
+Install-DPCPP -Action $Action
 
 Write-Host "Current script root: $PSScriptRoot"
 $currentRoot = $PSScriptRoot
-# Download-Googletest
+Download-Googletest
 Setup-GoogleTest -scriptRoot $currentRoot
 
 # Build-DPCPP-DLL
-# Compile-And-Run-Tests
+Compile-And-Run-Tests
 # Compile-And-Run-DPCPP-Tests
 
-# Compile-Program
+Compile-Program
