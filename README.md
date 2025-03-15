@@ -57,5 +57,5 @@ This build won't include GPU acceleration for now.
 </p>
 
 * In OpenGL, the CPU offloads rendering to the GPU asynchronously, so calling "render_grid" is negligible.
-* Most time at the moment is spent calculating the vertex data. 
+* Each loop takes around 80 milliseconds to execute, which works-out to around 12 FPS and 240 steps per second ( 20 steps per loop ).
 
