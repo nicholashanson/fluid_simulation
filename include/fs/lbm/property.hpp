@@ -11,6 +11,9 @@
 #include <fs/global_aliases.hpp>
 #include <fs/lbm/common.hpp>
 
+#include <tbb/blocked_range.h>
+#include <tbb/parallel_for.h>
+
 namespace fs {
 
     namespace lbm {
@@ -45,7 +48,17 @@ namespace fs {
             return rho;
         }
 
-        inline double calculate_u_x( std::array<double, 9>& f ) {
+        inline double calculate_u_x_( std::array<double, 9>& f ) {
+
+            double u_x{};
+
+            for ( size_t q = 0; q < 9; ++q ) 
+                u_x += e[ q ].first * f[ q ]; 
+
+            return u_x;
+        }
+
+        inline double calculate_u_x( std::span<double> f ) {
 
             double u_x{};
 
@@ -67,8 +80,8 @@ namespace fs {
 
         template<typename DataStorage, typename View>
         sim::grid<std::vector<double>, property_view>
-        calculate_property_v( const sim::grid<DataStorage, View>& gd, const std::vector<double>& property_states, 
-                              std::function<double( std::array<double,9>& )> calculate_property ) {
+        calculate_property_v_grid( const sim::grid<DataStorage, View>& gd, const std::vector<double>& property_states, 
+                                   std::function<double( std::array<double,9>& )> calculate_property ) {
 
             sim::grid<std::vector<double>, property_view> property_grid( property_states );
             
@@ -87,6 +100,47 @@ namespace fs {
             }
 
             return property_grid;
+        }
+
+        inline void calculate_property_v( double* D2Q9_data, double* property_data,
+                                          std::function<double( std::span<double> )> calculate_property ) {
+            
+            for ( size_t y = 0; y < fs::settings::ydim; ++y ) {
+                for ( size_t x = 0; x < fs::settings::xdim; ++x ) {
+
+                    const size_t offset = ( x + y * fs::settings::xdim ) * 9;
+
+                    std::span<double> cell_state( &D2Q9_data[ offset ], 9 );
+
+                    double property = calculate_property( cell_state );
+
+                    property_data[ x + y * fs::settings::xdim ] = property;
+                }
+            }
+        }
+
+        inline void calculate_property_v_tbb( double* D2Q9_data, double* property_data,
+                                              std::function<double( std::span<double> )> calculate_property ) {
+
+            tbb::parallel_for(
+                tbb::blocked_range<size_t>( 0, fs::settings::ydim ),
+                [&]( const tbb::blocked_range<size_t>& range ) {
+
+                    for ( size_t y = range.begin(); y < range.end(); ++y ) {
+ 
+                        for ( size_t x = 0; x < fs::settings::xdim; ++x ) {
+
+                            const size_t offset = ( x + y * fs::settings::xdim ) * 9;
+
+                            std::span<double> cell_state( &D2Q9_data[ offset ], 9 );
+
+                            double property = calculate_property( cell_state );
+
+                            property_data[ x + y * fs::settings::xdim ] = property;
+                        }
+                    }
+                }   
+            );
         }
 
         template<typename DataStorage, typename View>

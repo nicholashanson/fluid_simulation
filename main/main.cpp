@@ -83,7 +83,8 @@ int main() {
     }
 
 #ifdef GPU
-    void* cs_state = fs::dpcxx::lbm::init_cs( D2Q9_grid, barrier, 0.05 );
+
+    // void* cs_state = fs::dpcxx::lbm::init_cs( D2Q9_grid, barrier, 0.05 );
 #endif
 
     // initialize GLFW and OpenGL context
@@ -172,7 +173,14 @@ int main() {
 
             // start vertex calculation
 
+#ifdef GPU
+
+            fs::lbm::calculate_property_v_tbb( D2Q9_grid.get_data_handle(), property_grid.get_data_handle(), fs::lbm::calculate_u_x );
+
+            vertices = fs::dpcxx::lbm::grid_to_vertex_data( property_grid );
+#else
             vertices = app::property_grid_to_vertex_data_cv_tbb_copy( D2Q9_grid, fs::lbm::property_states, fs::lbm::calculate_u_x );
+#endif
 
             vertices.insert( vertices.end(), barrier_vertices.begin(), barrier_vertices.end() );
 
@@ -238,7 +246,7 @@ int main() {
     glfwTerminate();
 
 #ifdef GPU
-    fs::dpcxx::lbm::terminate_cs_c( cs_state );
+    // fs::dpcxx::lbm::terminate_cs_c( cs_state );
 #endif
 
     return 0;
