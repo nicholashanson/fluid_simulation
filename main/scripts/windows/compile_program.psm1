@@ -1,10 +1,18 @@
-Import-Module "./compile_vars.ps1"
+$compileVars = Join-Path $PSScriptRoot "compile_vars.psm1"
+Import-Module $compileVars -Force
 
 function Compile-Program {
+    param(
+        [switch]$GPU
+    )
 
     Write-Host "Compiling program..."
 
     $gppArgs = "-g -O0 -v -std=c++23"
+
+    if ($GPU) {
+        $gppArgs += " -DGPU"
+    }
 
     $files = @(
         "main.cpp",
@@ -15,7 +23,7 @@ function Compile-Program {
         "../src/glad.c"
     )
 
-    $files += $imgui_src
+    $files += $imGuiSrc
 
     $includes = @(
         "../include",
@@ -32,10 +40,15 @@ function Compile-Program {
 
     # Build command
     $compileCommand = "g++ $gppArgs -o $outputFile " +
-        ($files | ForEach-Object { $_ }) + " " +
+        ($files -join " ") + " " +
         ($includes | ForEach-Object { "-I" + (Join-Path (Get-Location) $_) }) + " " +
-        "$opencvIncludePath " +  
-        "-lopengl32 -lglfw3 -lgdi32 -ltbb12 -lopencv_core -lopencv_imgproc -lopencv_highgui -lopencv_imgcodecs"
+        "$opencvIncludePath " +
+        ($openCVLibs -join " ") + " " +  
+        "-lopengl32 -lglfw3 -lgdi32 -ltbb12"
+
+    if ($GPU) {
+        $compileCommand += " -lfs_dpcxx"
+    }
 
     # Print the command for debugging
     Write-Output "Compiling with: $compileCommand"

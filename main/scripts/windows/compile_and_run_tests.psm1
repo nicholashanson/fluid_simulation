@@ -1,16 +1,20 @@
+$compileVars = Join-Path $PSScriptRoot "compile_vars.psm1"
+Import-Module $compileVars -Force
+
 function Compile-And-Run-Tests {
+    param(
+        [switch]$GPU
+    )
 
     Write-Host "Compiling tests..."
 
-    $gppArgs = "-g -O0 -v -std=c++23 -DGPU"
+    $gppArgs = "-g -O0 -v -std=c++23"
+
+    if ($GPU) {
+        $gppArgs += " -DGPU"
+    }
 
     $files = @(
-        "../imgui-master/imgui.cpp",
-        "../imgui-master/imgui_draw.cpp",
-        "../imgui-master/imgui_widgets.cpp",
-        "../imgui-master/imgui_tables.cpp",
-        "../imgui-master/backends/imgui_impl_opengl3.cpp",
-        "../imgui-master/backends/imgui_impl_glfw.cpp",
         "../tests/test_collide_and_stream_equivalence.cpp",
         "../tests/test_vertex_data_equivalence.cpp",
         "gl.cpp",
@@ -19,6 +23,8 @@ function Compile-And-Run-Tests {
         "../src/shader.cpp",
         "../src/glad.c"
     )
+
+    $files += $imGuiSrc
 
     $includes = @(
         "../include",
@@ -37,13 +43,19 @@ function Compile-And-Run-Tests {
     # Get the OpenCV include path using pkg-config (no need to modify)
     $opencvIncludePath = $(pkg-config --cflags-only-I opencv4)
 
+    Write-Output "OpenCV Libraries: $openCVLibs"
+
     # Build command
     $compileCommand = "g++ $gppArgs -o $outputFile " +
         ($files | ForEach-Object { $_ + " " }) +
         ($includes | ForEach-Object { "-I" + (Join-Path (Get-Location) $_) + " " }) +
         "$opencvIncludePath " +
         ($libs | ForEach-Object { "-L" + (Join-Path (Get-Location) $_) + " " }) +
-        "-lopengl32 -lglfw3 -lgdi32 -ltbb12 -lopencv_core -lopencv_imgproc -lopencv_highgui -lopencv_imgcodecs -lfs_dpcxx -lgtest -lgtest_main" 
+        "-lopengl32 -lglfw3 -lgdi32 -ltbb12 " + 
+        ($openCVLibs -join " ") + " " +  
+        " -lfs_dpcxx -lgtest -lgtest_main" 
+
+    $compileCommand += " -lfs_dpcxx"
 
     # Print the command for debugging
     Write-Output "Compiling with: $compileCommand"

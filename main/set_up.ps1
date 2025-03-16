@@ -1,5 +1,6 @@
 param(
-    [string]$Action 
+    [string]$Action,
+    [switch]$GPU
 )
 
 Import-Module ".\scripts\windows\compile_program.psm1" -Force
@@ -859,7 +860,7 @@ function Download-Googletest {
     Write-Host "GoogleTest setup complete."
 }
 
-function Build-DPCPP-DLL {
+function Build-DLL {
     Write-Host "Compiling DPC++ DLL..."
 
     # Set the compiler flags and arguments for debugging and optimizations
@@ -869,7 +870,8 @@ function Build-DPCPP-DLL {
     # List of source files to compile
     $files = @(
         "../src/lbm/common.cpp",
-        "../dpcxx_dll/lbm/collide_and_stream.cpp"
+        "../dpcxx_dll/lbm/collide_and_stream.cpp",
+        "../dpcxx_dll/lbm/grid_to_vertex_data.cpp"
     )
 
     # Include directories
@@ -1088,8 +1090,12 @@ $currentRoot = $PSScriptRoot
 Download-Googletest
 Setup-GoogleTest -scriptRoot $currentRoot
 
-# Build-DPCPP-DLL
-Compile-And-Run-Tests
-# Compile-And-Run-DPCPP-Tests
-
-Compile-Program
+if ($GPU) {
+    Build-DLL
+    Compile-And-Run-DPCPP-Tests
+    Compile-And-Run-Tests -GPU 
+    Compile-Program -GPU 
+} else {
+    Compile-And-Run-Tests
+    Compile-Program
+}
