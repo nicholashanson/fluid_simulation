@@ -91,53 +91,45 @@ namespace fs {
         }
 
         inline std::set<std::pair<size_t, size_t>> get_airfoil_coords() {
+            
             std::set<std::pair<size_t, size_t>> coords;
         
-            // Airfoil specifications
-            const int chord_length = settings::xdim / 4;  // Airfoil spans 1/4 of xdim
-            const int start_x = settings::xdim / 8;       // Start at 1/8 of xdim
-            const int end_x = start_x + chord_length;     // End at 3/8 of xdim
+            const int chord_length = settings::xdim / 4; 
+            const int start_x = settings::xdim / 8;       
+            const int end_x = start_x + chord_length;    
         
-            // Vertical center of the airfoil
             const size_t center_y = settings::ydim / 2;
         
-            // NACA parameters (More realistic scaling)
-            const double max_camber = 0.04 * chord_length;   // Scale camber to grid size
-            const double camber_position = 0.4;             // 40% chord position
-            const double max_thickness = 0.12 * chord_length; // Scale thickness to grid size
+            const double max_camber = 0.04 * chord_length;   
+            const double camber_position = 0.4;             
+            const double max_thickness = 0.12 * chord_length; 
         
-            // Generate airfoil coordinates
-            for (size_t x = 0; x < chord_length; ++x) {
-                // Normalize x within the chord range [0,1]
-                double normalized_x = static_cast<double>(x) / chord_length;
-        
-                // Compute camber line (scaled properly)
+            for ( size_t x = 0; x < chord_length; ++x ) {
+
+                double normalized_x = static_cast<double>( x ) / chord_length;
+    
                 double camber = 0.0;
-                if (normalized_x < camber_position) {
-                    camber = (max_camber / camber_position) * 
-                             (2 * camber_position * normalized_x - normalized_x * normalized_x);
+                if ( normalized_x < camber_position ) {
+                    camber = ( max_camber / camber_position ) * 
+                             ( 2 * camber_position * normalized_x - normalized_x * normalized_x );
                 } else {
-                    camber = (max_camber / (1 - camber_position)) * 
-                             ((1 - 2 * camber_position) + 2 * camber_position * normalized_x - normalized_x * normalized_x);
+                    camber = ( max_camber / ( 1 - camber_position ) ) * 
+                             ( ( 1 - 2 * camber_position ) + 2 * camber_position * normalized_x - normalized_x * normalized_x );
                 }
         
-                // Compute thickness distribution (scaled properly)
                 double thickness = max_thickness * 
-                                   (0.2969 * std::sqrt(normalized_x) - 0.1260 * normalized_x 
+                                   ( 0.2969 * std::sqrt( normalized_x ) - 0.1260 * normalized_x 
                                     - 0.3516 * normalized_x * normalized_x + 
                                     0.2843 * normalized_x * normalized_x * normalized_x - 
-                                    0.1036 * normalized_x * normalized_x * normalized_x * normalized_x);
+                                    0.1036 * normalized_x * normalized_x * normalized_x * normalized_x );
         
-                // Compute actual x position (within correct range)
                 size_t airfoil_x = start_x + x;
         
-                // Compute y-coordinates for upper and lower surfaces (use **+/- thickness**)
-                size_t y_upper = static_cast<size_t>(center_y + camber + thickness);
-                size_t y_lower = static_cast<size_t>(center_y + camber - thickness);
+                size_t y_upper = static_cast<size_t>( center_y + camber + thickness );
+                size_t y_lower = static_cast<size_t>( center_y + camber - thickness );
         
-                // No bounds checking for y!
-                coords.insert({y_upper, airfoil_x});
-                coords.insert({y_lower, airfoil_x});
+                coords.insert( { y_upper, airfoil_x } );
+                coords.insert( { y_lower, airfoil_x } );
             }
         
             return coords;

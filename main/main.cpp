@@ -74,7 +74,7 @@ int main() {
 
     fs::lbm::initialize_grid( D2Q9_grid );
 	
-    fs::lbm::obstacle_coords = fs::lbm::get_obstacle_coords();
+    fs::lbm::obstacle_coords = fs::lbm::get_airfoil_coords();
 
     std::vector<unsigned char> barrier( fs::settings::ydim * fs::settings::xdim, 0 ); 
 
@@ -179,7 +179,7 @@ int main() {
 
             vertices = fs::dpcxx::lbm::grid_to_vertex_data( property_grid );
 #else
-            vertices = app::property_grid_to_vertex_data_cv_tbb_copy( D2Q9_grid, fs::lbm::property_states, fs::lbm::calculate_u_x );
+            vertices = app::property_grid_to_vertex_data_cv_tbb_copy( D2Q9_grid, fs::lbm::property_states, fs::lbm::calculate_u_x, selected_colormap );
 #endif
 
             vertices.insert( vertices.end(), barrier_vertices.begin(), barrier_vertices.end() );
