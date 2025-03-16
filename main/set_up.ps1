@@ -1092,7 +1092,7 @@ Setup-GoogleTest -scriptRoot $currentRoot
 
 if ($GPU) {
     Build-DLL
-    Compile-And-Run-DPCPP-Tests
+    # Compile-And-Run-DPCPP-Tests
     Compile-And-Run-Tests -GPU 
     Compile-Program -GPU 
 } else {

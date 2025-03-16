@@ -429,6 +429,7 @@ namespace fs {
             }
 
             void collide( sycl::queue& gpu_queue, T* d_D2Q9, const size_t vec_len, const T omega ) {
+                
                 gpu_queue.submit( [&]( sycl::handler& h ) {
                             
                     sycl::local_accessor<T, 1> local_Q9( 9 * 32, h );
@@ -497,6 +498,8 @@ namespace fs {
                         d_D2Q9[ d_D2Q9_offset + 8 ] = local_Q9[ local_Q9_offset + 8 ];
                     });
                 });
+
+                gpu_queue.wait();
             }
 
             void stream( sycl::queue& gpu_queue, T* d_D2Q9, T* d_D2Q9_n, const size_t ydim, const size_t xdim ) {
