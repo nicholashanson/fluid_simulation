@@ -383,7 +383,8 @@ namespace app {
 
     template<typename Array, typename MDSpan>
     std::vector<float> property_grid_to_vertex_data_cv_tbb_copy( const sim::grid<Array, MDSpan>& gd, const std::vector<double>& property_states,
-                                                                 std::function<double( std::array<double, 9>& )> calculate_property ) {
+                                                                 std::function<double( std::array<double, 9>& )> calculate_property,
+                                                                 int colormap ) {
 
         // number of vertices per grid square
         const size_t vertex_n = 6;
@@ -408,7 +409,7 @@ namespace app {
 
         colors.convertTo( colors, CV_8U, scale );
 
-        cv::applyColorMap( colors, colors, cv::COLORMAP_RAINBOW );
+        cv::applyColorMap( colors, colors, colormap );
 
         tbb::parallel_for(
             tbb::blocked_range<size_t>( 0, ydim ),
