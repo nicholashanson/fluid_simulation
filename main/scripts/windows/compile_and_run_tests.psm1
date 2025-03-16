@@ -53,9 +53,11 @@ function Compile-And-Run-Tests {
         ($libs | ForEach-Object { "-L" + (Join-Path (Get-Location) $_) + " " }) +
         "-lopengl32 -lglfw3 -lgdi32 -ltbb12 " + 
         ($openCVLibs -join " ") + " " +  
-        " -lgtest -lgtest_main" 
+        "-lgtest -lgtest_main" 
 
-    $compileCommand += " -lfs_dpcxx"
+    if ($GPU) {
+        $compileCommand += " -lfs_dpcxx"
+    }
 
     # Print the command for debugging
     Write-Output "Compiling with: $compileCommand"
