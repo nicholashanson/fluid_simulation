@@ -132,6 +132,7 @@ namespace fs {
 
                             const size_t offset = ( x + y * fs::settings::xdim ) * 9;
 
+                            // non-owning view of cell's Q9
                             std::span<double> cell_state( &D2Q9_data[ offset ], 9 );
 
                             double property = calculate_property( cell_state );
