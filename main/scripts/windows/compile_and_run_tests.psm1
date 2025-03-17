@@ -21,7 +21,8 @@ function Compile-And-Run-Tests {
         "../src/lbm/common.cpp",
         "../src/grid_renderer.cpp",
         "../src/shader.cpp",
-        "../src/glad.c"
+        "../src/glad.c",
+        "../src/gui.cpp"
     )
 
     $files += $imGuiSrc
