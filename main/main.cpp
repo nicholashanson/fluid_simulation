@@ -6,60 +6,24 @@
 
 #include <opencv2/opencv.hpp>
 
-#include <imgui.h>
-#include <imgui_impl_glfw.h>
-#include <imgui_impl_opengl3.h>
-
 #include <iostream>
-#include <vector>
+
 #include <chrono>
 #include <thread>
+
+#include <vector>
+#include <map>
 
 #include <fs/fs.hpp>
 #include <fs/lbm/js.hpp>
 
 #include <gl.hpp>
+#include <gui.hpp>
 
 #include <cmath>
 
 const int target_fps = 6;
 const auto frame_duration = std::chrono::milliseconds( 1000 / target_fps );
-
-const int opencv_colormaps[] = {
-    cv::COLORMAP_PLASMA,
-    cv::COLORMAP_VIRIDIS,
-    cv::COLORMAP_JET,
-    cv::COLORMAP_INFERNO,
-    cv::COLORMAP_MAGMA,
-    cv::COLORMAP_HOT,
-    cv::COLORMAP_COOL,
-    cv::COLORMAP_SPRING,
-    cv::COLORMAP_SUMMER,
-    cv::COLORMAP_AUTUMN,
-    cv::COLORMAP_WINTER,
-    cv::COLORMAP_RAINBOW,
-    cv::COLORMAP_OCEAN,
-    cv::COLORMAP_PARULA,
-};
-
-const char* colormaps[] = {
-    "Plasma",
-    "Viridis",
-    "Jet",
-    "Inferno",
-    "Magma",
-    "Hot",
-    "Cool",
-    "Spring",
-    "Summer",
-    "Autumn",
-    "Winter",
-    "Rainbow",
-    "Ocean",
-    "Parula",
-};
-
-int selected_colormap = 0;
 
 size_t frame_counter = 0;
 const size_t save_interval = 10;
@@ -95,16 +59,10 @@ int main() {
     std::vector<float> barrier_vertices = app::obstacle_to_vertex_data<fs::settings::ydim,fs::settings::xdim>( barrier );
 
     projection( shader_program ); 
-
-    IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO();
-    (void)io;
-    ImGui::StyleColorsDark();
-    ImGui_ImplGlfw_InitForOpenGL( window, true );
-    ImGui_ImplOpenGL3_Init( "#version 130" );
     
     std::vector<float> vertices;
+
+    app::init_imgui( window );
 
     // setup OpenGL buffers
     unsigned int VAO, VBO;
@@ -123,22 +81,7 @@ int main() {
 
         // start imgui set up
 
-        ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplGlfw_NewFrame();
-        ImGui::NewFrame();
-
-        ImGui::SetNextWindowPos( ImVec2( 0, 0 ), ImGuiCond_Always );
-
-        ImGui::Begin( "Simulation Controls" );
-
-        if ( ImGui::Button( simulation_running ? "Stop Simulation" : "Start Simulation" ) ) {
-
-            simulation_running = !simulation_running;
-        }
-
-        ImGui::Combo( "Colormap", &selected_colormap, colormaps, IM_ARRAYSIZE( colormaps ) );
-
-        ImGui::End();
+        app::setup_imgui( simulation_running );
 
         // end imgui set up
 
@@ -179,7 +122,7 @@ int main() {
 
             vertices = fs::dpcxx::lbm::grid_to_vertex_data( property_grid );
 #else
-            vertices = app::property_grid_to_vertex_data_cv_tbb_copy( D2Q9_grid, fs::lbm::property_states, fs::lbm::calculate_u_x, selected_colormap );
+            vertices = app::property_grid_to_vertex_data_cv_tbb_copy( D2Q9_grid, fs::lbm::property_states, fs::lbm::calculate_u_x, app::opencv_colormaps[ app::selected_colormap ] );
 #endif
 
             vertices.insert( vertices.end(), barrier_vertices.begin(), barrier_vertices.end() );
