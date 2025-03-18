@@ -7,6 +7,7 @@ Import-Module ".\scripts\windows\compile_program.psm1" -Force
 Import-Module ".\scripts\windows\compile_and_run_tests.psm1" -Force
 Import-Module ".\scripts\windows\global_vars.psm1" -Force 
 Import-Module ".\scripts\windows\setup_googletest.psm1" -Force
+Import-Module ".\scripts\windows\setup_opencv.psm1" -Force
 
 [Environment]::CurrentDirectory = (Get-Location -PSProvider FileSystem).ProviderPath
 
@@ -628,7 +629,7 @@ int main() {
     }
 
     # Compile the C++ program using cl.exe and capture both standard output and error output
-    $compileOutput = & $clExePath $cppFilePath 2>&1
+    $compileOutput = & $clExePath /EHsc $cppFilePath 2>&1
 
     # Check if compilation was successful by looking for the expected output (e.g., .exe file creation)
     if (Test-Path $exeFilePath) {
@@ -893,11 +894,11 @@ function Build-DLL {
         "`"C:\Program Files (x86)\Intel\oneAPI\tbb\2022.0\lib`""
     )
 
-    # Build command output file (DLL) path
     $outputDLL = "fs_dpcxx.dll"
 
-    # Set the DPC++ compiler path, assuming `icpx` or its equivalent is available in your path
-    $dpcxx = "icpx"  # Use `icpx` for Intel DPC++ compiler
+    $dpcxx = "icpx"  
+
+    $dpcpp_libs = "../lib/dpc++_libs"
 
     # Build command
     $compileCommand = "$dpcxx -DDLL_EXPORTS $icpxArgs " +
@@ -906,10 +907,11 @@ function Build-DLL {
         ($libs | ForEach-Object { "-L" + (Join-Path (Get-Location) $_) + " " }) +
         ($dpcxx_includes | ForEach-Object { "-I" + $_ + " " }) +
         ($dpcxx_libs | ForEach-Object { "-L" + $_ + " " }) +
+        "-L" + (Join-Path (Get-Location) $dpcpp_libs) + " " +
         "-shared " +
         "-o $outputDLL " +
         "--cuda-path=" + $cudaPath + " " +
-        "-lsycl -lOpenCL " +
+        "-lsycl -lOpenCL -lopencv_core4120 -lopencv_imgproc4120 " +
         "-LD"
 
     # Print the compile command for debugging
@@ -1085,15 +1087,18 @@ Install-VisualStudio -Action $Action
 # Install-Handle
 Install-DPCPP -Action $Action
 
+
+
 Write-Host "Current script root: $PSScriptRoot"
 $currentRoot = $PSScriptRoot
 Download-Googletest
 Setup-GoogleTest -scriptRoot $currentRoot
 
 if ($GPU) {
-    Build-DLL
+    Setup-OpenCV -scriptRoot $currentRoot
+    # Build-DLL
     # Compile-And-Run-DPCPP-Tests
-    Compile-And-Run-Tests -GPU 
+    # Compile-And-Run-Tests -GPU 
     Compile-Program -GPU 
 } else {
     Compile-And-Run-Tests
