@@ -58,7 +58,7 @@ This build won't include GPU acceleration for now.
   <img src="main/profiling_data.png" width="800">
 </p>
 
-### Using SYCL for vertex calculation and collide-and-stream
+#### Using SYCL for vertex calculation and collide-and-stream
 
 <p align="center">
   <img src="main/profiling_data_gpu.png" width="800">
