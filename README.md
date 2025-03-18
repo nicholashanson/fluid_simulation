@@ -52,8 +52,16 @@ This build won't include GPU acceleration for now.
 
 ### Profiling
 
+#### Using TBB for vertex calculation and collide-and-stream
+
 <p align="center">
   <img src="main/profiling_data.png" width="800">
+</p>
+
+#### Using SYCL for vertex calculation and collide-and-stream
+
+<p align="center">
+  <img src="main/profiling_data_gpu.png" width="800">
 </p>
 
 * In OpenGL, the CPU offloads rendering to the GPU asynchronously, so calling "render_grid" is negligible.
