@@ -8,7 +8,7 @@
   <img src="images/u_y.png" height="160" width="400">
   <img src="images/curl.png" height="160" width="400">
   <br>
-  <span>top-left: curl, top-right: ux, bottom-left: uy, bottom-right: curl</span>
+  <span>top-left: density, top-right: ux, bottom-left: uy, bottom-right: curl</span>
 </p>
 
 ### Feautures
