@@ -18,7 +18,7 @@
   <img src="images/15_degrees.png" height="160" width="400">
   <img src="images/20_degrees.png" height="160" width="400">
   <br>
-  <span>top-left: density, top-right: ux, bottom-left: uy, bottom-right: curl</span>
+  <span>top-left: 3° angle-of-attack, top-right: 10° angle-of-attack, bottom-left: 15° angle-of-attack, bottom-right: 20° angle-of-attack</span>
 </p>
 
 ### Feautures
