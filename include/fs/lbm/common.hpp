@@ -8,6 +8,8 @@
 #include <array>
 #include <vector>
 
+#include <iostream>
+
 #include <settings.hpp>
 
 #ifdef DPCPP_COMPILER
@@ -90,50 +92,168 @@ namespace fs {
             return coords;
         }
 
-        inline std::set<std::pair<size_t, size_t>> get_airfoil_coords() {
-            
+        inline std::set<std::pair<size_t, size_t>> get_airfoil_coords( const double max_camber, 
+                                                                       const double camber_position, 
+                                                                       const double max_thickness ) {
+        
+            // object to return
             std::set<std::pair<size_t, size_t>> coords;
-        
-            const int chord_length = settings::xdim / 4; 
-            const int start_x = settings::xdim / 8;       
-            const int end_x = start_x + chord_length;    
-        
-            const size_t center_y = settings::ydim / 2;
-        
-            const double max_camber = 0.04 * chord_length;   
-            const double camber_position = 0.4;             
-            const double max_thickness = 0.12 * chord_length; 
-        
-            for ( size_t x = 0; x < chord_length; ++x ) {
 
-                double normalized_x = static_cast<double>( x ) / chord_length;
-    
+            // chord length in pixels
+            const int chord_length = fs::settings::xdim / 4;
+
+            // x is zero-indexed
+            const int start_x = fs::settings::xdim / 8 - 1;
+
+            const size_t center_y = fs::settings::ydim / 2;
+
+            const double max_camber_pixels = max_camber * chord_length;
+            const double max_thickness_pixels = max_thickness * chord_length;
+
+            const double camber_position_pixels = chord_length * camber_position;
+
+            for ( size_t dx = 0; dx < chord_length; ++dx ) {
+
+                double d_dx = static_cast<double>( dx );
+
                 double camber = 0.0;
-                if ( normalized_x < camber_position ) {
-                    camber = ( max_camber / camber_position ) * 
-                             ( 2 * camber_position * normalized_x - normalized_x * normalized_x );
+                if ( dx < camber_position_pixels ) {
+
+                    camber = ( max_camber_pixels / ( camber_position_pixels * camber_position_pixels ) ) *
+                             ( 2 * camber_position_pixels * d_dx - d_dx * d_dx );
                 } else {
-                    camber = ( max_camber / ( 1 - camber_position ) ) * 
-                             ( ( 1 - 2 * camber_position ) + 2 * camber_position * normalized_x - normalized_x * normalized_x );
+                    camber = ( max_camber_pixels / ( ( 1 - camber_position_pixels ) * ( 1 - camber_position_pixels ) ) ) *
+                             ( ( 1 - 2 * camber_position_pixels ) + 2 * camber_position_pixels * d_dx - d_dx * d_dx ); 
                 }
-        
-                double thickness = max_thickness * 
-                                   ( 0.2969 * std::sqrt( normalized_x ) - 0.1260 * normalized_x 
-                                    - 0.3516 * normalized_x * normalized_x + 
-                                    0.2843 * normalized_x * normalized_x * normalized_x - 
-                                    0.1036 * normalized_x * normalized_x * normalized_x * normalized_x );
-        
-                size_t airfoil_x = start_x + x;
-        
-                size_t y_upper = static_cast<size_t>( center_y + camber + thickness );
-                size_t y_lower = static_cast<size_t>( center_y + camber - thickness );
-        
-                coords.insert( { y_upper, airfoil_x } );
-                coords.insert( { y_lower, airfoil_x } );
+
+                double dy_dx = 0.0;
+                if ( dx < camber_position_pixels ) {
+
+                    dy_dx = ( 2 * max_camber_pixels / ( camber_position_pixels * camber_position_pixels ) ) *
+                            ( camber_position_pixels - d_dx );
+                } else {
+
+                    dy_dx = ( 2 * max_camber_pixels / ( ( 1 - camber_position_pixels ) * ( 1 - camber_position_pixels ) ) ) *
+                            ( camber_position_pixels - d_dx ); 
+                }
+
+                double theta = std::atan( dy_dx );
+
+                double d_dx_n = d_dx / chord_length;
+
+                double y_t = 5.0 * max_thickness_pixels * 
+                             ( 0.2969 * std::sqrt( d_dx_n ) - 0.1260 * d_dx_n - 0.3516 * d_dx_n * d_dx_n + 0.2843 * d_dx_n * d_dx_n * d_dx_n - 0.1036 * d_dx_n * d_dx_n * d_dx_n * d_dx_n );
+                
+                size_t x = start_x + dx;
+
+                size_t x_u = static_cast<size_t>( std::round( x - y_t * std::sin( theta ) ) );
+                size_t x_l = static_cast<size_t>( std::round( x + y_t * std::sin( theta ) ) );
+
+                size_t y_u = static_cast<size_t>( std::round( center_y - camber - y_t * std::cos( theta ) ) );
+                size_t y_l = static_cast<size_t>( std::round( center_y - camber + y_t * std::cos( theta ) ) );
+
+                coords.insert( { y_u, x_u } );
+                coords.insert( { y_l, x_l } );
             }
-        
+
             return coords;
-        }        
+        }
+
+        inline std::set<std::pair<size_t, size_t>> get_airfoil_coords_aoa( const double max_camber, 
+                                                                           const double camber_position, 
+                                                                           const double max_thickness, 
+                                                                           double aoa ) {
+
+            aoa = aoa * M_PI / 180.0;
+
+            // object to return
+            std::set<std::pair<size_t, size_t>> coords;
+
+            // chord length in pixels
+            const int chord_length = fs::settings::xdim / 4;
+
+            // x is zero-indexed
+            const int start_x = fs::settings::xdim / 8 - 1;
+
+            double d_start_x = static_cast<double>( start_x );
+
+            const size_t center_y = fs::settings::ydim / 2;
+
+            double d_center_y = static_cast<double>( center_y );
+
+            const double max_camber_pixels = max_camber * chord_length;
+            const double max_thickness_pixels = max_thickness * chord_length;
+
+            const double camber_position_pixels = chord_length * camber_position;
+
+            const double cos_aoa = std::cos( aoa );
+            const double sin_aoa = std::sin( aoa ); 
+
+            const double pivot_y = fs::settings::ydim / 2;
+            const double pivot_x = fs::settings::xdim / 4;
+
+            for ( size_t dx = 0; dx < chord_length; ++dx ) {
+
+                double d_dx = static_cast<double>( dx );
+
+                double camber = 0.0;
+                if ( dx < camber_position_pixels ) {
+
+                    camber = ( max_camber_pixels / ( camber_position_pixels * camber_position_pixels ) ) *
+                             ( 2 * camber_position_pixels * d_dx - d_dx * d_dx );
+                } else {
+                    camber = ( max_camber_pixels / ( ( 1 - camber_position_pixels ) * ( 1 - camber_position_pixels ) ) ) *
+                             ( ( 1 - 2 * camber_position_pixels ) + 2 * camber_position_pixels * d_dx - d_dx * d_dx ); 
+                }
+
+                double dy_dx = 0.0;
+                if ( dx < camber_position_pixels ) {
+
+                    dy_dx = ( 2 * max_camber_pixels / ( camber_position_pixels * camber_position_pixels ) ) *
+                            ( camber_position_pixels - d_dx );
+                } else {
+
+                    dy_dx = ( 2 * max_camber_pixels / ( ( 1 - camber_position_pixels ) * ( 1 - camber_position_pixels ) ) ) *
+                            ( camber_position_pixels - d_dx ); 
+                }
+
+                double theta = std::atan( dy_dx );
+
+                double d_dx_n = d_dx / chord_length;
+
+                double y_t = 5.0 * max_thickness_pixels * 
+                             ( 0.2969 * std::sqrt( d_dx_n ) - 0.1260 * d_dx_n - 0.3516 * d_dx_n * d_dx_n + 0.2843 * d_dx_n * d_dx_n * d_dx_n - 0.1036 * d_dx_n * d_dx_n * d_dx_n * d_dx_n );
+
+                double x = d_start_x + d_dx;
+
+                double x_u = x - y_t * std::sin( theta );
+                double x_l = x + y_t * std::sin( theta );
+
+                double y_u = d_center_y - camber - y_t * std::cos( theta );
+                double y_l = d_center_y - camber + y_t * std::cos( theta );
+
+                auto rotate = [&]( double x, double y ) {
+                    double x_rel = x - pivot_x;
+                    double y_rel = y - pivot_y;
+                    
+                    size_t x_rot = static_cast<size_t>( std::round( pivot_x + x_rel * cos_aoa - y_rel * sin_aoa ) );
+                    size_t y_rot = static_cast<size_t>( std::round( pivot_y + x_rel * sin_aoa + y_rel * cos_aoa ) );    
+
+                    coords.insert( { y_rot, x_rot } );
+                };
+
+                if ( aoa != 0.0 ) {
+                    rotate( x_u, y_u );
+                    rotate( x_l, y_l );
+                } else {
+
+                    coords.insert( { static_cast<size_t>( std::round( y_u ) ), static_cast<size_t>( std::round( x_u ) ) } );
+                    coords.insert( { static_cast<size_t>( std::round( y_l ) ), static_cast<size_t>( std::round( x_l ) ) } );
+                }
+            }
+
+            return coords;
+        }
 
         inline std::set<std::pair<size_t, size_t>> obstacle_coords;
 
