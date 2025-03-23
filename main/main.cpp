@@ -22,7 +22,8 @@
 
 #include <cmath>
 
-const int target_fps = 6;
+const int target_fps = 60;
+
 const auto frame_duration = std::chrono::milliseconds( 1000 / target_fps );
 
 size_t frame_counter = 0;
@@ -38,7 +39,7 @@ int main() {
 
     fs::lbm::initialize_grid( D2Q9_grid );
 	
-    fs::lbm::obstacle_coords = fs::lbm::get_airfoil_coords();
+    fs::lbm::obstacle_coords = fs::lbm::get_airfoil_coords_aoa( 0.0, 0.0, 0.12, 3.0 );
 
     std::vector<unsigned char> barrier( fs::settings::ydim * fs::settings::xdim, 0 ); 
 
@@ -62,16 +63,18 @@ int main() {
     
     std::vector<float> vertices;
 
-    app::init_imgui( window );
+    app::gui::init_imgui( window );
 
     // setup OpenGL buffers
     unsigned int VAO, VBO;
-    app::setup_grid_buffers( vertices, VAO, VBO );
+    app::init_grid_buffers( vertices, VAO, VBO );
 
     bool simulation_running = false;
 
     // render loop
     while ( !glfwWindowShouldClose( window ) ) {
+
+        // start loop
 
         auto frame_start = std::chrono::steady_clock::now();
 
@@ -81,17 +84,17 @@ int main() {
 
         // start imgui set up
 
-        app::setup_imgui( simulation_running );
+        app::gui::setup_imgui( simulation_running );
 
         // end imgui set up
 
         if ( simulation_running ) {
 
-            // start grid buffer setup
+            // start grid buffer set up
 
-            app::setup_grid_buffers( vertices, VAO, VBO );
+            app::refresh_grid_buffers( vertices, VBO );
 
-            // end grid buffer setup
+            // end grid buffer set up
 
             // start boundary setting
 
@@ -114,15 +117,28 @@ int main() {
             // end collide and stream
 #endif
 
+            // start property calculation
+        
+            // selected_property = curl
+            if ( std::strcmp( app::gui::properties[ app::gui::selected_property ], "curl" ) == 0 ) {
+                fs::lbm::calculate_curl_v_tbb( D2Q9_grid.get_data_handle(), property_grid.get_data_handle() );
+            } else {
+                fs::lbm::calculate_property_v_tbb( D2Q9_grid.get_data_handle(), property_grid.get_data_handle(),
+                                                    app::gui::physical_properties[ app::gui::selected_property ] );    
+            }
+
+            // end property calculation
+
             // start vertex calculation
 
 #ifdef GPU
 
-            fs::lbm::calculate_property_v_tbb( D2Q9_grid.get_data_handle(), property_grid.get_data_handle(), fs::lbm::calculate_u_x );
-
-            vertices = fs::dpcxx::lbm::grid_to_vertex_data( property_grid );
+            vertices = fs::dpcxx::lbm::grid_to_vertex_data_cv( property_grid, 
+                                                               app::gui::opencv_colormaps[ app::gui::selected_colormap ] );
 #else
-            vertices = app::property_grid_to_vertex_data_cv_tbb_copy( D2Q9_grid, fs::lbm::property_states, fs::lbm::calculate_u_x, app::opencv_colormaps[ app::selected_colormap ] );
+
+            vertices = app::property_to_vertex_data( property_grid.get_data_handle(), 
+                                                     app::gui::opencv_colormaps[ app::gui::selected_colormap ] );
 #endif
 
             vertices.insert( vertices.end(), barrier_vertices.begin(), barrier_vertices.end() );

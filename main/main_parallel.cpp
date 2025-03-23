@@ -24,11 +24,7 @@
 
 #include <cmath>
 
-#ifdef GPU
-const int target_fps = 10;
-#else
-const int target_fps = 6;
-#endif
+const int target_fps = 60;
 
 tbb::task_group group;
 
@@ -49,7 +45,7 @@ int main() {
 
     fs::lbm::initialize_grid( D2Q9_grid );
 	
-    fs::lbm::obstacle_coords = fs::lbm::get_airfoil_coords( 0.04, 0.1, 0.24 );
+    fs::lbm::obstacle_coords = fs::lbm::get_airfoil_coords_aoa( 0.02, 0.4, 0.12, 3.0 );
 
     std::vector<unsigned char> barrier( fs::settings::ydim * fs::settings::xdim, 0 ); 
 
@@ -73,16 +69,18 @@ int main() {
     
     std::vector<float> vertices;
 
-    app::init_imgui( window );
+    app::gui::init_imgui( window );
 
     // setup OpenGL buffers
     unsigned int VAO, VBO;
-    app::setup_grid_buffers( vertices, VAO, VBO );
+    app::init_grid_buffers( vertices, VAO, VBO );
 
     bool simulation_running = false;
 
     // render loop
     while ( !glfwWindowShouldClose( window ) ) {
+
+        // start loop
 
         auto frame_start = std::chrono::steady_clock::now();
 
@@ -92,17 +90,11 @@ int main() {
 
         // start imgui set up
 
-        app::setup_imgui( simulation_running );
+        app::gui::setup_imgui( simulation_running );
 
         // end imgui set up
 
         if ( simulation_running ) {
-
-            // start grid buffer setup
-
-            app::setup_grid_buffers( vertices, VAO, VBO );
-
-            // end grid buffer setup
 
             // start boundary setting
 
@@ -138,43 +130,56 @@ int main() {
 
             group.run( [&]() {
 
+                // start grid buffer set up
+
+                app::refresh_grid_buffers( vertices, VBO );
+
+                // end grid buffer set up
+
+                // start property calculation
+            
+                // selected_property = curl
+                if ( std::strcmp( app::gui::properties[ app::gui::selected_property ], "curl" ) == 0 ) {
+                    fs::lbm::calculate_curl_v_tbb( D2Q9_grid_copy.get_data_handle(), property_grid.get_data_handle() );
+                } else {
+                    fs::lbm::calculate_property_v_tbb( D2Q9_grid_copy.get_data_handle(), property_grid.get_data_handle(),
+                                                       app::gui::physical_properties[ app::gui::selected_property ] );    
+                }
+
+                // end property calculation
+
                 // start vertex calculation
-            
-#ifdef GPU
-            
-                fs::lbm::calculate_property_v_tbb( D2Q9_grid_copy.get_data_handle(), property_grid.get_data_handle(), fs::lbm::calculate_u_x );
-            
-                vertices = fs::dpcxx::lbm::grid_to_vertex_data_cv( property_grid, app::opencv_colormaps[ app::selected_colormap ] );
-#else
-                vertices = app::property_grid_to_vertex_data_cv_all_tbb( D2Q9_grid_copy, fs::lbm::property_states, fs::lbm::calculate_u_x, app::opencv_colormaps[ app::selected_colormap ] );
-#endif
+
+                vertices = app::property_to_vertex_data( property_grid.get_data_handle(), 
+                                                         app::gui::opencv_colormaps[ app::gui::selected_colormap ] );
+
             
                 vertices.insert( vertices.end(), barrier_vertices.begin(), barrier_vertices.end() );
             
                 // end vertex calculation
+
+                // start render set up
+
+                GLint vbo_size;
+                glBindBuffer( GL_ARRAY_BUFFER, VBO );
+                glGetBufferParameteriv( GL_ARRAY_BUFFER, GL_BUFFER_SIZE, &vbo_size );
+            
+                // if the VBO is not large enough, reallocate it
+                if ( vertices.size() * sizeof( float ) > vbo_size ) {
+                    glBufferData( GL_ARRAY_BUFFER, vertices.size() * sizeof( float ), vertices.data(), GL_DYNAMIC_DRAW );
+                } else {
+                    glBufferSubData( GL_ARRAY_BUFFER, 0, vertices.size() * sizeof( float ), vertices.data() );
+                }
+
+                glClearColor( 0.0f, 0.0f, 0.0f, 1.0f );
+                glClear( GL_COLOR_BUFFER_BIT );
+
+                // end render set up
             });
 
             group.wait();
 
             // end parallel tasks
-
-            // start render set up
-
-            GLint vbo_size;
-            glBindBuffer( GL_ARRAY_BUFFER, VBO );
-            glGetBufferParameteriv( GL_ARRAY_BUFFER, GL_BUFFER_SIZE, &vbo_size );
-        
-            // if the VBO is not large enough, reallocate it
-            if ( vertices.size() * sizeof( float ) > vbo_size ) {
-                glBufferData( GL_ARRAY_BUFFER, vertices.size() * sizeof( float ), vertices.data(), GL_DYNAMIC_DRAW );
-            } else {
-                glBufferSubData( GL_ARRAY_BUFFER, 0, vertices.size() * sizeof( float ), vertices.data() );
-            }
-
-            glClearColor( 0.0f, 0.0f, 0.0f, 1.0f );
-            glClear( GL_COLOR_BUFFER_BIT );
-
-            // end render set up
 
             // start render
 
