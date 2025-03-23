@@ -34,31 +34,6 @@ namespace fs {
             }
         }
 
-        template<typename Array, typename MDSpan>
-        void initialize_grid_with_perturbation( sim::grid<Array, MDSpan>& gd ) {
-
-            constexpr double initial_density = 0.05;
-
-            constexpr double perturbation_factor = 0.001; 
-            
-            std::random_device rd;  
-            std::mt19937 gen( rd() ); 
-            std::normal_distribution<> dist( 0.0, perturbation_factor ); 
-
-            for ( size_t i = 1; i < gd.get_grid_height() - 1; ++i ) {
-                for ( size_t j = 0; j < gd.get_grid_width(); ++j )
-
-                    for ( size_t q = 0; q < 9; ++q ) {
-
-                        double perturbation = dist( gen );
-
-                        double f_eq = w[q] * ( initial_density + perturbation );
-
-                        gd.set_cell_state( f_eq, i, j, q );
-                    }
-            }
-        }
-
         template<typename DataStorage, typename View>
         void set_boundaries( sim::grid<DataStorage, View>& gd ) {
 
@@ -77,7 +52,6 @@ namespace fs {
                 set_velocity( gd, ydim - 1, x, 0.1, 0.0 );
             }
         }
-
 
     } // lbm
 
