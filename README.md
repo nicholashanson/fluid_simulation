@@ -51,24 +51,25 @@ This may take a while depending on which dependencies are already present on you
 This build won't include GPU acceleration for now.
 
 ### Profiling
-
+<!--
 #### Using TBB for vertex calculation and collide-and-stream
 
 <p align="center">
   <img src="main/profiling_data.png" width="800">
 </p>
+-->
 
-#### Using SYCL for vertex calculation and collide-and-stream
+#### Fork-join parallelism using SYCL for vertex calculation and collide-and-stream
 
 <p align="center">
-  <img src="main/profiling_data_gpu.png" width="800">
+  <img src="main/profiling_data_gpu_abs.png" width="800">
 </p>
 
 * In OpenGL, the CPU offloads rendering to the GPU asynchronously, so calling "render_grid" is negligible.
 * In the case where GPU-offloading is used for compute, each loop takes around 80 milliseconds to execute, which works-out to around 12 FPS and 240 steps per second ( 20 steps per loop ).
 * "render setup" and "imgui render" are both taking significantly longer when GPU-offloading is used, even though these parts of the code are not directly linked to GPU-offloading. iGPU utilisation on my system is also approximately double when the dGPU is used for compute. Also GPU shared-memory usage ramps in a cycle when the dGPU isn't utililised but stays stable when it is. I need to profile the rendering process to try and get some insight into this.
 
-#### Task-level paralellization using TBB
+#### Task-level paralellism using TBB
 
 <p align="center">
   <img src="main/profiling_data_parallel_gpu_abs.png" width="800">
