@@ -451,6 +451,222 @@ namespace app {
     }
 
     template<typename Array, typename MDSpan>
+    std::vector<float> property_grid_to_vertex_data_cv_all_tbb( sim::grid<Array, MDSpan>& gd, const std::vector<double>& property_states,
+                                                                std::function<double( std::span<double> )> calculate_property,
+                                                                int colormap ) {
+
+        // number of vertices per grid square
+        const size_t vertex_n = 6;
+
+        // number of data points per vertex
+        const size_t vertex_data_n = 5;
+
+        const size_t data_n = vertex_n * vertex_data_n;
+
+        double max_property;
+
+        sim::grid<std::vector<double>, fs::property_view> properties( fs::lbm::property_states );
+
+        fs::lbm::calculate_property_v_with_max_tbb( gd.get_data_handle(), properties.get_data_handle(), max_property, calculate_property );
+        
+        const size_t ydim = gd.get_dim( 0 );
+        const size_t xdim = gd.get_dim( 1 );
+
+        std::vector<float> vertices( ydim * xdim * data_n );
+
+        const float cell_size = 2.0f / std::max( ydim, xdim );
+
+        cv::Mat colors( ydim, xdim, CV_64F, ( void* )properties.get_data_handle() );
+
+        double scale = 255.0 / max_property;
+
+        colors.convertTo( colors, CV_8U, scale );
+
+        cv::applyColorMap( colors, colors, colormap );
+
+        tbb::parallel_for(
+            tbb::blocked_range<size_t>( 0, ydim ),
+            [&]( const tbb::blocked_range<size_t>& range ) {
+        
+                for ( size_t y = range.begin(); y < range.end(); ++y ) {
+                    for ( size_t x = 0; x < xdim; ++x ) {
+        
+                        cv::Vec3b color = colors.at<cv::Vec3b>( y, x );
+        
+                        float x_ = -1.0f + x * cell_size;
+                        float y_ = 1.0f - y * cell_size;
+    
+                        float r = color[ 2 ] / 255.0f; 
+                        float g = color[ 1 ] / 255.0f;
+                        float b = color[ 0 ] / 255.0f;
+        
+                        std::array<float, data_n> vertex_data = {
+                            // first triangle
+                            x_, y_, r, g, b, 
+                            x_ + cell_size, y_, r, g, b,
+                            x_, y_ - cell_size, r, g, b,
+
+                            // second triangle
+                            x_ + cell_size, y_, r, g, b,
+                            x_, y_ - cell_size, r, g, b,
+                            x_ + cell_size, y_ - cell_size, r, g, b,
+                        };
+
+                        const size_t starting_index = ( x + y * xdim ) * data_n;
+
+                        std::copy( vertex_data.begin(), vertex_data.end(), vertices.begin() + starting_index );
+                    }
+                }
+            }
+        );
+
+        return vertices;
+    }
+
+    template<typename Array, typename MDSpan>
+    std::vector<float> property_grid_to_vertex_data_cv_all_tbb_neg( sim::grid<Array, MDSpan>& gd, const std::vector<double>& property_states,
+                                                                    std::function<double( std::span<double> )> calculate_property,
+                                                                    int colormap ) {
+
+        // number of vertices per grid square
+        const size_t vertex_n = 6;
+
+        // number of data points per vertex
+        const size_t vertex_data_n = 5;
+
+        const size_t data_n = vertex_n * vertex_data_n;
+
+        double min_property;
+        double max_property;
+
+        sim::grid<std::vector<double>, fs::property_view> properties( fs::lbm::property_states );
+
+        fs::lbm::calculate_property_v_with_min_max_tbb( gd.get_data_handle(), properties.get_data_handle(), min_property, max_property, calculate_property );
+        
+        const size_t ydim = gd.get_dim( 0 );
+        const size_t xdim = gd.get_dim( 1 );
+
+        std::vector<float> vertices( ydim * xdim * data_n );
+
+        const float cell_size = 2.0f / std::max( ydim, xdim );
+
+        cv::Mat colors( ydim, xdim, CV_64F, ( void* )properties.get_data_handle() );
+
+        double scale = 255.0 / ( max_property - min_property );
+
+        colors.convertTo( colors, CV_8U, scale, -min_property * scale );
+
+        cv::applyColorMap( colors, colors, colormap );
+
+        tbb::parallel_for(
+            tbb::blocked_range<size_t>( 0, ydim ),
+            [&]( const tbb::blocked_range<size_t>& range ) {
+        
+                for ( size_t y = range.begin(); y < range.end(); ++y ) {
+                    for ( size_t x = 0; x < xdim; ++x ) {
+        
+                        cv::Vec3b color = colors.at<cv::Vec3b>( y, x );
+        
+                        float x_ = -1.0f + x * cell_size;
+                        float y_ = 1.0f - y * cell_size;
+    
+                        float r = color[ 2 ] / 255.0f; 
+                        float g = color[ 1 ] / 255.0f;
+                        float b = color[ 0 ] / 255.0f;
+        
+                        std::array<float, data_n> vertex_data = {
+                            // first triangle
+                            x_, y_, r, g, b, 
+                            x_ + cell_size, y_, r, g, b,
+                            x_, y_ - cell_size, r, g, b,
+
+                            // second triangle
+                            x_ + cell_size, y_, r, g, b,
+                            x_, y_ - cell_size, r, g, b,
+                            x_ + cell_size, y_ - cell_size, r, g, b,
+                        };
+
+                        const size_t starting_index = ( x + y * xdim ) * data_n;
+
+                        std::copy( vertex_data.begin(), vertex_data.end(), vertices.begin() + starting_index );
+                    }
+                }
+            }
+        );
+
+        return vertices;
+    }
+
+    inline std::vector<float> property_to_vertex_data( double* property_data, int colormap ) {
+
+        // number of vertices per grid square
+        const size_t vertex_n = 6;
+
+        // number of data points per vertex
+        const size_t vertex_data_n = 5;
+
+        const size_t data_n = vertex_n * vertex_data_n;
+
+        const size_t elem_n = fs::settings::ydim * fs::settings::xdim;
+
+        double min_property = *std::min_element( property_data, property_data + elem_n );
+        double max_property = *std::max_element( property_data, property_data + elem_n );
+
+        const size_t ydim = fs::settings::ydim;
+        const size_t xdim = fs::settings::xdim;
+
+        std::vector<float> vertices( ydim * xdim * data_n );
+
+        const float cell_size = 2.0f / std::max( ydim, xdim );
+
+        cv::Mat colors( ydim, xdim, CV_64F, ( void* )property_data );
+
+        double scale = 255.0 / ( max_property - min_property );
+
+        colors.convertTo( colors, CV_8U, scale, -min_property * scale );
+
+        cv::applyColorMap( colors, colors, colormap );
+
+        tbb::parallel_for(
+            tbb::blocked_range<size_t>( 0, ydim ),
+            [&]( const tbb::blocked_range<size_t>& range ) {
+        
+                for ( size_t y = range.begin(); y < range.end(); ++y ) {
+                    for ( size_t x = 0; x < xdim; ++x ) {
+        
+                        cv::Vec3b color = colors.at<cv::Vec3b>( y, x );
+        
+                        float x_ = -1.0f + x * cell_size;
+                        float y_ = 1.0f - y * cell_size;
+    
+                        float r = color[ 2 ] / 255.0f; 
+                        float g = color[ 1 ] / 255.0f;
+                        float b = color[ 0 ] / 255.0f;
+        
+                        std::array<float, data_n> vertex_data = {
+                            // first triangle
+                            x_, y_, r, g, b, 
+                            x_ + cell_size, y_, r, g, b,
+                            x_, y_ - cell_size, r, g, b,
+
+                            // second triangle
+                            x_ + cell_size, y_, r, g, b,
+                            x_, y_ - cell_size, r, g, b,
+                            x_ + cell_size, y_ - cell_size, r, g, b,
+                        };
+
+                        const size_t starting_index = ( x + y * xdim ) * data_n;
+
+                        std::copy( vertex_data.begin(), vertex_data.end(), vertices.begin() + starting_index );
+                    }
+                }
+            }
+        );
+
+        return vertices;
+    }
+
+    template<typename Array, typename MDSpan>
     std::vector<float> curl_to_vertex_data_cv( const sim::grid<Array, MDSpan>& gd, const std::vector<double>& property_states ) {
 
         std::vector<float> vertices;
