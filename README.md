@@ -106,7 +106,7 @@ while( ... ) {
 }
 ```
 
-To ensure there are no data-races, we copy the grid at the beginning of the loop. With modern hardware and compiler optimizations, copying contiguous memory like a vector is extremely fast( around 1 millisecond for 128 KB ), which is tiny in comparision to the performance gains from task-level parallelization. Because vertex calculation and collide-and-stream are now concurrent, using the CPU for one task and the dGPU for the other usually ensures the best uitilisation of resources.
+To ensure there are no data-races, we copy the grid at the beginning of the loop. With modern hardware and compiler optimizations, copying contiguous memory like a vector is extremely fast ( around 1 millisecond for 128 KB ), which is tiny in comparision to the performance gains from task-level parallelization. Because vertex calculation and collide-and-stream are now concurrent, using the CPU for one task and the dGPU for the other usually ensures the best uitilisation of resources.
 
 Here are the results for using only the CPU for both concurrent operations:
 
