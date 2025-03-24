@@ -91,17 +91,22 @@ while( ... ) {
 
     grid_copy = grid;
 
+    // calculate the next stage in the simulation at the same time as ...
     group.run( [&]() {
 
       collide_and_stream( grid );
     });
 
+    // ... rendering the current state before ...
     group.run( [&]() {
 
       vertices = calculate_vertex_data( grid_copy );
 
       render_grid( vertices );
     });
+
+    // ... synchronising for the next iteration
+    group.wait();
   }
 }
 ```
