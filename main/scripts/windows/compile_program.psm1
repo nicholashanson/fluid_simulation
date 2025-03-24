@@ -3,7 +3,9 @@ Import-Module $compileVars -Force
 
 function Compile-Program {
     param(
-        [switch]$GPU
+        [switch]$GPU,
+        [switch]$PAR,
+        [switch]$ThreeD
     )
 
     Write-Host "Compiling program..."
@@ -15,7 +17,6 @@ function Compile-Program {
     }
 
     $files = @(
-        "main.cpp",
         "gl.cpp",
         "../src/lbm/common.cpp",
         "../src/grid_renderer.cpp",
@@ -23,6 +24,14 @@ function Compile-Program {
         "../src/glad.c",
         "../src/gui.cpp"
     )
+
+    if ($PAR) {
+        $files += "main_parallel.cpp"
+    } elseif ($ThreeD) {
+        $files += "main_3D.cpp"
+    } else {
+        $files += "main.cpp"
+    }
 
     $files += $imGuiSrc
 
@@ -33,8 +42,13 @@ function Compile-Program {
         "../imgui-master/backends"
     )
 
-    # Output file name
-    $outputFile = "fs.exe"
+    if ($GPU) {
+        $outputFile = "fs_gpu.exe"
+    } elseif ($ThreeD) {
+        $outputFile = "fs_3D.exe"
+    } else {
+        $outputFile = "fs.exe"
+    }
 
     # Get the OpenCV include path using pkg-config
     $opencvIncludePath = $(pkg-config --cflags-only-I opencv4)

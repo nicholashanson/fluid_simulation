@@ -33,8 +33,7 @@ function Build-WithMinGW {
 function Setup-Googletest {
     param (
         [string]$scriptRoot,
-        [string]$url = "https://github.com/google/googletest/archive/refs/heads/main.zip",
-        [string]$destination = "../include/googletest-main.zip"
+        [string]$url = "https://github.com/google/googletest/archive/refs/heads/main.zip"
     )
 
     Write-Host "Received script root in function: $scriptRoot"
