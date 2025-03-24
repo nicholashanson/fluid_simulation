@@ -1,6 +1,8 @@
 param(
     [string]$Action,
-    [switch]$GPU
+    [switch]$GPU,
+    [switch]$PAR,
+    [switch]$ThreeD
 )
 
 Import-Module ".\scripts\windows\compile_program.psm1" -Force
@@ -1087,8 +1089,6 @@ Install-VisualStudio -Action $Action
 # Install-Handle
 Install-DPCPP -Action $Action
 
-
-
 Write-Host "Current script root: $PSScriptRoot"
 $currentRoot = $PSScriptRoot
 Download-Googletest
@@ -1096,11 +1096,13 @@ Setup-GoogleTest -scriptRoot $currentRoot
 
 if ($GPU) {
     Setup-OpenCV -scriptRoot $currentRoot
-    # Build-DLL
+    Build-DLL
     # Compile-And-Run-DPCPP-Tests
-    # Compile-And-Run-Tests -GPU 
-    Compile-Program -GPU 
+    Compile-And-Run-Tests -GPU 
+    Compile-Program -GPU -PAR
+} elseif ($ThreeD) {
+    Compile-Program -ThreeD
 } else {
     Compile-And-Run-Tests
-    Compile-Program
+    Compile-Program -PAR
 }
