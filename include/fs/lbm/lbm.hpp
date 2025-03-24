@@ -12,6 +12,7 @@
 
 #ifdef GPU
 #include <fs/lbm/collide_and_stream_dpcxx_interface.hpp>
+#include <fs/lbm/grid_to_vertex_data_dpcxx_interface.hpp>
 #endif // GPU
 
 #include <fs/lbm/initialize_grid.hpp>
