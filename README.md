@@ -62,7 +62,7 @@ This build won't include GPU acceleration for now.
 
 ### Profiling
 
-#### Using TBB for vertex calculation and collide-and-stream
+#### Fork-join parallelism using TBB for vertex calculation and collide-and-stream
 
 <p align="center">
   <img src="main/profiling_data_abs.png" width="800">
@@ -79,6 +79,32 @@ This build won't include GPU acceleration for now.
 * "render setup" and "imgui render" are both taking significantly longer when GPU-offloading is used, even though these parts of the code are not directly linked to GPU-offloading. iGPU utilisation on my system is also approximately double when the dGPU is used for compute. Also GPU shared-memory usage ramps in a cycle when the dGPU isn't utililised but stays stable when it is. I need to profile the rendering process to try and get some insight into this.
 
 #### Task-level paralellism using TBB
+
+We can use the "task_group" class in TBB to manage task-level parallelism. Vertex calculation and collide-and-stream are the compute-heavy parts of the loop. Instead of first performing collide-and-stream and then using the output to compute the vertex data, we can instead stagger the two operations: we calculate the vertex data and render the current state and at the same time calculate the next stage of the simulation:
+
+```cpp
+tbb::task_group group;
+
+while( ... ) {
+
+  if ( simulation_running ) {
+
+    grid_copy = grid;
+
+    group.run( [&]() {
+
+      collide-and-stream( grid );
+    });
+
+    group.run( [&]() {
+
+      vertices = calculate-vertex-data( grid_copy );
+
+      render_grid( vertices );
+    });
+  }
+}
+```
 
 <p align="center">
   <img src="main/profiling_data_parallel_abs.png" width="800">
