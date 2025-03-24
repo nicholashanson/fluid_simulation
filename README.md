@@ -60,7 +60,7 @@ This may take a while depending on which dependencies are already present on you
 ```
 This build won't include GPU acceleration for now.
 
-### Profiling
+### Profiling and Optimizations
 
 #### Fork-join parallelism using TBB for vertex calculation and collide-and-stream
 
