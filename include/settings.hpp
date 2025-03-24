@@ -9,6 +9,7 @@ namespace fs {
 
         constexpr size_t xdim = 32 * 20;
         constexpr size_t ydim = 32 * 8;
+        constexpr size_t zdim = ydim;
 
         constexpr size_t pixels_per_cell = 2;
 
@@ -17,7 +18,7 @@ namespace fs {
 
         constexpr size_t vertex_n = 6;
         constexpr size_t vertex_data_n = 5;
-
+        
     }
 
 }
