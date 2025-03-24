@@ -106,9 +106,9 @@ while( ... ) {
 }
 ```
 
-Because vertex calculation and collide-and-stream are now concurrent, using the CPU for one and the DGPU for the other usually ensures the best uitilisation of resources.
+Because vertex calculation and collide-and-stream are now concurrent, using the CPU for one and the dGPU for the other usually ensures the best uitilisation of resources.
 
-Here are the resulis for using only the CPU for compute:
+Here are the resulis for using only the CPU for both concurrent operatiosn:
 
 <p align="center">
   <img src="main/profiling_data_parallel_abs.png" width="800">
