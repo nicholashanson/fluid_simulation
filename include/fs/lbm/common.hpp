@@ -11,6 +11,12 @@
 #include <iostream>
 
 #include <settings.hpp>
+#include <fs/global_aliases.hpp>
+
+#ifndef DPCPP_COMPILER
+#include <opencv2/opencv.hpp>
+#include <opencv2/imgcodecs.hpp>
+#endif
 
 #ifdef DPCPP_COMPILER
 #include <sycl/sycl.hpp>
@@ -70,6 +76,11 @@ namespace fs {
             1.0 / 36.0,     // [ 7 ] down-left ( inter-cardinal )
             1.0 / 36.0      // [ 8 ] down-right ( inter-cardinal )
         };
+
+        /*
+            transformation matrix for D2Q9 MRT
+        */
+        extern std::array<T, 9 * 9> M;
 
 #ifndef DPCPP_COMPILER
         inline std::set<std::pair<size_t, size_t>> get_obstacle_coords() {
@@ -253,6 +264,78 @@ namespace fs {
             }
 
             return coords;
+        }
+
+        inline void fill_gaps( std::set<std::pair<size_t, size_t>>& coords ) {
+
+            cv::Mat img = cv::Mat::zeros( fs::settings::ydim, fs::settings::xdim, CV_8UC1 );
+
+            for ( const auto& coord : coords ) {
+                
+                img.at<uchar>( coord.first, coord.second ) = 255;
+            }
+
+#ifndef NDEBUG
+            cv::imwrite( "before_fill_gaps.png", img );
+#endif
+
+            const int kernel_size = 3;
+
+            cv::Mat kernel = cv::getStructuringElement( cv::MORPH_ELLIPSE, cv::Size( kernel_size, kernel_size ) );
+
+            cv::dilate( img, img, kernel );
+
+            cv::morphologyEx( img, img, cv::MORPH_CLOSE, kernel );
+
+            coords.clear();
+
+            for ( size_t y = 0; y < img.rows; ++y ) {
+                for ( size_t x = 0; x < img.cols; ++x ) {
+
+                    if ( img.at<uchar>( y, x ) > 0 ) {
+
+                        coords.insert( { y, x } );
+                    }
+                }
+            }
+
+#ifndef NDEBUG
+            cv::imwrite( "after_fill_gaps.png", img );
+#endif
+        }
+
+        inline void complete_contour( std::set<std::pair<size_t, size_t>>& coords ) {
+
+            cv::Mat img = cv::Mat::zeros( fs::settings::ydim, fs::settings::xdim, CV_8UC1 );
+
+            for ( const auto& coord : coords ) {
+                
+                img.at<uchar>( coord.first, coord.second ) = 255;
+            }
+
+            std::vector<std::vector<cv::Point>> contours;
+            cv::findContours( img, contours, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE );
+        
+            cv::Mat filled = cv::Mat::zeros( img.size(), CV_8UC1 );
+            cv::drawContours( filled, contours, -1, cv::Scalar(255), cv::FILLED );
+
+            img = filled;
+
+            coords.clear();
+
+            for ( size_t y = 0; y < img.rows; ++y ) {
+                for ( size_t x = 0; x < img.cols; ++x ) {
+
+                    if ( img.at<uchar>( y, x ) > 0 ) {
+
+                        coords.insert( { y, x } );
+                    }
+                }
+            }
+
+#ifndef NDEBUG
+            cv::imwrite( "after_complete_contour.png", img );
+#endif
         }
 
         inline std::set<std::pair<size_t, size_t>> obstacle_coords;

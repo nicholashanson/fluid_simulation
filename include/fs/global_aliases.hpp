@@ -12,6 +12,8 @@ namespace fs {
 
     namespace lbm {
 
+        using T = double;
+
         using D2Q9_view = Kokkos::mdspan<double, Kokkos::extents<size_t, settings::ydim, settings::xdim, 9>>;
 
     } // lbm

@@ -1,9 +1,25 @@
 #include <fs/lbm/common.hpp>
+#include <fs/global_aliases.hpp>
 #include <settings.hpp>
 
 namespace fs {
 
     namespace lbm {
+
+        /*
+            transformation matrix for D2Q9 MRT
+        */
+        std::array<T, 9 * 9> M = {
+             1,  1,  1,  1,  1,  1,  1,  1,  1,
+            -4, -1, -1, -1, -1,  2,  2,  2,  2,
+             4, -2, -2, -2, -2,  1,  1,  1,  1, 
+             0,  1, -1,  0,  0,  1, -1, -1,  1,
+             0, -2,  2,  0,  0,  1, -1, -1,  1,
+             0,  0,  0,  1, -1,  1,  1, -1, -1,
+             0,  0,  0, -2,  2,  1,  1, -1, -1,
+             0,  1,  1, -1, -1,  0,  0,  0,  0,
+             0,  0,  0,  0,  0,  1, -1,  1, -1, 
+        };
 
         double calculate_f_eq( size_t q, double rho, double u_x, double u_y ) {
 
