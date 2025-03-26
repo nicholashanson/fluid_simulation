@@ -60,9 +60,9 @@ This may take a while depending on which dependencies are already present on you
 ```
 This build won't include GPU acceleration for now.
 
-### Profiling
+### Profiling and Optimizations
 
-#### Using TBB for vertex calculation and collide-and-stream
+#### Fork-join parallelism using TBB for vertex calculation and collide-and-stream
 
 <p align="center">
   <img src="main/profiling_data_abs.png" width="800">
@@ -80,9 +80,46 @@ This build won't include GPU acceleration for now.
 
 #### Task-level paralellism using TBB
 
+We can use the "task_group" class in TBB to manage task-level parallelism. Vertex calculation and collide-and-stream are the compute-heavy parts of the loop. Instead of first performing collide-and-stream and then using the output to compute the vertex data, we can instead stagger the two operations: we calculate the vertex data and render the current state and at the same time calculate the next stage of the simulation:
+
+```cpp
+tbb::task_group group;
+
+while( ... ) {
+
+  if ( simulation_running ) {
+
+    grid_copy = grid;
+
+    // calculate the next stage in the simulation at the same time as ...
+    group.run( [&]() {
+
+      collide_and_stream( grid );
+    });
+
+    // ... rendering the current state before ...
+    group.run( [&]() {
+
+      vertices = calculate_vertex_data( grid_copy );
+
+      render_grid( vertices );
+    });
+
+    // ... synchronising for the next iteration
+    group.wait();
+  }
+}
+```
+
+To ensure there are no data-races, we copy the grid at the beginning of the loop. With modern hardware and compiler optimizations, copying contiguous memory like a vector is extremely fast ( around 1 millisecond for 128 KB ), which is tiny in comparision to the performance gains from task-level parallelization. Because vertex calculation and collide-and-stream are now concurrent, using the CPU for one task and the dGPU for the other usually ensures the best uitilisation of resources.
+
+Here are the results for using only the CPU for both concurrent operations:
+
 <p align="center">
   <img src="main/profiling_data_parallel_abs.png" width="800">
 </p>
+
+Here are the results for using the dGPU for collide-and-stream and the CPU for vertex calculation:
 
 <p align="center">
   <img src="main/profiling_data_parallel_gpu_abs.png" width="800">
