@@ -624,6 +624,82 @@ namespace fs {
                 sycl::free( d_D2Q9_n, gpu_queue );
                 sycl::free( d_obstacle, gpu_queue );
             }
+
+            void collide_MRT( sycl::queue& gpu_queue, fs::lbm::T* d_D2Q9, const size_t vec_len, fs::lbm::T omega ) {
+    
+                gpu_queue.submit( [&]( sycl::handler& h ) {
+
+                    sycl::range<2> range_9x9;
+    
+                    // transformation matrix
+                    sycl::local_accessor<fs::lbm::T, 2> local_M( range_9x9, h );
+    
+                    // transformation matrix inverse
+                    sycl::local_accessor<fs::lbm::T, 2> local_M_inv( range_9x9, h );
+    
+                    sycl::local_accessor<fs::lbm::T, 1> local_m( 9, h );
+                    sycl::local_accessor<fs::lbm::T, 1> local_f( 9, h );
+    
+                    h.parallel_for( sycl::nd_range<1>( { vec_len }, { 32 } ), [=]( sycl::nd_item<1> item ) {
+                        
+                        const size_t i = item.get_group().get_group_id();
+                        const size_t k = item.get_local_id();
+    
+                        const size_t d_D2Q9_offset = ( i * 32 + k ) * 9;
+                        const size_t local_f_offset = k * 9;
+                        const size_t local_m_offset = local_f_offset;
+    
+                        /*
+                            first thead in the group copies transformation matrix from host memory to 
+                            local memory.
+                        */
+                        if ( k == 0 ) {
+    
+                            for ( size_t i = 0; i < 9; ++i ) {
+                                for ( size_t j = 0; j < 9; ++j ) {
+    
+                                    local_M[ j, i ] = fs::lbm::M[ i + j * 9 ];
+                                    local_M_inv[ j, i ] = fs::lbm::M_inv[ i + j * 9 ];
+                                }
+                            } 
+                        }
+    
+                    }));
+                });
+    
+                gpu_queue.wait();
+            }
+
+            void collide_and_stream_MRT( fs::lbm::T* D2Q9, unsigned char* obstacle, const size_t steps ) {
+
+                const fs::lbm::T viscosity = 0.005;
+            
+                const fs::lbm::T omega = 1 / ( 3 * viscosity + 0.5 );
+    
+                const size_t ydim = fs::settings::ydim;
+                const size_t xdim = fs::settings::xdim;
+                const size_t vec_len = ydim * xdim;
+    
+                std::optional<sycl::device> gpu = get_gpu();
+            
+                sycl::queue gpu_queue( *gpu );
+            
+                fs::lbm::T* d_D2Q9 = sycl::malloc_device<fs::lbm::T>( vec_len * 9, gpu_queue );
+                fs::lbm::T* d_D2Q9_n = sycl::malloc_device<fs::lbm::T>( vec_len * 9, gpu_queue ); 
+    
+                unsigned char* d_obstacle = sycl::malloc_device<unsigned char>( vec_len, gpu_queue );
+    
+                gpu_queue.memcpy( d_obstacle, obstacle, vec_len * sizeof( unsigned char ) );
+                gpu_queue.memcpy( d_D2Q9, D2Q9, vec_len * 9 * sizeof( fs::lbm::T ) );
+                gpu_queue.wait();
+                gpu_queue.memcpy( d_D2Q9_n, d_D2Q9, vec_len * 9 * sizeof( fs::lbm::T ) );
+                gpu_queue.wait();
+            
+                for ( size_t z = 0; z < steps; ++z ) {
+            
+                    collide_MRT( gpu_queue, d_D2Q9, vec_len, omega );
+                }
+            }
         
         } // lbm
 

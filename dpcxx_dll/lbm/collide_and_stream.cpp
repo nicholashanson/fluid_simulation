@@ -15,6 +15,12 @@ namespace fs {
                     return init_cs( D2Q9, obstacle, ydim, xdim, viscosity );
                 }
 
+                void stateful_collide_and_stream_c( void* cs_state, const size_t steps ) {
+
+                    stateful_collide_and_stream( cs_state, steps );
+                }
+
+
                 void terminate_cs_c( void* state ) {
 
                     terminate_cs( state );
@@ -29,6 +35,11 @@ namespace fs {
 
                     fs::lbm::collide_and_stream_tbb( D2Q9, obstacle, steps );
                 } 
+
+                void collide_and_stream_MRT_c( T* D2Q9, unsigned char* obstacle, const size_t steps ) {
+
+                    collide_and_stream_MRT( D2Q9, obstacle, steps );
+                }
 
                 char** get_available_devices( int* num_devices ) {
 
