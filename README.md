@@ -24,6 +24,7 @@
 ### Feautures
 
 * Visualization of multiple properties including speed, density, and curl
+* 4-digit series NACA airfoils with adjustable angle-of-attack.
 * Cross-platform: Linux and Windows
 * Rendering using OpenGL
 * CPU multi-threading using TBB
