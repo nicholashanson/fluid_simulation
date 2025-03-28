@@ -14,7 +14,6 @@ void print_matrix( const std::array<T, Dim * Dim>& matrix ) {
     }
 }
 
-
 // multiply two square matrices
 template<typename T, size_t Dim>
 std::array<T, Dim * Dim> matrix_mult( 
