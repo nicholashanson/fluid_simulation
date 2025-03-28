@@ -65,7 +65,7 @@ TEST( LBMTests, MInverse ) {
 
     auto result_T = matrix_mult<double, 2>( T, T_inv );
 
-    EXPECT_TRUE( ( is_identity_matrix<double, 2>( result_T ) ) ) << "T * T_inv is not identity!";
+    EXPECT_TRUE( ( is_identity_matrix<double, 2>( result_T ) ) ) << "T * T_inv is not identity";
 
     auto result_M = matrix_mult<fs::lbm::T, 9>( fs::lbm::M, fs::lbm::M_inv );
 
