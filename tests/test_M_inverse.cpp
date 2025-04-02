@@ -2,13 +2,15 @@
 
 #include <array>
 
+#include <iomanip>
+
 #include <fs/fs.hpp>
 
-template <typename T, size_t Dim>
+template<typename T, size_t Dim>
 void print_matrix( const std::array<T, Dim * Dim>& matrix ) {
     for ( size_t i = 0; i < Dim; ++i ) {
         for ( size_t j = 0; j < Dim; ++j ) {
-            std::cout << matrix[ j + i * Dim ] << " ";
+            std::cout << std::setw( 16 ) << matrix[ j + i * Dim ] << " ";
         }
         std::cout << std::endl;
     }
@@ -21,7 +23,7 @@ std::array<T, Dim * Dim> matrix_mult(
     const std::array<T, Dim * Dim>& B
 ) {
 
-    std::array<T, Dim * Dim> result;
+    std::array<T, Dim * Dim> result = { ( T )0 };
 
     for ( size_t i = 0; i < Dim; ++i ) {
         for ( size_t j = 0; j < Dim; ++j ) {
@@ -67,6 +69,6 @@ TEST( LBMTests, MInverse ) {
     EXPECT_TRUE( ( is_identity_matrix<double, 2>( result_T ) ) ) << "T * T_inv is not identity";
 
     auto result_M = matrix_mult<fs::lbm::T, 9>( fs::lbm::M, fs::lbm::M_inv );
-
+    
     EXPECT_TRUE( ( is_identity_matrix<fs::lbm::T, 9>( result_M ) ) ) << "M * M_inv is not identity";
 } 
