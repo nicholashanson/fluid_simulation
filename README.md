@@ -86,7 +86,7 @@ We can use the "task_group" class in TBB to manage task-level parallelism. Verte
 ```cpp
 tbb::task_group group;
 
-while( ... ) {
+while ( ... ) {
 
   if ( simulation_running ) {
 
