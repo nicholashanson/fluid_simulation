@@ -126,13 +126,13 @@ namespace app {
         
         float step = 0.5f;
 
-        float x_f = static_cast<float>( fs::settings::xdim );
-        float y_f = static_cast<float>( fs::settings::ydim );
-        float z_f = static_cast<float>( fs::settings::zdim );
+        float xdim = static_cast<float>( fs::settings::xdim );
+        float ydim = static_cast<float>( fs::settings::ydim );
+        float zdim = static_cast<float>( fs::settings::zdim );
 
-        float x_start = -( x_f / 2.0 ) * step;
-        float y_start = -( y_f / 2.0 ) * step;
-        float z_start = -( z_f / 2.0 ) * step;
+        float x_start = -( xdim / 2.0 ) * step;
+        float y_start = -( ydim / 2.0 ) * step;
+        float z_start = -( zdim / 2.0 ) * step;
 
         for ( size_t x = 0; x < fs::settings::xdim; ++x ) {
             for ( size_t y = 0; y < fs::settings::ydim; ++y ) {
@@ -140,7 +140,7 @@ namespace app {
                 vertices.insert( vertices.end(), {
                     x_start + static_cast<float>( x ) * step, y_start + static_cast<float>( y ) * step, z_start,
                     0.5f, 0.5f, 0.5f,
-                    x_start + static_cast<float>( x ) * step, y_start + static_cast<float>( y ) * step, z_start + z_f * step,
+                    x_start + static_cast<float>( x ) * step, y_start + static_cast<float>( y ) * step, z_start + zdim * step,
                     0.5f, 0.5f, 0.5f,
                 });
             }
@@ -152,7 +152,7 @@ namespace app {
                 vertices.insert( vertices.end(), {
                     x_start + static_cast<float>( x ) * step, y_start, z_start + static_cast<float>( z ) * step,
                     0.5f, 0.5f, 0.5f,
-                    x_start + static_cast<float>( x ) * step, y_start + y_f * step, z_start + static_cast<float>( z ) * step,
+                    x_start + static_cast<float>( x ) * step, y_start + ydim * step, z_start + static_cast<float>( z ) * step,
                     0.5f, 0.5f, 0.5f,
                 });
             }
@@ -164,7 +164,7 @@ namespace app {
                 vertices.insert( vertices.end(), {
                     x_start, y_start + static_cast<float>( y ) * step, z_start + static_cast<float>( z ) * step,
                     0.5f, 0.5f, 0.5f,
-                    x_start + x_f * step, y_start + static_cast<float>( y ) * step, z_start + static_cast<float>( z ) * step,
+                    x_start + xdim * step, y_start + static_cast<float>( y ) * step, z_start + static_cast<float>( z ) * step,
                     0.5f, 0.5f, 0.5f,
                 });
             }
@@ -177,13 +177,13 @@ namespace app {
 
         float step = 0.5f;
 
-        float x_f = static_cast<float>( fs::settings::xdim );
-        float y_f = static_cast<float>( fs::settings::ydim );
-        float z_f = static_cast<float>( fs::settings::zdim );
+        float xdim_f = static_cast<float>( fs::settings::xdim );
+        float ydim_f = static_cast<float>( fs::settings::ydim );
+        float zdim_f = static_cast<float>( fs::settings::zdim );
 
-        float x_start = -( x_f / 2.0 ) * step;
-        float y_start = -( y_f / 2.0 ) * step;
-        float z_start = -( z_f / 2.0 ) * step;
+        float x_start = -( xdim_f / 2.0 ) * step;
+        float y_start = -( ydim_f / 2.0 ) * step;
+        float z_start = -( zdim_f / 2.0 ) * step;
 
         float x_end = -x_start;
         float y_end = -y_start;
@@ -225,7 +225,6 @@ namespace app {
 
               x_end,   y_end,  100.0f,
                0.0f,    0.0f,    1.0f,
-
         });
 
         return boundaries;
@@ -253,7 +252,6 @@ namespace app {
 
                0.0f,    0.0f,  100.0f,
                0.0f,    0.0f,    1.0f,
-
         });
 
         return axes;
