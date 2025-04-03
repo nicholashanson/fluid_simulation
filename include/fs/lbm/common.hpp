@@ -80,7 +80,12 @@ namespace fs {
         /*
             transformation matrix for D2Q9 MRT
         */
-        extern std::array<T, 9 * 9> M;
+        extern const std::array<T, 9 * 9> M;
+
+        /*
+            inverse of transformation matrix for D2Q9 MRT
+        */
+        extern const std::array<T, 9 * 9> M_inv;
 
 #ifndef DPCPP_COMPILER
         inline std::set<std::pair<size_t, size_t>> get_obstacle_coords() {
@@ -344,10 +349,10 @@ namespace fs {
 #endif
 
         // zero-initialized vector used to initialize D2Q9 grids
-        inline const std::vector<double> D2Q9_states( fs::settings::ydim * fs::settings::xdim * 9, 0.0 );
+        inline const std::vector<T> D2Q9_states( fs::settings::ydim * fs::settings::xdim * 9, ( T )0 );
 
         // zero-initialized vector used to initialize property grids
-        inline const std::vector<double> property_states( fs::settings::ydim * fs::settings::xdim, 0.0 );
+        inline const std::vector<T> property_states( fs::settings::ydim * fs::settings::xdim, ( T )0 );
 
 #ifdef DPCPP_COMPILER
 
@@ -355,12 +360,12 @@ namespace fs {
         constexpr double c_s = 0.57735;
 
         extern "C" {
-            SYCL_EXTERNAL double calculate_f_eq( size_t q, double rho, double u_x, double u_y );
+            SYCL_EXTERNAL T calculate_f_eq( const size_t q, const T rho, const T u_x, const T u_y );
         }
 #else
         constexpr double c_s = 1 / std::sqrt( 3 );
 
-        double calculate_f_eq( size_t q, double rho, double u_x, double u_y );
+        T calculate_f_eq( const size_t q, const T rho, const T u_x, const T u_y );
 #endif
 
         /*
