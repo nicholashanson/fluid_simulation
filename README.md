@@ -128,7 +128,7 @@ Here are the results for using the dGPU for collide-and-stream and the CPU for v
 
 #### Maintaining state on the GPU
 
-In the previous implementation, collide-and-stream on the GPU is essentially stateless: each time collide-and-stream is called, data is copied to the device, processed, and then copied back again. Memory on the GPU is allocated and de-allocated inside a single call. This is inefficent, because copying data from the host to the GPU is slow. This isn't necessary in our simulation, because the data doesn't change between calls to collide-and-stream, except when the boundaries are reset. If we can move boundary-resetting to the GPU side, then we can leave the data on the GPU between calls, removing the need to allocated, copy to, and de-allocate the memory each time.
+In the previous implementation, collide-and-stream on the GPU is essentially stateless: each time collide-and-stream is called, data is copied to the device, processed, and then copied back again. Memory on the GPU is allocated and de-allocated inside a single call. This is inefficent, because copying data from the host to the GPU is slow. This isn't necessary in our simulation, because the data doesn't change between calls to collide-and-stream, except when the boundaries are reset. If we can move boundary-resetting to the GPU side, then we can leave the data on the GPU between calls, removing the need to allocate, copy to, and de-allocate the memory each time.
 
 One method of doing this is to have a handle to the GPU state that we keep on the host side:
 
