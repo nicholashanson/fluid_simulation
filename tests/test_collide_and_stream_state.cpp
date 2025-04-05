@@ -15,7 +15,9 @@
 
 const double epsilon_ = 1e-6; 
 
-bool approx_equal_cells_( const size_t y, const size_t x, const std::array<double, 9>& stateless, const std::array<double, 9>& stateful ) {
+bool approx_equal_cells_( const size_t y, const size_t x, 
+                          const std::array<double, 9>& stateless, 
+                          const std::array<double, 9>& stateful ) {
 
     bool approx_equal_ = true;
 
@@ -38,7 +40,8 @@ bool approx_equal_cells_( const size_t y, const size_t x, const std::array<doubl
     return approx_equal_;
 }
 
-bool approx_equal_arrays( const std::vector<fs::lbm::T>& arr_1, const std::vector<fs::lbm::T>& arr_2 ) {
+bool approx_equal_arrays( const std::vector<fs::lbm::T>& arr_1, 
+                          const std::vector<fs::lbm::T>& arr_2 ) {
     
     if ( arr_1.size() != arr_2.size() ) {
         
@@ -66,7 +69,8 @@ TEST( LBMTests, CollideAndStreamState ) {
 
     fs::lbm::initialize_grid( lbm_grid );
 
-    std::vector<fs::lbm::T> expected_state( lbm_grid.get_data_handle(), lbm_grid.get_data_handle() + ydim * xdim * 9 );
+    std::vector<fs::lbm::T> expected_state( lbm_grid.get_data_handle(), 
+                                            lbm_grid.get_data_handle() + ydim * xdim * 9 );
 
     unsigned char barrier[ fs::settings::ydim * fs::settings::xdim ] = { 0 };
 
@@ -74,7 +78,8 @@ TEST( LBMTests, CollideAndStreamState ) {
 
     double viscosity = 0.005;
 
-    auto state_ = ( fs::dpcxx::lbm::cs_state* )fs::dpcxx::lbm::init_cs( lbm_grid.get_data_handle(), barrier, fs::settings::ydim, fs::settings::xdim, viscosity );
+    auto state_ = ( fs::dpcxx::lbm::cs_state* )fs::dpcxx::lbm::init_cs( lbm_grid.get_data_handle(), 
+                                                                        barrier, ydim, xdim, viscosity );
 
     ASSERT_NE( state_, nullptr ) << "Initialization failed: 'state' is nullptr.";
 
@@ -125,8 +130,10 @@ TEST( LBMTests, CollideAndStreamStateSB ) {
 
     fs::lbm::T viscosity = 0.005;
 
-    auto state_0 = ( fs::dpcxx::lbm::cs_state* )fs::dpcxx::lbm::init_cs( lbm_grid_0.get_data_handle(), barrier, fs::settings::ydim, fs::settings::xdim, viscosity );
-    auto state_1 = ( fs::dpcxx::lbm::cs_state* )fs::dpcxx::lbm::init_cs( lbm_grid_1.get_data_handle(), barrier, fs::settings::ydim, fs::settings::xdim, viscosity );
+    auto state_0 = ( fs::dpcxx::lbm::cs_state* )fs::dpcxx::lbm::init_cs( lbm_grid_0.get_data_handle(), 
+                                                                         barrier, ydim, xdim, viscosity );
+    auto state_1 = ( fs::dpcxx::lbm::cs_state* )fs::dpcxx::lbm::init_cs( lbm_grid_1.get_data_handle(), 
+                                                                         barrier, ydim, xdim, viscosity );
 
     fs::dpcxx::lbm::set_grid_boundaries( ( void* )state_0 );
 
