@@ -139,7 +139,7 @@ struct cs_state {
     T* D2Q9;                       // handle to the grid data on the host side
     T* d_D2Q9;                     // data to be processed ( device side )
     T* d_D2Q9_n;                   // final result of processing ( device side )
-    unsigned char* d_obstacle;     // obatacle mask ( device side )
+    unsigned char* d_obstacle;     // obstacle mask ( device side )
     size_t ydim;                   // y dimension of grid
     size_t xdim;                   // x dimension of grid
     size_t vec_len;                // ydim * xdim ( total number of cells )
