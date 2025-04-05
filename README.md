@@ -126,3 +126,30 @@ Here are the results for using the dGPU for collide-and-stream and the CPU for v
   <img src="main/profiling_data_parallel_gpu_abs.png" width="800">
 </p>
 
+#### Maintaining state on the GPU
+
+In the previous implementation, collide-and-stream on the GPU is essentially stateless: each time collide-and-stream is called, data is copied to the device, processed, and then copied back again. Memory on the GPU is allocated and de-allocated inside a single call. This is inefficent, because copying data from the host to the GPU is slow. This isn't necessary in our simulation, because the data doesn't change between calls to collide-and-stream, except when the boundaries are reset. If we can move boundary-resetting to the GPU side, then we can leave the data on the GPU between calls, removing the need to allocated, copy to, and de-allocate the memory each time.
+
+One method of doing this is to have a handle to the GPU state that we keep on the host side:
+
+```cpp
+struct cs_state {
+
+    sycl::queue* gpu_queue;
+    T* D2Q9;
+    T* d_D2Q9;
+    T* d_D2Q9_n;
+    unsigned char * d_obstacle;
+    size_t ydim;
+    size_t xdim;
+    size_t vec_len;
+    T omega;
+};
+```
+Now we can pass the handle to each call to collide-and-stream and continue processing the data in-place.
+
+<p align="center">
+  <img src="main/profiling_data_parallel_state_abs.png" width="800">
+</p>
+
+Although overall execution time hasn't decreased significantly, whereas collide-and-stream before was the bottle-neck, vertex data calculation has now become the bottleneck. If vertex data calculation can be sped-up, overall execution time will decrease.
