@@ -139,7 +139,7 @@ struct cs_state {
     T* D2Q9;
     T* d_D2Q9;
     T* d_D2Q9_n;
-    unsigned char * d_obstacle;
+    unsigned char* d_obstacle;
     size_t ydim;
     size_t xdim;
     size_t vec_len;
