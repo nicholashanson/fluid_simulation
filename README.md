@@ -135,15 +135,15 @@ One method of doing this is to have a handle to the GPU state that we keep on th
 ```cpp
 struct cs_state {
 
-    sycl::queue* gpu_queue;
-    T* D2Q9;
-    T* d_D2Q9;
-    T* d_D2Q9_n;
-    unsigned char* d_obstacle;
-    size_t ydim;
-    size_t xdim;
-    size_t vec_len;
-    T omega;
+    sycl::queue* gpu_queue;        // handle to the queue
+    T* D2Q9;                       // handle to the grid data on the host side
+    T* d_D2Q9;                     // data to be processed ( device side )
+    T* d_D2Q9_n;                   // final result of processing ( device side )
+    unsigned char* d_obstacle;     // obatacle mask ( device side )
+    size_t ydim;                   // y dimension of grid
+    size_t xdim;                   // x dimension of grid
+    size_t vec_len;                // ydim * xdim ( total number of cells )
+    T omega;                       // viscocity
 };
 ```
 Now we can pass the handle to each call to collide-and-stream and continue processing the data in-place.
