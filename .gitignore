@@ -4,6 +4,8 @@
 /include/mdspan-stable
 /include/gtest
 
+/main/scrpts/python/__pycache__
+
 
 
 
