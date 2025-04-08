@@ -46,7 +46,7 @@ namespace fs {
             return u_v;
         }
 
-        inline double calculate_u( const std::span<double> f) {
+        inline double calculate_u( const std::span<double> f ) {
 
             std::pair<double,double> u_v = calculate_u_v( f );
 
@@ -54,7 +54,7 @@ namespace fs {
         }
 
         // get velocity magnitude
-        inline double calculate_u_a( const std::array<double, 9>& f) {
+        inline double calculate_u_a( const std::array<double, 9>& f ) {
 
             std::pair<double,double> u_v = calculate_u_v_a( f );
 
@@ -207,7 +207,6 @@ namespace fs {
                                           + u_x_data[ x + ( y - 1 ) * fs::settings::xdim ];
 
                             curl_data[ x + y * fs::settings::xdim ] = curl;
-
                         }
                     }
                 }   
