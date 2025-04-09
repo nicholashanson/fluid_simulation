@@ -1,5 +1,6 @@
 #include "fs_dpcxx.hpp"
 #include <fs/lbm/collide_and_stream_dpcxx.hpp>
+#include <fs/lbm/stateful_collide_and_stream_dpcxx.hpp>
 #include <fs/lbm/collide_and_stream_tbb.hpp>
 
 namespace fs {
@@ -10,7 +11,7 @@ namespace fs {
 
             extern "C" {
 
-                void* init_cs_c( double* D2Q9, unsigned char* obstacle, size_t ydim, size_t xdim, float viscosity ) {
+                void* init_cs_c( double* D2Q9, const unsigned char* obstacle, const size_t ydim, const size_t xdim, const double viscosity ) {
 
                     return init_cs( D2Q9, obstacle, ydim, xdim, viscosity );
                 }
@@ -39,6 +40,11 @@ namespace fs {
                 void collide_and_stream_MRT_c( T* D2Q9, unsigned char* obstacle, const size_t steps ) {
 
                     collide_and_stream_MRT( D2Q9, obstacle, steps );
+                }
+
+                void collide_and_stream_MRT_c_( T* D2Q9, unsigned char* obstacle, const size_t steps ) {
+
+                    collide_and_stream_MRT_( D2Q9, obstacle, steps );
                 }
 
                 char** get_available_devices( int* num_devices ) {

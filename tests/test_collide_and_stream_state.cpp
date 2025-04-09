@@ -7,6 +7,7 @@
 
 #include <fs/fs.hpp>
 #include <fs/lbm/collide_and_stream_dpcxx.hpp>
+#include <fs/lbm/stateful_collide_and_stream_dpcxx.hpp>
 
 #include <settings.hpp>
 #include <grid.hpp>

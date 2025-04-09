@@ -29,6 +29,8 @@ namespace fs {
 
             extern "C" {
 
+                DLL_API void check_for_extension_c();
+
                 DLL_API char** get_available_devices( int * num_devices );       
 
                 DLL_API void free_device_list( char** device_list, int num_devices );
@@ -41,13 +43,15 @@ namespace fs {
 
                 DLL_API void collide_and_stream_tbb_c( T* D2Q9, unsigned char* obstacle, size_t steps );
 
-                DLL_API void* init_cs_c( double* D2Q9, unsigned char* obstacle, size_t ydim, size_t xdim, float viscosity );
+                DLL_API void* init_cs_c( double* D2Q9, const unsigned char* obstacle, const size_t ydim, const size_t xdim, const double viscosity );
 
                 DLL_API void stateful_collide_and_stream_c( void* cs_state, const size_t steps );
 
                 DLL_API void terminate_cs_c( void* state );
 
                 DLL_API void collide_and_stream_MRT_c( T* D2Q9, unsigned char* obstacle, const size_t steps );
+
+                DLL_API void collide_and_stream_MRT_c_( T* D2Q9, unsigned char* obstacle, const size_t steps );
 
                 DLL_API size_t get_size_of_cs_state();
             }
