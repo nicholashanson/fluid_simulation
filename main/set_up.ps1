@@ -2,7 +2,9 @@ param(
     [string]$Action,
     [switch]$GPU,
     [switch]$PAR,
-    [switch]$ThreeD
+    [switch]$ThreeD,
+    [switch]$Profile,
+    [switch]$Test
 )
 
 Import-Module ".\scripts\windows\compile_program.psm1" -Force
@@ -10,6 +12,7 @@ Import-Module ".\scripts\windows\compile_and_run_tests.psm1" -Force
 Import-Module ".\scripts\windows\global_vars.psm1" -Force 
 Import-Module ".\scripts\windows\setup_googletest.psm1" -Force
 Import-Module ".\scripts\windows\setup_opencv.psm1" -Force
+Import-Module ".\scripts\windows\build_dll.psm1" -Force
 
 [Environment]::CurrentDirectory = (Get-Location -PSProvider FileSystem).ProviderPath
 
@@ -863,79 +866,6 @@ function Download-Googletest {
     Write-Host "GoogleTest setup complete."
 }
 
-function Build-DLL {
-    Write-Host "Compiling DPC++ DLL..."
-
-    # Set the compiler flags and arguments for debugging and optimizations
-    $icpxArgs = "-v -fsycl -fsycl-targets=nvptx64-nvidia-cuda -std=c++23 -DDPCPP_COMPILER -DGPU"
-    $cudaPath = "`"C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.0`""
-
-    # List of source files to compile
-    $files = @(
-        "../src/lbm/common.cpp",
-        "../dpcxx_dll/lbm/collide_and_stream.cpp",
-        "../dpcxx_dll/lbm/grid_to_vertex_data.cpp"
-    )
-
-    # Include directories
-    $includes = @(
-        "../include"
-    )
-
-    $libs = @(
-        "../lib"
-    )
-
-    $dpcxx_includes = @(
-        "`"C:\Program Files (x86)\Intel\oneAPI\compiler\2025.0\include`"",
-        "`"C:\Program Files (x86)\Intel\oneAPI\tbb\2022.0\include`""
-    )
-
-    $dpcxx_libs = @(
-        "`"C:\Program Files (x86)\Intel\oneAPI\compiler\2025.0\lib`"",
-        "`"C:\Program Files (x86)\Intel\oneAPI\tbb\2022.0\lib`""
-    )
-
-    $outputDLL = "fs_dpcxx.dll"
-
-    $dpcxx = "icpx"  
-
-    $dpcpp_libs = "../lib/dpc++_libs"
-
-    # Build command
-    $compileCommand = "$dpcxx -DDLL_EXPORTS $icpxArgs " +
-        ($files | ForEach-Object { "$_ " }) +
-        ($includes | ForEach-Object { "-I" + (Join-Path (Get-Location) $_) + " " }) +
-        ($libs | ForEach-Object { "-L" + (Join-Path (Get-Location) $_) + " " }) +
-        ($dpcxx_includes | ForEach-Object { "-I" + $_ + " " }) +
-        ($dpcxx_libs | ForEach-Object { "-L" + $_ + " " }) +
-        "-L" + (Join-Path (Get-Location) $dpcpp_libs) + " " +
-        "-shared " +
-        "-o $outputDLL " +
-        "--cuda-path=" + $cudaPath + " " +
-        "-lsycl -lOpenCL -lopencv_core4120 -lopencv_imgproc4120 " +
-        "-LD"
-
-    # Print the compile command for debugging
-    Write-Output "Compiling with: $compileCommand"
-
-    # Execute the build command
-    Invoke-Expression $compileCommand
-
-    Write-Host "Compilation complete."
-
-    # Resolve the full path for the DLL (relative to current location)
-    $dllPath = (Resolve-Path $outputDLL).Path
-
-    # Check if the DLL file exists
-    if (-Not (Test-Path $dllPath)) {
-        Write-Error "DLL not found at $dllPath. Exiting script."
-        exit 1
-    } else {
-        Write-Host "DLL found at $dllPath."
-    }
-}
-
 function Compile-And-Run-DPCPP-Tests {
 
     Write-Host "Compiling tests..."
@@ -1054,6 +984,25 @@ function Install-CUDA {
     Write-Host "CUDA installation completed."
 }
 
+function Disassemble {
+    param (
+        [string]$Executable = "fs_gpu.exe",
+        [string]$OutputFile = "fs_gpu.txt"
+    )
+
+    # Make sure objdump is available
+    $objdump = "objdump"
+    if (-not (Get-Command $objdump -ErrorAction SilentlyContinue)) {
+        Write-Error "objdump not found in PATH. Please install binutils or add it to PATH."
+        return
+    }
+
+    $command = "$objdump -d -M intel `"$Executable`" > `"$OutputFile`""
+    Invoke-Expression $command
+
+    Write-Host "Disassembly of $Executable written to $OutputFile"
+}
+
 $vcVarsAllPath = "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvarsall.bat"
 if (Test-Path $vcVarsAllPath) {
     Write-Host "Running vcvarsall.bat to finalize the environment setup..."
@@ -1095,13 +1044,22 @@ Download-Googletest
 Setup-GoogleTest -scriptRoot $currentRoot
 
 if ($GPU) {
-    Setup-OpenCV -scriptRoot $currentRoot
-    Build-DLL
-    # Compile-And-Run-DPCPP-Tests
-    Compile-And-Run-Tests -GPU 
-    Compile-Program -GPU -PAR
+    if ($Profile) {
+        Build-DLL -scriptRoot $currentRoot
+        Compile-Program -GPU -Profile 
+    } elseif ($Test) {
+        Build-DLL -scriptRoot $currentRoot
+        Compile-And-Run-Tests -GPU
+    } else {
+        # Setup-OpenCV -scriptRoot $currentRoot
+        Build-DLL -scriptRoot $currentRoot
+        Compile-And-Run-DPCPP-Tests
+        Compile-And-Run-Tests -GPU 
+        Compile-Program -GPU -PAR
+        Disassemble
+    }
 } elseif ($ThreeD) {
-    Compile-Program -ThreeD
+    Compile-Program -ThreeD 
 } else {
     Compile-And-Run-Tests
     Compile-Program -PAR
