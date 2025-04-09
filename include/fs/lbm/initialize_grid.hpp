@@ -1,14 +1,16 @@
 #ifndef LBM_INITIALIZE_GRID_HPP
 #define LBM_INITIALIZE_GRID_HPP
 
-#include <random>
+#include <grid.hpp>
 
 namespace fs {
 
     namespace lbm {
 
-        template<typename Array, typename MDSpan>
-        void set_velocity( sim::grid<Array, MDSpan>& gd, const size_t y, const size_t x, const double u_x, const double u_y ) {
+        template<typename DataStorage, typename View>
+        void set_velocity( sim::grid<DataStorage, View>& gd, 
+                           const size_t y, const size_t x, 
+                           const double u_x, const double u_y ) {
 
             const double rho = 1.0;
 
@@ -17,6 +19,23 @@ namespace fs {
                 double f_eq = calculate_f_eq( q, rho, u_x, u_y );
 
                 gd.set_cell_state( f_eq, y, x, q );
+            }
+        }
+
+        inline void set_velocity( T* D2Q9, 
+                                  const size_t y, const size_t x,
+                                  const size_t yidm, const size_t xdim,
+                                  const T u_x, const T u_y ) {
+
+            const T rho = 1.0;
+
+            const size_t base_index = ( x + y * xdim ) * 9;
+
+            for ( size_t q = 0; q < 9; ++ q ) {
+
+                T f_eq = calculate_f_eq( q, rho, u_x, u_y );
+
+                D2Q9[ base_index + q ] = f_eq;
             }
         }
 
