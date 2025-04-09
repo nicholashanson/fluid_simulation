@@ -7,6 +7,10 @@ namespace fs {
 
     namespace lbm {
 
+        /*
+            set the frequency distributions in a cell ( y, x )
+            according to a certain velocity and density
+        */
         template<typename DataStorage, typename View>
         void set_velocity( sim::grid<DataStorage, View>& gd, 
                            const size_t y, const size_t x, 
@@ -39,6 +43,10 @@ namespace fs {
             }
         }
 
+        /*
+            initialize all the cells in a D2Q9 grid to
+            a certain density and velocity
+        */
         template<typename DataStorage, typename View>
         void initialize_grid( sim::grid<DataStorage, View>& gd ) {
 
@@ -53,6 +61,9 @@ namespace fs {
             }
         }
 
+        /*
+            set all the edge-cells in the grid
+        */
         template<typename DataStorage, typename View>
         void set_boundaries( sim::grid<DataStorage, View>& gd ) {
 
