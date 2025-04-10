@@ -1,6 +1,7 @@
 #ifndef LBM_PROPERTY_HPP
 #define LBM_PROPERTY_HPP
 
+#include <concepts>
 #include <numeric>
 #include <functional>
 
@@ -182,6 +183,39 @@ namespace fs {
             );
         }
 
+        template<typename Callable>
+        concept CallableWithSpan = requires( Callable&& calc, std::span<double> cell_state ) {
+            { calc( cell_state ) } -> std::convertible_to<double>;
+        };
+
+        template<typename Callable>
+        inline void calculate_property_v_tbb_t( double* D2Q9_data, double* property_data,
+                                                Callable&& calculate_property ) 
+            requires CallableWithSpan<Callable> {
+
+            tbb::parallel_for(
+                tbb::blocked_range<size_t>( 0, fs::settings::ydim ),
+                [&]( const tbb::blocked_range<size_t>& range ) {
+
+                    for ( size_t y = range.begin(); y < range.end(); ++y ) {
+
+                        for ( size_t x = 0; x < fs::settings::xdim; ++x ) {
+
+                            // 1D index of cell
+                            const size_t offset = ( x + y * fs::settings::xdim ) * 9;
+
+                            // non-owning view of cell's Q9
+                            std::span<double> cell_state( &D2Q9_data[ offset ], 9 );
+
+                            double property = calculate_property( cell_state );
+
+                            property_data[ x + y * fs::settings::xdim ] = property;
+                        }
+                    }
+                }      
+            );
+        }
+
         inline void calculate_curl_v_tbb( double* D2Q9_data, double* curl_data ) {
 
             sim::grid<std::vector<double>, fs::property_view> u_x( fs::lbm::property_states );
@@ -250,7 +284,7 @@ namespace fs {
         }
 
         /*
-            takes a D2Q9 grid and outputs a grid of a property values defined by calculate_property
+            takes a D2Q9 grid and outputs a grid of property values defined by calculate_property
             e.g. fs::lbm::calculate_property_v_with_max( ..., fs::lbm::calculate_rho ) will return a 
             two-element tuple containing a grid object of density values and the max density as a real
             number.
@@ -361,7 +395,8 @@ namespace fs {
             max_property = local_max_property.combine( []( double a, double b ) { return std::max( a, b ); } );
         }
 
-    }
-}
+    } // lbm
+
+} // fs
 
 #endif
