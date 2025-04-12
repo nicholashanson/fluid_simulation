@@ -21,7 +21,7 @@
   <span>top-left: 3° angle-of-attack, top-right: 10° angle-of-attack, bottom-left: 15° angle-of-attack, bottom-right: 20° angle-of-attack</span>
 </p>
 
-### Feautures
+### Features
 
 * Visualization of multiple properties including speed, density, and curl
 * 4-digit series NACA airfoils with adjustable angle-of-attack.
