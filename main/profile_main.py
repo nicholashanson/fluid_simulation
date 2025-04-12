@@ -10,7 +10,9 @@ import os
 import itertools
 
 from scripts.python.compile_main import compile_for_windows
-from scripts.python.compule_main_for_linux import compile_and_run_linux
+from scripts.python.compile_main_for_linux import compile_and_run_linux
+
+from scripts.python.insert_profiling import insert_profiling_abs
 
 import argparse
 
@@ -93,71 +95,6 @@ def insert_profiling( object_path, target_path, out, gpu_out, GPU, sections ):
                         profiled_content.append( f"{ indent }std::ofstream file(\"{ out }\");\n" )
                     ofstream_defined = True
 
-                profiled_content.append( f"{ indent }file << \"{ section }: \" <<  std::chrono::duration_cast<std::chrono::microseconds>( end_{ cpp_var } - start_{ cpp_var } ).count() << std::endl; \n" ) 
-                matched = True
-                break
-        
-        if matched == False:
-            profiled_content.append( original_line )
-    
-    with open( target_path, 'w', encoding = 'utf-8' ) as file:
-        file.writelines( profiled_content )
-
-def insert_profiling_abs( object_path, target_path, out, gpu_out, state_out, GPU, state, sections ):
-
-    profile_steps = 10
-    
-    with open( object_path, 'r', encoding = 'utf-8' ) as file:
-        original_content = file.readlines()
-
-    profiled_content = []
-
-    profiled_content.append( '#include <fstream>\n\n' )
-
-    for original_line in original_content:
-
-        stripped_line = original_line.lstrip()
-
-        indent = original_line[:len( original_line) - len( stripped_line ) ]
-
-        matched = False
-
-        stripped_line = stripped_line.rstrip()
-
-        for section in sections:
-
-            if stripped_line == 'while ( !glfwWindowShouldClose( window ) ) {':
-                profiled_content.append(f'{ indent }for ( size_t i = 0; i < { profile_steps }; ++i ) {{\n' )
-                matched = True
-                break
-
-            elif stripped_line == 'bool simulation_running = false;':
-                profiled_content.append( f'{ indent }bool simulation_running = true;\n' )
-                matched = True
-                break
-
-            elif stripped_line == f"// start loop":
-                if state: 
-                    profiled_content.append( f"{ indent }std::ofstream file(\"{ state_out }\");\n" )
-                elif GPU:
-                    profiled_content.append( f"{ indent }std::ofstream file(\"{ gpu_out }\");\n" )
-                else:
-                    profiled_content.append( f"{ indent }std::ofstream file(\"{ out }\");\n" )
-
-                profiled_content.append( f"{ indent }auto start_loop = std::chrono::high_resolution_clock::now();\n" )
-                matched = True
-                break
-                
-            elif stripped_line == f"// start { section }":
-                cpp_var = section.replace( ' ', '_' )
-                profiled_content.append( f"{ indent }auto start_{ cpp_var } = std::chrono::high_resolution_clock::now();\n" )
-                profiled_content.append( f"{ indent }file << \"{ section } start: \" << std::chrono::duration_cast<std::chrono::microseconds>( start_{ cpp_var } - start_loop ).count() << std::endl;;\n"  )
-                matched = True
-                break
-
-            elif stripped_line == f"// end { section }":
-                cpp_var = section.replace( ' ', '_' )
-                profiled_content.append( f"{ indent }auto end_{ cpp_var } = std::chrono::high_resolution_clock::now();\n" )
                 profiled_content.append( f"{ indent }file << \"{ section }: \" <<  std::chrono::duration_cast<std::chrono::microseconds>( end_{ cpp_var } - start_{ cpp_var } ).count() << std::endl; \n" ) 
                 matched = True
                 break
@@ -385,7 +322,7 @@ def profile_main_parallel_abs( gpu, comp, state ):
         plot_profiling_data_abs( 'profile_output_paralell_abs.txt', 'profiling_data_parallel_abs.png', par = True )
 
 def profile_main_abs( gpu, comp, state ):
-    insert_profiling_abs( 'main.cpp', 'main_profiled.cpp', 'profile_output_abs.txt', 'profile_output_gpu_abs.txt', gpu, sections )
+    insert_profiling_abs( 'main.cpp', 'main_profiled.cpp', 'profile_output_abs.txt', 'profile_output_gpu_abs.txt', 'dummy.txt', gpu, state, sections )
 
     if comp:
         compile_for_windows( 'main_profiled.cpp', gpu, state )
@@ -398,7 +335,6 @@ def profile_main_abs( gpu, comp, state ):
         plot_profiling_data_abs( 'profile_output_gpu_abs.txt', 'profiling_data_gpu_abs.png', par = False )
     else:
         plot_profiling_data_abs( 'profile_output_abs.txt', 'profiling_data_abs.png', par = False )
-
 
 if __name__ == '__main__':
 
