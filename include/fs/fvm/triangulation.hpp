@@ -5,8 +5,7 @@
 
 #include <set>
 #include <tuple>
-
-#include <grid.hpp>
+#include <vector>
 
 namespace fs {
 
@@ -49,6 +48,32 @@ namespace fs {
             }
 
             return triangles;
+        }
+
+        inline std::vector<std::pair<double,double>> get_lattice_points( const double a, const double b, 
+                                                                         const double c, const double d, 
+                                                                         const size_t xdim, const size_t ydim ) {
+            
+            std::vector<std::pair<double,double>> points( ydim * xdim, { 0.0, 0.0 } );
+
+            double delta_X = ( b - a ) / ( static_cast<double>( xdim - 1 ) );
+            double delta_y = ( d - c ) / ( static_cast<double>( ydim - 1 ) );
+        
+            for ( size_t y = 1; y < ydim; ++y ) {
+
+                double y_ = c + static_cast<double>( y - 1 ) * delta_y;
+
+                for ( size_t x = 1; x < xdim; ++x ) {
+
+                    double x_ = a + static_cast<double>( x - 1 ) * delta_X; 
+
+                    const size_t index = sub_2_ind( x - 1, y, xdim );
+
+                    points[ index ] = { x_, y_ }; 
+                }
+            }
+
+            return points;
         }
 
     } // namespace fvm

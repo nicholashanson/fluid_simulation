@@ -4,6 +4,8 @@
 
 #include <ranges>
 
+#include <iomanip>
+
 TEST( FVMTests, GetLatticeTriangles ) {
 
     fs::fvm::triangle_set expected_triangles = {         
@@ -23,6 +25,8 @@ TEST( FVMTests, GetLatticeTriangles ) {
 
     fs::fvm::triangle_set first_ten;
 
+    std::vector<std::pair<double,double>> lattice_points = fs::fvm::get_lattice_points( 0.0, 2.0, 0.0, 2.0, 50, 50 );
+
     for ( auto [ index, tri ] : actual_triangles | std::views::enumerate ) {
         first_ten.insert( tri );
         if ( index >= 9 ) break;
@@ -30,3 +34,33 @@ TEST( FVMTests, GetLatticeTriangles ) {
 
     EXPECT_EQ( expected_triangles, first_ten );
 } 
+
+TEST( FVMTests, GetLatticePoints ) {
+
+    std::vector<std::pair<double,double>> expected_lattice_points = {         
+        {                 0.0, 0.0 }, 
+        { 0.04081632653061224, 0.0 }, 
+        { 0.08163265306122448, 0.0 }, 
+        { 0.12244897959183673, 0.0 },  
+        { 0.16326530612244897, 0.0 }, 
+        {  0.2040816326530612, 0.0 }, 
+        { 0.24489795918367346, 0.0 }, 
+        {  0.2857142857142857, 0.0 }, 
+        { 0.32653061224489793, 0.0 }, 
+        { 0.36734693877551017, 0.0 },
+    };
+
+    std::vector<std::pair<double,double>> actual_lattice_points = fs::fvm::get_lattice_points( 0.0, 2.0, 0.0, 2.0, 50, 50 );
+    
+    /*
+    for ( size_t k = 0; k < 10; ++k ) {
+        std::cout << std::setprecision( 16 ) << actual_lattice_points[ k ].first << ", " 
+                  << std::setprecision( 16 ) << actual_lattice_points[ k ].second << std::endl;
+    }
+    */
+
+    std::vector<std::pair<double,double>> first_ten( actual_lattice_points.begin(), actual_lattice_points.begin() + 10 );
+
+    EXPECT_EQ( expected_lattice_points, first_ten );
+} 
+
