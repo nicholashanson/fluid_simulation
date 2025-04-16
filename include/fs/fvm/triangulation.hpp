@@ -27,8 +27,6 @@ namespace fs {
             return std::fma( y - 1, xdim, x );
         }
 
-        using triangle = std::tuple<int,int,int>;
-
         inline triangle_set get_lattice_triangles( const size_t ydim, const size_t xdim ) {
 
             triangle_set triangles = {};
