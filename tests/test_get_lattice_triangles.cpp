@@ -64,3 +64,9 @@ TEST( FVMTests, GetLatticePoints ) {
     EXPECT_EQ( expected_lattice_points, first_ten );
 } 
 
+TEST( FVMTests, NumBoundaryEdges ) {
+
+    auto lattice_boundary = fs::fvm::get_lattice_boundary( 50, 50 );
+
+    EXPECT_EQ( lattice_boundary.size(), 196 );
+}
