@@ -70,3 +70,13 @@ TEST( FVMTests, NumBoundaryEdges ) {
 
     EXPECT_EQ( lattice_boundary.size(), 196 );
 }
+
+TEST( FVMTests, MultipleCurves ) {
+
+    auto lattice_boundary = fs::fvm::get_lattice_boundary( 50, 50 );
+
+    auto tri = fs::fvm::triangulate_rectangle<int,double>( 0.0, 2.0, 0.0, 2.0, 50, 50 );
+
+    EXPECT_FALSE( fs::fvm::has_multiple_sections( lattice_boundary ) );
+}
+
