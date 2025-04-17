@@ -135,7 +135,7 @@ namespace fs {
             T delta_2 = dist_sqr( std::pair<T,T>{ p_x, p_y }, std::pair<T,T>{ intersect_x, intersect_y } );
 
             return delta_2;
-        } 
+        }
 
         /*
             does a horizontal line that extends from the point p
@@ -225,10 +225,6 @@ namespace fs {
             }
         };
 
-        template<typename T>
-        bool has_multiple_sections( const T& ) {
-            return false;
-        }
 
         template<typename T>
         typename std::enable_if<
@@ -315,12 +311,17 @@ namespace fs {
 
             using integer_type = I;
 
+            triangulation( const std::vector<std::pair<T,T>>&& points, const std::vector<I>&& boundary ) 
+                : points( std::move( points ) ), boundary( std::move( boundary ) ) {}
+
             // Rule-of-Zero
             BPL<I,T> get_representative_points() {
                 return representative_points;
             }
         private:
             BPL<I,T> representative_points;
+            std::vector<std::pair<T,T>> points;
+            std::vector<I> boundary;
         };
 
         using triangle = std::tuple<int,int,int>;
@@ -362,22 +363,23 @@ namespace fs {
             return triangles;
         }
 
-        inline std::vector<std::pair<double,double>> get_lattice_points( const double a, const double b, 
-                                                                         const double c, const double d, 
-                                                                         const size_t xdim, const size_t ydim ) {
+        template<typename T>
+        std::vector<std::pair<T,T>> get_lattice_points( const T a, const T b, 
+                                                        const T c, const T d, 
+                                                        const size_t xdim, const size_t ydim ) {
             
-            std::vector<std::pair<double,double>> points( ydim * xdim, { 0.0, 0.0 } );
+            std::vector<std::pair<T,T>> points( ydim * xdim, { ( T )0, ( T )0 } );
 
-            double delta_x = ( b - a ) / ( static_cast<double>( xdim - 1 ) );
-            double delta_y = ( d - c ) / ( static_cast<double>( ydim - 1 ) );
+            T delta_x = ( b - a ) / ( static_cast<T>( xdim - 1 ) );
+            T delta_y = ( d - c ) / ( static_cast<T>( ydim - 1 ) );
         
             for ( size_t y = 0; y < ydim; ++y ) {
 
-                double y_ = c + static_cast<double>( y ) * delta_y;
+                T y_ = c + static_cast<T>( y ) * delta_y;
 
                 for ( size_t x = 0; x < xdim; ++x ) {
 
-                    double x_ = a + static_cast<double>( x ) * delta_x; 
+                    T x_ = a + static_cast<T>( x ) * delta_x; 
 
                     const size_t index = sub_2_ind( x, y, xdim );
 
@@ -395,16 +397,29 @@ namespace fs {
             for ( size_t x = 0; x < xdim; ++x ) {
 
                 boundary[ x ] = sub_2_ind( x, 0, xdim );
-                boundary[ ( xdim - 1 ) + x ] = sub_2_ind( x, ydim - 1, xdim );
+                boundary[ xdim + x ] = sub_2_ind( x, ydim - 1, xdim );
             }
 
             for ( size_t y = 1; y < ydim - 1; ++y ) {
 
-                boundary[ 2 * ( xdim - 1 ) + y - 1 ] = sub_2_ind( 0, y, xdim );
-                boundary[ 2 * ( xdim - 1 ) + ( ydim - 2 ) + y ] = sub_2_ind( xdim, y, xdim );
+                boundary[ 2 * xdim + y - 1 ] = sub_2_ind( 0, y, xdim );
+                boundary[ 2 * xdim + ( ydim - 2 ) + y - 1 ] = sub_2_ind( xdim - 1, y, xdim );
             }
 
             return boundary;
+        }
+
+        template<typename I,typename T>
+        inline triangulation<I,T> triangulate_rectangle( const T a, const T b, 
+                                                         const T c, const T d,
+                                                         const size_t xdim, const size_t ydim,  
+                                                         bool single_boundary = false ) {
+
+            auto lattice_triangles = get_lattice_triangles( ydim, xdim );
+            auto points = get_lattice_points( a, b, c, d, xdim, ydim );
+            auto boundary = get_lattice_boundary( xdim, ydim );
+            
+            auto tri = triangulation( points, boundary );
         }
 
     } // namespace fvm
