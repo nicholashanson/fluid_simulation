@@ -77,76 +77,127 @@ namespace fs {
         template<typename T>
         T dist_sqr( const std::pair<T, T>& p, const std::pair<T,T>& q ) {
 
-            std::pair<T,T> vec = { q.first - p.frst, q.second - p.second };
+            std::pair<T,T> vec = { q.first - p.first, q.second - p.second };
             return vec.first * vec.first + vec.second * vec.second;
         }
 
+        /*
+            calculate the distance between a point P and the
+            line segment Q-R 
+        */
         template<typename T>
-        T squared_distance_to_segment( const T x_1, const T y_1,
-                                       const T x_2, const T y_2, 
-                                       const T x, const T y ) {
-            T q_p_1_x = x - x_1;
-            T q_p_1_y = y - y_1;
-            T p_1_p_2_x = x_2 - x_1;
-            T p_1_p_2_y = y_2 - y_1;
+        T squared_distance_to_segment( const T q_x, const T q_y,
+                                       const T r_x, const T r_y, 
+                                       const T p_x, const T p_y ) {
 
-            T denom = dist_sqr( { x_1, y_1 }, { x_2, y_2 } );
+            // the x distance between P and Q
+            T p_q_x = p_x - q_x;
+            
+            // the y distance between P and Q
+            T p_q_y = p_y - q_y;
 
-            T t = ( q_p_1_x * p_1_p_2_x + q_p_1_y * p_1_p_2_y ) / denom;
-            T ts = std::min( std::max( t, ( T )0), ( T )1 );
+            // the x distance between Q and R
+            T r_q_x = r_x - q_x;
 
-            T intersect_x = x_1 + ts * p_1_p_2_x;
-            T intersect_y = y_1 + ts * p_1_p_2_y;
+            // the y distance between Q and R
+            T r_q_y = r_y - q_y;
 
-            T delta_2 = dist_sqr( { x, y }, { intersect_x, intersect_y } );
+            // dot product of (P - Q) and (R - Q)
+            T dot_product = p_q_x * r_q_x + p_q_y * r_q_y;
+
+            T denom = dist_sqr( std::pair<T,T>{ q_x, q_y }, std::pair<T,T>{ r_x, r_y } );
+
+            // degenerate case: Q = R
+            if ( denom == T( 0 ) )
+                return dist_sqr( std::pair<T,T>{ p_x, p_y }, std::pair<T,T>{ q_x, q_y } );
+
+            /*
+                if 0 < t < 1 then the closest point to P
+                is somewhere between Q and R:
+                t = 0: closest to Q
+                t = 1: closest to R
+            */
+            T t = dot_product / denom;
+
+            /*
+                it's possible that t < 0 or t > 1
+
+                in these cases we need to clamp t 
+                so that t = 0 or t = 1
+            */
+            T clamped_t = std::min( std::max( t, ( T )0 ), ( T )1 );
+
+            T intersect_x = q_x + clamped_t * r_q_x;
+            T intersect_y = q_y + clamped_t * r_q_y;
+
+            T delta_2 = dist_sqr( std::pair<T,T>{ p_x, p_y }, std::pair<T,T>{ intersect_x, intersect_y } );
 
             return delta_2;
         } 
 
+        /*
+            does a horizontal line that extends from the point p
+            intersect a line segment extending between the points
+            q and r?
+
+            If so, at what x co-ordinate does that horizontal
+            line intersect with that line segment?
+
+        */
         template<typename T,typename Points,typename BoundaryNodes>
-        T distance_to_polygon_single_segment( std::pair<T,T> q, 
+        T distance_to_polygon_single_segment( std::pair<T,T> p, 
                                               Points points,
                                               BoundaryNodes boundary_nodes,
                                               bool is_in_outer = false, 
                                               bool return_sqrt = true ) {
-            T x = q.first;
-            T y = q.second;
+            T p_x = p.first;
+            T p_y = p.second;
 
-            using F = number_type<Points>::type;
+            //using F = number_type<Points>::type;
 
-            F dist = std::numeric_limits<F>::max;
+            T dist = std::numeric_limits<T>::max();
 
             const size_t n_edge = num_boundary_edges( boundary_nodes );
 
-            auto v_i = get_boundary_nodes( boundary_nodes, 1 );
-            auto p_i = get_point( points, v_i );
+            // get the global index of the first node in the boundary
+            auto q_index = get_boundary_nodes( boundary_nodes, 0 );
 
-            T x_i = p_i.first;
-            T y_i = p_i.second;
+            // get the co-ord ( x, y ) at that global index
+            auto q = get_point( points, q_index );
 
-            for ( size_t j = 2; j < n_edge; ++j ) {
+            // the starting point of the line segment
+            T q_x = q.first;
+            T q_y = q.second;
 
-                auto v_i_1 = get_boundary_nodes( boundary_nodes, j );
-                auto p_i_1 = get_point( points, v_i_1 );
+            for ( size_t i = 1; i <= n_edge; ++i ) {
 
-                T x_i_1 = p_i_1.first; 
-                T y_i_1 = p_i_1.second;
+                auto r_index = get_boundary_nodes( boundary_nodes, i );
+                auto r = get_point( points, r_index );
 
-                if ( ( y_i_1 > y ) != ( y_i > y ) ) {
+                // the end point of the line segment
+                T r_x = r.first; 
+                T r_y = r.second;
 
-                    T x_intersect = ( x_i - x_i_1 ) * ( y - y_i_1 ) / ( y_i - y_i_1 ) + x_i_1;
-                    if ( x < x_intersect ) {
+                // p_y lies between q_y and r_y
+                if ( ( r_y > p_y ) != ( q_y > p_y ) ) {
+
+                    /*
+                        the point where the hypothetical hotizontal line 
+                        intersects with the line segment
+                    */
+                    T x_intersect = ( q_x - r_x ) * ( p_y - r_y ) / ( q_y - r_y ) + r_x;
+
+                    // ( p_x, p_y ) lies on the inside of the line segment
+                    if ( p_x < x_intersect ) {
                         is_in_outer = !is_in_outer;
                     }
                 }
 
-                F new_dist = squared_distance_to_segment( x_i, y_i, x_i_1, y_i_1, x, y );
+                T new_dist = squared_distance_to_segment( q_x, q_y, r_x, r_y, p_x, p_y );
                 dist = new_dist < dist ? new_dist : dist;
 
-                v_i = v_i_1;
-                p_i = p_i_1;
-                x_i = x_i_1;
-                y_i = y_i_1;
+                q_x = r_x;
+                q_y = r_y;
             }
 
             dist = return_sqrt ? std::sqrt( dist ) : dist;
