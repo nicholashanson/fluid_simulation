@@ -105,10 +105,12 @@ namespace fs {
             // dot product of (P - Q) and (R - Q)
             T dot_product = p_q_x * r_q_x + p_q_y * r_q_y;
 
+            // squared distance between Q and R
             T denom = dist_sqr( std::pair<T,T>{ q_x, q_y }, std::pair<T,T>{ r_x, r_y } );
 
             // degenerate case: Q = R
             if ( denom == T( 0 ) )
+                // squared distance between P and Q
                 return dist_sqr( std::pair<T,T>{ p_x, p_y }, std::pair<T,T>{ q_x, q_y } );
 
             /*
