@@ -18,6 +18,39 @@ namespace fs {
 
     namespace fvm {
 
+        template<typename T> 
+        struct three_d_plane {
+            T alpha;
+            T beta;
+            T gamma;
+            T delta;
+
+            three_d_plane( const T alpha, const T beta, const T gamma, const T delta )
+                : alpha( alpha ), beta( beta ), gamma( gamma ), delta( delta ) {}
+        };
+
+        template<typename T>
+        struct three_d_point {
+            T x;
+            T y;
+            T z;
+        };
+
+        template<typename T>
+        three_d_plane<T> get_plane_through_three_points( 
+            const three_d_point<T>& p,
+            const three_d_point<T>& q,
+            const three_d_point<T>& r
+        ) {
+
+            const T alpha = p.y * q.z + p.z * q.y - p.z * r.y + q.y * r.z - q.z * r.y;
+            const T beta = p.z * q.x - p.x * q.z + p.x * r.z - p.z * r.x - q.x * r.z + q.z * r.x;
+            const T gamma = p.x * q.y - p.y * q.x - p.x * r.y + p.y * r.x + q.x * r.y - q.y * r.x;
+            const T delta = p.x * q.z * r.y - p.x * q.y * r.z + p.y * q.x * r.z - p.y * q.z * r.x - p.z * q.x * r.y + p.z * q.y * r.x;
+
+            return three_d_plane( alpha, beta, gamma, delta );
+        }
+
         template<typename T>
         struct err_bound {
             T A;

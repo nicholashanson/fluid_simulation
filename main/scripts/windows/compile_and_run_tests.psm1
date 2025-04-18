@@ -17,6 +17,12 @@ function Compile-And-Run-Tests {
     $files = @(
         "../tests/test_collide_and_stream_equivalence.cpp",
         "../tests/test_vertex_data_equivalence.cpp",
+        "../tests/test_stateful_collide_and_stream.cpp",
+        "../tests/test_M_inverse.cpp",
+        "../tests/test_get_lattice_triangles.cpp",
+        "../tests/test_squared_distance_to_segment.cpp",
+        "../tests/test_distance_to_polygon_single_segment.cpp",
+        "../tests/test_geometry.cpp",
         "gl.cpp",
         "../src/lbm/common.cpp",
         "../src/grid_renderer.cpp",
