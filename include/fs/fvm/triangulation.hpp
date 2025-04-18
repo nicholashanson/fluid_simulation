@@ -228,9 +228,9 @@ namespace fs {
 
         */
         template<typename T,typename Points,typename BoundaryNodes>
-        T distance_to_polygon_single_segment( std::pair<T,T> p, 
-                                              Points points,
-                                              BoundaryNodes boundary_nodes,
+        T distance_to_polygon_single_segment( const std::pair<T,T>& p, 
+                                              const Points& points,
+                                              const BoundaryNodes& boundary_nodes,
                                               bool is_in_outer = false, 
                                               bool return_sqrt = true ) {
             T p_x = p.first;
@@ -285,6 +285,31 @@ namespace fs {
 
             dist = return_sqrt ? std::sqrt( dist ) : dist;
             return is_in_outer ? dist : -dist;
+        }
+
+        template<typename T,typename Points,typename BoundaryNodes>
+        T distance_to_polygon_multiple_segments( const std::pair<T,T>& p, 
+                                                 const Points& points,
+                                                 const BoundaryNodes& boundary_nodes,
+                                                 bool is_in_outer = false, 
+                                                 bool return_sqrt = true ) {
+
+            T dist = std::numeric_limits<T>::max();
+            
+            const size_t ns = num_sections( boundary_nodes );
+
+            for ( size_t i = 0; i < ns; ++i ) {
+
+                BoundaryNodes bn = get_boundary_nodes( boundary_nodes, i );
+
+                T new_dist = distance_to_polygon_single_segment( p, points, bn, is_in_outer == true );
+                new_dist = std::abs( new_dist );
+
+                dist = new_dist < dist ? new_dist : dist;
+            }
+
+            dist = return_sqrt ? std::sqrt( dist ) : dist;
+            return is_in_outer * dist;
         }
 
         template<typename T,typename Points,typename BondaryNodes>
