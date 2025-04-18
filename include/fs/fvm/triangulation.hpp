@@ -4,17 +4,98 @@
 #include <cmath>
 #include <limits>
 #include <iterator>
+#include <optional>
 
 #include <set>
 #include <map>
 #include <tuple>
 #include <vector>
 
+#include <concepts>
 #include <type_traits>
 
 namespace fs {
 
     namespace fvm {
+
+        template<typename T>
+        struct err_bound {
+            T A;
+            T B;
+            T C;
+
+            constexpr T calc( const T& a, const T& b, const T& epsilon ) {
+                return ( a + b * epsilon ) * epsilon;
+            }
+
+            constexpr err_bound( const T& aa, const T& ab,
+                                 const T& ba, const T& bb,
+                                 const T& ca, const T& cb,
+                                 const T& epsilon )
+                : A( calc( aa, ab, epsilon ) ), 
+                  B( calc( ba, bb, epsilon ) ),
+                  C( calc( ca, cb, epsilon ) ) {}
+        };
+
+        template<typename T>
+        struct init_constants {
+            T epsilon;
+            T splitter;
+            T result_err_bound;
+            err_bound<T> ccw;
+            err_bound<T> o3d;
+            err_bound<T> icc;
+            err_bound<T> isperr;
+
+            constexpr init_constants( const T epsilon ) 
+                : epsilon( epsilon ),
+                  splitter( T( 1 ) + epsilon ),
+                  result_err_bound( ( ( T )3 + T( 8 ) * epsilon ) * epsilon ),
+                  ccw( 3, 16, 2, 12, 2, 12, epsilon ),
+                  o3d( 7, 56, 3, 28, 26, 288, epsilon ),
+                  icc( 10, 96, 4, 48, 44, 576, epsilon ),
+                  isperr( 16, 224, 5, 72, 71, 1408, epsilon ) {}
+        };
+
+        constexpr init_constants<double> double_constants( std::numeric_limits<double>::epsilon() );
+
+        /*
+        template<typename T> 
+        std::tuple<T,T> two_product( const T a, const T b ) {
+
+            T x = a * b
+            T y = two_product_tail( a, b, x )
+            
+            return std::make_tuple( x, y );
+        }
+        */
+
+        template<typename T>
+        T orient_2( const std::pair<T,T>& p, const std::pair<T,T>& q, const std::pair<T,T>& r ) {
+
+            T det_left = ( p.first - r.first ) * ( q.second - r.second );
+            T det_right = ( p.second - r.second ) * ( q.first - r.first );
+
+            T det = det_left - det_right;
+
+            T detsum{};
+
+            if ( det_left > 0 ) {
+                if ( det_right <= 0 ) {
+                    return det;
+                } else {
+                    detsum = det_left + det_right;
+                }
+            } else if ( det_left < 0 ) {
+                if ( det_right ) {
+                    return det;
+                } else {
+                    detsum = -det_left - det_right;
+                }
+            } else {
+                return det;
+            }
+        }
 
         struct custom_point;
         struct custom_points;
@@ -225,7 +306,6 @@ namespace fs {
             }
         };
 
-
         template<typename T>
         typename std::enable_if<
             std::is_arithmetic<typename T::value_type>::value,
@@ -258,7 +338,6 @@ namespace fs {
 
             static_assert( a != b && "Can't get mid-point of equal numbers" );
       
-            
             if ( a < b ) {
                 return a + ( b - a ) / 2;
             } else {
@@ -382,7 +461,6 @@ namespace fs {
                     T x_ = a + static_cast<T>( x ) * delta_x; 
 
                     const size_t index = sub_2_ind( x, y, xdim );
-
                     points[ index ] = { x_, y_ }; 
                 }
             }
@@ -419,8 +497,85 @@ namespace fs {
             auto points = get_lattice_points( a, b, c, d, xdim, ydim );
             auto boundary = get_lattice_boundary( xdim, ydim );
             
-            auto tri = triangulation( points, boundary );
+            auto tri = triangulation( std::move( points ), std::move( boundary ) );
+
+            return tri;
         }
+
+        template<typename I>
+        std::map<std::pair<I,I>, std::pair<I,I>> construct_boundary_edge_contiguous( std::vector<I> boundary_nodes ) {
+
+            std::map<std::pair<I,I>,std::pair<I,I>> edges;
+
+            const size_t num_edges = num_boundary_edges( boundary_nodes );
+
+            for ( size_t i = 0; i < num_edges; ++ i ) {
+                const I u = get_boundary_nodes( boundary_nodes, i );
+                const I v = get_boundary_nodes( boundary_nodes, i + 1 );
+                edges[ { u, v } ] = { u, v };
+            }
+
+            return edges;
+        }
+
+        template<typename T>
+        struct bounding_box {
+
+            T xmin;
+            T xmax;
+            T ymin;
+            T ymax;
+
+            bounding_box( const T& xmin, const T& xmax, const T& ymin, const T& ymax ) 
+                : xmin( xmin ), xmax( xmax ), ymin( ymin ), ymax( ymax ) {}
+        };
+
+        template<typename I>
+        struct polygon_tree {
+
+            std::optional<polygon_tree> parent;
+            std::set<polygon_tree> children;
+            I index;
+            int height;
+        };
+
+        template<typename T>
+        concept HasInfinity = requires {
+            { std::numeric_limits<T>::infinity() } -> std::same_as<T>;
+        };
+
+        template<typename T>
+        requires HasInfinity<T>
+        bounding_box<T> get_bounding_box( const std::vector<std::pair<T,T>>& points ) {
+
+            T xmin = std::numeric_limits<T>::infinity();
+            T xmax = -std::numeric_limits<T>::infinity();
+
+            T ymin = std::numeric_limits<T>::infinity();
+            T ymax = -std::numeric_limits<T>::infinity();
+
+            for ( const auto& point : points ) {
+
+                xmin = std::min( xmin, point.first );
+                xmax = std::max( xmax, point.first );
+                ymin = std::min( ymin, point.second );
+                ymax = std::max( ymax, point.second );
+            }
+
+            return bounding_box( xmin, xmax, ymin, ymax );
+        }
+
+        template<typename I,typename T>
+        struct polygon_heirarchy {
+
+            std::vector<bool> polygon_orientations;
+            std::vector<bounding_box<T>> bounding_boxes;
+            std::map<I,polygon_tree<I>> trees;
+
+            polygon_heirarchy() {
+                polygon_orientations.push_back( true );
+            }
+        };
 
     } // namespace fvm
 
