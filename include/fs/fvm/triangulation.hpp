@@ -18,6 +18,11 @@ namespace fs {
 
     namespace fvm {
 
+        template<typename T>
+        int sign( T val ) {
+            return ( T( 0 ) < val ) - ( val < T( 0 ) );
+        }
+
         template<typename T> 
         struct three_d_plane {
             T alpha;
@@ -266,6 +271,7 @@ namespace fs {
                                               const BoundaryNodes& boundary_nodes,
                                               bool is_in_outer = false, 
                                               bool return_sqrt = true ) {
+
             T p_x = p.first;
             T p_y = p.second;
 
@@ -320,6 +326,13 @@ namespace fs {
             return is_in_outer ? dist : -dist;
         }
 
+
+        template<typename BoundaryNodes>
+        size_t num_sections( const BoundaryNodes& boundary_nodes ) {
+
+            return boundary_nodes.size();
+        }
+
         template<typename T,typename Points,typename BoundaryNodes>
         T distance_to_polygon_multiple_segments( const std::pair<T,T>& p, 
                                                  const Points& points,
@@ -327,22 +340,26 @@ namespace fs {
                                                  bool is_in_outer = false, 
                                                  bool return_sqrt = true ) {
 
+            using InnerBoundaryNodess = std::decay_t<decltype(boundary_nodes[0])>;
+
             T dist = std::numeric_limits<T>::max();
             
             const size_t ns = num_sections( boundary_nodes );
 
             for ( size_t i = 0; i < ns; ++i ) {
 
-                BoundaryNodes bn = get_boundary_nodes( boundary_nodes, i );
+                InnerBoundaryNodess bn = get_boundary_nodes( boundary_nodes, i );
 
-                T new_dist = distance_to_polygon_single_segment( p, points, bn, is_in_outer == true );
+                T new_dist = distance_to_polygon_single_segment( p, points, bn, is_in_outer == true, false );
+
+                is_in_outer = sign( new_dist ) == 1 ? true : false;
                 new_dist = std::abs( new_dist );
 
                 dist = new_dist < dist ? new_dist : dist;
             }
 
             dist = return_sqrt ? std::sqrt( dist ) : dist;
-            return is_in_outer * dist;
+            return is_in_outer ? dist : -dist;
         }
 
         template<typename T,typename Points,typename BondaryNodes>
