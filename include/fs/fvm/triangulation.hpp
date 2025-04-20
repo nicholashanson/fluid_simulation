@@ -19,6 +19,66 @@ namespace fs {
     namespace fvm {
 
         template<typename T>
+        T fast_two_sum_tail( const T a, const T b, const T x ) {
+
+            const T b_virt = x - a;
+            const T y = b - b_virt;
+
+            return y;
+        }
+
+        template<typename T>
+        std::tuple<T,T> fast_two_sum( const T a, const T b ) {
+
+            const T x = a + b;
+            const T y = fast_two_sum_tail( a, b, x );
+            
+            return std::make_tuple( x, y );
+        }
+
+        template<typename T>
+        T two_sum_tail( const T a, const T b, const T x ) {
+
+            const T b_virt = x - a;
+            const T a_virt = x - b_virt;
+            const T b_round = b - b_virt;
+            const T a_round = a - a_virt;
+            const T y = a_round + b_round;
+
+            return y;
+        }
+
+        template<typename T>
+        std::pair<T,T> two_sum( const T a, const T b ) {
+
+            const T x = a + b;
+            const T y = two_sum_tail( a, b, x );
+            
+            return std::make_tuple( x, y );
+        }
+
+        template<typename T>
+        T two_diff_tail( const T a, const T b, const T x ) {
+
+            const T b_virt = a - x;
+            const T a_virt = x + b_virt;
+            const T b_round = b_virt - b;
+            const T a_round = a - a_virt;
+            const T y = a_round + b_round;
+
+            return y;
+        }
+
+        template<typename T>
+        std::tuple<T,T> two_diff( const T a, const T b ) {
+            
+            const T x = a - b;
+            const T y = two_diff_tail( a, b, x );
+            
+            return std::make_tuple( x, y );  
+        }
+
+        template<typename T>
         int sign( T val ) {
             return ( T( 0 ) < val ) - ( val < T( 0 ) );
         }
@@ -97,16 +157,255 @@ namespace fs {
 
         constexpr init_constants<double> double_constants( std::numeric_limits<double>::epsilon() );
 
-        /*
+        template<typename T>
+        std::tuple<T,T,T> two_one_diff( const T a_1, const T a_0, const T b ) {
+            
+            const auto [ _i, x_0 ] = two_diff( a_0, b );
+            const auto [ x_2, x_1 ] = two_sum( a_1, _i );
+            
+            return std::make_tuple( x_2, x_1, x_0 );
+        }
+
+        template<typename T>
+        std::tuple<T,T,T,T>
+        two_two_diff( const T a_1, const T a_0, const T b_1, const T b_0 ) {
+
+            const auto [ _j, _0, x_0 ] = two_one_diff( a_1, a_0, b_0 );
+            const auto [ x_3, x_2, x_1 ] = two_one_diff( _j, _0, b_1 );
+            
+            return std::make_tuple( x_3, x_2, x_1, x_0 );
+        }
+
+        template<typename T>
+        std::tuple<T,T> split( const T a ) {
+            
+            const T c = double_constants.splitter * a;
+            const T a_big = c - a;
+            const T a_hi = c - a_big;
+            const T a_lo = a - a_hi;
+            
+            return std::make_tuple( a_hi, a_lo );
+        }
+
+        template<typename T> 
+        T two_product_tail( const T a, const T b, const T x ) {
+
+            const auto [ a_hi, a_lo ] = split( a );
+            const auto [ b_hi, b_lo ] = split( b );
+
+            const T err_1 = x - ( a_hi * b_hi );
+            const T err_2 = err_1 - ( a_lo * b_hi );
+            const T err_3 = err_2 - ( a_hi * b_lo );
+            const T y = ( a_lo * b_lo ) - err_3;
+            
+            return y;
+        }
+
         template<typename T> 
         std::tuple<T,T> two_product( const T a, const T b ) {
 
-            T x = a * b
-            T y = two_product_tail( a, b, x )
+            T x = a * b;
+            T y = two_product_tail( a, b, x );
             
             return std::make_tuple( x, y );
         }
-        */
+
+        template<typename T>
+        T estimate( const size_t elen, std::tuple<T,T,T,T> e ) {
+            T Q{};
+            for ( size_t i = 0; i < elen; ++i ) {
+                Q += e[i];
+            }
+            return Q;
+        }
+
+        template<typename T>
+        void set_index( const std::array<T,8>& e, const T value, const size_t index ) {
+
+            if ( index > e.size() ) {
+                return;
+            } else {
+                return e[ index ] = value;
+            }
+        }
+
+        template<typename T>
+        T safe_get_index( const std::array<T,8> e, const size_t e_index, const size_t e_len ) {
+
+            if ( e_index <= e_len && e_index <= e.size() ) {
+                return e[ e_index ];
+            } else {
+                return ( T )0;
+            }
+        }
+
+        template<typename T>
+        std::tuple<T,T> fast_expansion_sum_zero_elim( const size_t e_len, const std::array<T,8> e, 
+                                                      const size_t f_len, const std::array<T,8> f,
+                                                      const std::array<T,8> h ) {
+        
+            T e_now = e[ 0 ];
+            T f_now = f[ 0 ];
+
+            size_t e_index = 1;
+            size_t f_index = 1;
+
+            T Q{};
+
+            if ( ( f_now > e_now ) == ( f_now > -e_now ) ) {
+                Q = e_now;
+                e_index += 1;
+                e_now = safe_get_index( e, e_index, e_len );
+            } else {
+                Q = f_now;
+                f_index += 1;
+                f_now = safe_get_index( f, f_index, f_len );
+            }
+         
+            size_t h_index = 1;
+            T hh{};
+
+            if ( ( e_index <= e_len ) && ( f_index <= f_len ) ) {
+
+                if ( ( f_now > e_now ) == ( f_now > -e_now ) ) {
+
+                    std::tuple<T,T> sum = fast_two_sum( e_now, Q );
+                    Q = std::get<0>( sum );
+                    hh = std::get<1>( sum );
+                    e_index += 1;
+                    e_now = safe_get_index( e, e_index, e_len );
+                } else {
+                    std::tuple<T,T> sum = fast_two_sum( f_now, Q );
+                    Q = std::get<0>( sum );
+                    hh = std::get<1>( sum );
+                    f_index += 1;
+                    f_now = safe_get_index( f, f_index, f_len );
+                }
+            }
+
+            if ( hh != 0 ) {
+                set_index( h, hh, h_index );
+                h_index += 1;
+            }
+
+            while ( ( e_index <= e_len ) && ( f_index <= f_len ) ) {
+                if ( ( f_now > e_now ) == ( f_now > -e_now ) ) {
+                    std::tuple<T,T> sum = two_sum( Q, e_now );
+                    Q = std::get<0>( sum );
+                    hh = std::get<1>( sum );
+                    e_index += 1;
+                    e_now = safe_get_index( e, e_index, e_len );
+                } else {
+                    std::tuple<T,T> sum = fast_two_sum( Q, f_now );
+                    Q = std::get<0>( sum );
+                    hh = std::get<1>( sum );
+                    f_index += 1;
+                    f_now = safe_get_index( f, f_index, f_len );
+                }
+
+                if ( hh != 0 ) { 
+                    set_index( h, hh, h_index );
+                    h_index += 1;
+                }
+            }
+        
+            while ( e_index <= e_len ) {
+                
+                std::tuple<T,T> sum = two_sum( Q, e_now );
+                Q = std::get<0>( sum );
+                hh = std::get<1>( sum );
+                e_index += 1;
+                e_now = safe_get_index( e, e_index, e_len );
+                
+                if ( hh != 0 ) {
+                    set_index( h, hh, h_index );
+                    h_index += 1;
+                }
+            }
+
+            while ( f_index <= f_len ) {
+
+                std::tuple<T,T> sum = two_sum( Q, f_now );
+                Q = std::get<0>( sum );
+                hh = std::get<1>( sum );
+                f_index += 1;
+                f_now = safe_get_index( f, f_index, f_len );
+
+                if ( hh != 0 ) {
+                    set_index( h, hh, h_index );
+                    h_index += 1;
+                }
+            }
+
+            if ( Q != 0 || h_index == 1 ) {
+                set_index( h, Q, h_index );
+                h_index += 1;
+            }
+
+            return std::make_tuple( h, h_index - 1 );
+        }
+
+
+        template<typename T>
+        T orient_2_adapt( const std::pair<T,T>& p, const std::pair<T,T>& q, const std::pair<T,T>& r, const T detsum ) {
+
+            const T ac_x = p.first - r.first;
+            const T bc_x = q.first - r.first;
+            const T ac_y = p.second - r.second;
+            const T bc_y = q.second - r.second;
+
+            auto [ det_left, det_left_tail ] = two_Product( ac_x, bc_y );
+            auto [ det_right, det_right_tail ] = two_Product( ac_y, bc_x );
+
+            const auto B = two_two_diff( det_left, det_left_tail, det_right, det_right_tail );
+
+            const T det = estimate( 4, B ); 
+            const T err_bound = double_constants.ccw.B * detsum;
+
+            if ( ( det >= err_bound ) || ( -det >= err_bound ) ) {
+                return det;
+            }
+
+            T ac_x_tail = two_diff_tail( p.first, r.first, ac_x );
+            T bc_x_tail = two_diff_tail( q.first, r.first, bc_x );
+            T ac_y_tail = two_diff_tail( p.second, r.second, ac_y );
+            T bc_y_tail = two_diff_tail( q.second, r.second, bc_y );
+
+            if ( ac_x_tail == 0 && ac_y_tail == 0 && bc_x_tail == 0 && bc_y_tail == 0 ) {
+                return det;
+            }
+
+            err_bound = double_constants.ccw.C * detsum + double_constants.result_err_bound * std::abs( det );
+            det += ( ac_x * bc_y_tail + bc_y * ac_x_tail ) - ( ac_y * bc_x_tail + bc_x * ac_y_tail );
+        
+            if ( ( det >= err_bound ) || ( -det >= err_bound ) ) {
+                return det;
+            }
+
+            const auto [ s_1, s_0 ] = two_product( ac_x_tail, bc_y );
+            const auto [ t_1, t_0 ] = two_product( ac_y_tail, bc_x );
+            const auto u = two_two_diff( s_1, s_0, t_1, t_0 );
+
+            std::array<T, 8> h_8 = { T( 0 ) };
+
+            const auto [ c_1, c_1_len ] = fast_expansion_sum_zero_elim( 4, B, 4, u, h_8 );
+
+            std::tie( s_1, s_0 ) = two_product( ac_x, bc_y_tail );
+            std::tie( t_1, t_0 ) = two_product( ac_y, bc_x_tail );
+            u = two_two_diff( s_1, s_0, t_1, t_0 ); 
+
+            std::array<T,12> h_12 = { ( T )0 };
+            const auto [ c_2, c_2_len ] = fast_expansion_sum_zero_elim( c_1_len, c_1, 4, u, h_12 );
+
+            std::tie( s_1, s_0 ) = two_product( ac_x_tail, bc_y_tail );
+            std::tie( t_1, t_0 ) = two_product( ac_y_tail, bc_x_tail );
+            u = two_two_diff( s_1, s_0, t_1, t_0 );
+        
+            std::array<T,16> h_16 = { ( T )0 };
+            const auto [ d, d_len ] = fast_expansion_sum_zero_elim( c_2_len, c_2, 4, u, h_16 );
+
+            return d[ d_len ];
+        }
 
         template<typename T>
         T orient_2( const std::pair<T,T>& p, const std::pair<T,T>& q, const std::pair<T,T>& r ) {
@@ -133,6 +432,13 @@ namespace fs {
             } else {
                 return det;
             }
+
+            const T err_bound = double_constants.ccw.A * detsum;
+            if ( ( det >= err_bound ) || ( -det >= err_bound ) ) {
+                return det;
+            }
+
+            return orient_2_adapt( p, q, r, detsum );
         }
 
         struct custom_point;
@@ -422,17 +728,61 @@ namespace fs {
 
         template<typename T>
         void polygon_bounds_multiple_segments() {
-
-            T xmin = std::numeric_limits<T>::max();
-            T xmax = std::numeric_limits<T>::min();
-            T ymin = std::numeric_limits<T>::max();
-            T ymax = std::numeric_limits<T>::min();
-        
         }
 
         template<typename T>
-        void polygon_bounds( bool check_all_curves = false ) {
+        struct polygon_bounds {
+            T xmin;
+            T xmax;
+            T ymin;
+            T ymax;
+
+            polygon_bounds() 
+                : xmin( std::numeric_limits<T>::max() ),
+                  xmax( std::numeric_limits<T>::min() ),
+                  ymin( std::numeric_limits<T>::max() ),
+                  ymax( std::numeric_limits<T>::min() ) {}
+
+            polygon_bounds( const T& xmin, const T& xmax, const T& ymin, const T& ymax ) 
+                : xmin( xmin ), xmax( xmax ), ymin( ymin ), ymax( ymax ) {}
+
+            void update( const std::pair<T,T>& p ) {
+                xmin = std::min( p.first, xmin );
+                xmax = std::max( p.first, xmax );
+                ymin = std::min( p.second, ymin );
+                ymax = std::max( p.second, ymax );
+            }
+        };
+
+        template<typename T,typename Points,typename BoundaryNodes>
+        polygon_bounds<T> get_polygon_bounds_single_segment( const Points points, 
+                                                             const BoundaryNodes& boundary_nodes, 
+                                                             bool check_all_curves = false ) {
+
+            polygon_bounds<T> pb;
+            
+            const size_t n_edge = num_boundary_edges( boundary_nodes );
+
+            for ( size_t i = 0; i < n_edge; ++ i ) {
+                
+                const auto p_index = get_boundary_nodes( boundary_nodes, i );
+                const auto p = get_point( points, p_index );
+                pb.update( p );
+            }
+
+            return pb;
+        }
+
+        template<typename T,typename Points,typename BoundaryNodes>
+        polygon_bounds<T> get_polygon_bounds( const Points points, 
+                                              const BoundaryNodes& boundary_nodes, 
+                                              bool check_all_curves = false ) {
+
             polygon_bounds_multiple_segments<T>();
+
+            auto polygon_bounds = get_polygon_bounds_single_segment( points, boundary_nodes );
+
+            return polygon_bounds;
         }
 
         template<typename I,typename T>
@@ -651,6 +1001,34 @@ namespace fs {
                 polygon_orientations.push_back( true );
             }
         };
+
+        template<typename I,typename T>
+        std::pair<T,T> triangle_orthocenter( const triangulation<I,T>& tri, const triangle& t ) {
+
+            const std::pair<T,T> p = get_point( tri, std::get<0>( t ) );
+            const std::pair<T,T> q = get_point( tri, std::get<1>( t ) );
+            const std::pair<T,T> r = get_point( tri, std::get<2>( t ) );
+
+            const T a = get_weight( tri, std::get<0>( t ) );
+            const T b = get_weight( tri, std::get<1>( t ) );
+            const T c = get_weight( tri, std::get<2>( t ) );
+
+            const T A = triangle_area( p, q, r );
+
+            const T d_11 = dist_Sqr( p, r ) + c - a;
+            const T d_12 = p.second - r.second;
+            const T d_21 = dist_sqr( q, r ) + c - b;
+            const T d_22 = q.second - r.second;
+            
+            const T o_x = r.first + ( d_11 * d_22 - d_12 * d_21 ) / ( 4 * A );
+            const T e_11 = p.fist - r.first;
+            const T e_12 = d_11;
+            const T e_21 = q.first - r.first;
+            const T e_22 = d_21;
+            const T o_y = r.second + ( e_11 * e_22 - e_12 * e_21 ) / ( 4 * A );
+
+            return { o_x, o_y };
+        }
 
     } // namespace fvm
 
