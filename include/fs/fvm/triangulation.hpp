@@ -18,6 +18,16 @@ namespace fs {
 
     namespace fvm {
 
+        template <typename... Ts, std::size_t... I>
+        auto tuple_to_array_impl(const std::tuple<Ts...>& t, std::index_sequence<I...>) {
+            return std::array{std::get<I>(t)...}; // Use index sequence to access elements
+        }
+
+        template <typename... Ts>
+        auto tuple_to_array(const std::tuple<Ts...>& t) {
+            return tuple_to_array_impl(t, std::index_sequence_for<Ts...>{});
+        }
+
         template<typename T>
         T fast_two_sum_tail( const T a, const T b, const T x ) {
 
@@ -211,38 +221,37 @@ namespace fs {
         }
 
         template<typename T>
-        T estimate( const size_t elen, std::tuple<T,T,T,T> e ) {
+        T estimate( const size_t e_len, std::tuple<T,T,T,T> e ) {
             T Q{};
-            for ( size_t i = 0; i < elen; ++i ) {
-                Q += e[i];
+            auto e_arr = tuple_to_array( e );
+            for ( size_t i = 0; i < e_len; ++i ) {
+                Q += e_arr[ i ];
             }
             return Q;
         }
 
-        template<typename T>
-        void set_index( const std::array<T,8>& e, const T value, const size_t index ) {
+        template<size_t N,typename T>
+        void set_index( std::array<T,N>& e, const T value, const size_t index ) {
 
-            if ( index > e.size() ) {
-                return;
-            } else {
-                return e[ index ] = value;
+            if ( index < e.size() ) {
+                e[ index ] = value;
             }
         }
 
-        template<typename T>
-        T safe_get_index( const std::array<T,8> e, const size_t e_index, const size_t e_len ) {
+        template<size_t N,typename T>
+        T safe_get_index( const std::array<T,N> e, const size_t e_index ) {
 
-            if ( e_index <= e_len && e_index <= e.size() ) {
+            if ( e_index <= N && e_index <= e.size() ) {
                 return e[ e_index ];
             } else {
                 return ( T )0;
             }
         }
 
-        template<typename T>
-        std::tuple<T,T> fast_expansion_sum_zero_elim( const size_t e_len, const std::array<T,8> e, 
-                                                      const size_t f_len, const std::array<T,8> f,
-                                                      const std::array<T,8> h ) {
+        template<size_t N,typename T>
+        std::tuple<size_t,std::array<T,N>> fast_expansion_sum_zero_elim( const size_t e_len, const std::array<T,N-4>& e, 
+                                                                         const size_t f_len, const std::array<T,4>& f,
+                                                                         std::array<T,N>& h ) {
         
             T e_now = e[ 0 ];
             T f_now = f[ 0 ];
@@ -255,11 +264,11 @@ namespace fs {
             if ( ( f_now > e_now ) == ( f_now > -e_now ) ) {
                 Q = e_now;
                 e_index += 1;
-                e_now = safe_get_index( e, e_index, e_len );
+                e_now = safe_get_index<N-4>( e, e_index );
             } else {
                 Q = f_now;
                 f_index += 1;
-                f_now = safe_get_index( f, f_index, f_len );
+                f_now = safe_get_index<4>( f, f_index );
             }
          
             size_t h_index = 1;
@@ -273,18 +282,18 @@ namespace fs {
                     Q = std::get<0>( sum );
                     hh = std::get<1>( sum );
                     e_index += 1;
-                    e_now = safe_get_index( e, e_index, e_len );
+                    e_now = safe_get_index<N-4>( e, e_index );
                 } else {
                     std::tuple<T,T> sum = fast_two_sum( f_now, Q );
                     Q = std::get<0>( sum );
                     hh = std::get<1>( sum );
                     f_index += 1;
-                    f_now = safe_get_index( f, f_index, f_len );
+                    f_now = safe_get_index<4>( f, f_index );
                 }
             }
 
             if ( hh != 0 ) {
-                set_index( h, hh, h_index );
+                set_index<N>( h, hh, h_index );
                 h_index += 1;
             }
 
@@ -294,17 +303,17 @@ namespace fs {
                     Q = std::get<0>( sum );
                     hh = std::get<1>( sum );
                     e_index += 1;
-                    e_now = safe_get_index( e, e_index, e_len );
+                    e_now = safe_get_index<N-4>( e, e_index );
                 } else {
                     std::tuple<T,T> sum = fast_two_sum( Q, f_now );
                     Q = std::get<0>( sum );
                     hh = std::get<1>( sum );
                     f_index += 1;
-                    f_now = safe_get_index( f, f_index, f_len );
+                    f_now = safe_get_index<4>( f, f_index );
                 }
 
                 if ( hh != 0 ) { 
-                    set_index( h, hh, h_index );
+                    set_index<N>( h, hh, h_index );
                     h_index += 1;
                 }
             }
@@ -315,10 +324,10 @@ namespace fs {
                 Q = std::get<0>( sum );
                 hh = std::get<1>( sum );
                 e_index += 1;
-                e_now = safe_get_index( e, e_index, e_len );
+                e_now = safe_get_index<N-4>( e, e_index );
                 
                 if ( hh != 0 ) {
-                    set_index( h, hh, h_index );
+                    set_index<N>( h, hh, h_index );
                     h_index += 1;
                 }
             }
@@ -329,37 +338,39 @@ namespace fs {
                 Q = std::get<0>( sum );
                 hh = std::get<1>( sum );
                 f_index += 1;
-                f_now = safe_get_index( f, f_index, f_len );
+                f_now = safe_get_index<4>( f, f_index );
 
                 if ( hh != 0 ) {
-                    set_index( h, hh, h_index );
+                    set_index<N>( h, hh, h_index );
                     h_index += 1;
                 }
             }
 
             if ( Q != 0 || h_index == 1 ) {
-                set_index( h, Q, h_index );
+                set_index<N>( h, Q, h_index );
                 h_index += 1;
             }
 
-            return std::make_tuple( h, h_index - 1 );
+            return std::make_tuple( h_index - 1, h );
         }
 
         template<typename T>
         T orient_2_adapt( const std::pair<T,T>& p, const std::pair<T,T>& q, const std::pair<T,T>& r, const T detsum ) {
+
+            std::cout << "called backup" << std::endl;
 
             const T ac_x = p.first - r.first;
             const T bc_x = q.first - r.first;
             const T ac_y = p.second - r.second;
             const T bc_y = q.second - r.second;
 
-            auto [ det_left, det_left_tail ] = two_Product( ac_x, bc_y );
-            auto [ det_right, det_right_tail ] = two_Product( ac_y, bc_x );
+            auto [ det_left, det_left_tail ] = two_product( ac_x, bc_y );
+            auto [ det_right, det_right_tail ] = two_product( ac_y, bc_x );
 
             const auto B = two_two_diff( det_left, det_left_tail, det_right, det_right_tail );
 
-            const T det = estimate( 4, B ); 
-            const T err_bound = double_constants.ccw.B * detsum;
+            T det = estimate( 4, B ); 
+            T err_bound = double_constants.ccw.B * detsum;
 
             if ( ( det >= err_bound ) || ( -det >= err_bound ) ) {
                 return det;
@@ -381,27 +392,32 @@ namespace fs {
                 return det;
             }
 
-            const auto [ s_1, s_0 ] = two_product( ac_x_tail, bc_y );
-            const auto [ t_1, t_0 ] = two_product( ac_y_tail, bc_x );
-            const auto u = two_two_diff( s_1, s_0, t_1, t_0 );
+            auto [ s_1, s_0 ] = two_product( ac_x_tail, bc_y );
+            auto [ t_1, t_0 ] = two_product( ac_y_tail, bc_x );
+            auto u = two_two_diff( s_1, s_0, t_1, t_0 );
 
             std::array<T, 8> h_8 = { T( 0 ) };
 
-            const auto [ c_1, c_1_len ] = fast_expansion_sum_zero_elim( 4, B, 4, u, h_8 );
+            auto B_arr = tuple_to_array( B );
+            auto u_arr = tuple_to_array( u );
+
+            const auto [ c_1_len, c_1 ] = fast_expansion_sum_zero_elim<8>( 4, B_arr, 4, u_arr, h_8 );
 
             std::tie( s_1, s_0 ) = two_product( ac_x, bc_y_tail );
             std::tie( t_1, t_0 ) = two_product( ac_y, bc_x_tail );
-            u = two_two_diff( s_1, s_0, t_1, t_0 ); 
+            u = two_two_diff( s_1, s_0, t_1, t_0 );
+            u_arr = tuple_to_array( u ); 
 
             std::array<T,12> h_12 = { ( T )0 };
-            const auto [ c_2, c_2_len ] = fast_expansion_sum_zero_elim( c_1_len, c_1, 4, u, h_12 );
+            const auto [ c_2_len, c_2 ] = fast_expansion_sum_zero_elim<12>( c_1_len, c_1, 4, u_arr, h_12 );
 
             std::tie( s_1, s_0 ) = two_product( ac_x_tail, bc_y_tail );
             std::tie( t_1, t_0 ) = two_product( ac_y_tail, bc_x_tail );
             u = two_two_diff( s_1, s_0, t_1, t_0 );
+            u_arr = tuple_to_array( u );
         
             std::array<T,16> h_16 = { ( T )0 };
-            const auto [ d, d_len ] = fast_expansion_sum_zero_elim( c_2_len, c_2, 4, u, h_16 );
+            const auto [ d_len, d ] = fast_expansion_sum_zero_elim<16>( c_2_len, c_2, 4, u_arr, h_16 );
 
             return d[ d_len ];
         }
