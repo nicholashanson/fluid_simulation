@@ -345,7 +345,6 @@ namespace fs {
             return std::make_tuple( h, h_index - 1 );
         }
 
-
         template<typename T>
         T orient_2_adapt( const std::pair<T,T>& p, const std::pair<T,T>& q, const std::pair<T,T>& r, const T detsum ) {
 
@@ -1001,6 +1000,13 @@ namespace fs {
                 polygon_orientations.push_back( true );
             }
         };
+
+        template<typename T>
+        T triangle_area( const std::pair<T,T>& p, const std::pair<T,T>& q, const std::pair<T,T>& r ) {
+
+            const T A = orient_2( p, q, r ) / ( T )2;
+            return A;
+        }
 
         template<typename I,typename T>
         std::pair<T,T> triangle_orthocenter( const triangulation<I,T>& tri, const triangle& t ) {
