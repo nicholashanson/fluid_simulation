@@ -18,6 +18,16 @@ namespace fs {
 
     namespace fvm {
 
+        using triangle = std::tuple<int,int,int>;
+
+        struct compare_triangles {
+            bool operator()( const triangle& a, const triangle& b ) const {
+                return std::get<0>( a ) < std::get<0>( b );
+            }
+        };
+
+        using triangle_set = std::set<triangle, compare_triangles>;
+
         template <typename... Ts, std::size_t... I>
         auto tuple_to_array_impl(const std::tuple<Ts...>& t, std::index_sequence<I...>) {
             return std::array{std::get<I>(t)...}; // Use index sequence to access elements
@@ -830,28 +840,32 @@ namespace fs {
 
             using integer_type = I;
 
-            triangulation( const std::vector<std::pair<T,T>>&& points, const std::vector<I>&& boundary ) 
-                : points( std::move( points ) ), boundary( std::move( boundary ) ) {}
+            triangulation( const triangle_set&& triangles,
+                           const std::vector<std::pair<T,T>>&& points, const std::vector<I>&& boundary ) 
+                : triangles( std::move( triangles ) ), points( std::move( points ) ), boundary( std::move( boundary ) ) {}
 
             // Rule-of-Zero
             BPL<I,T> get_representative_points() {
                 return representative_points;
             }
+
+            T get_weight( const size_t i ) const {
+                return ( T )0;
+            }
+
+            std::pair<T,T> get_point( const size_t i ) const {
+                return points[ i ];
+            } 
+
+            triangle_set get_triangles() const {
+                return triangles;
+            }
         private:
+            triangle_set triangles;
             BPL<I,T> representative_points;
             std::vector<std::pair<T,T>> points;
             std::vector<I> boundary;
         };
-
-        using triangle = std::tuple<int,int,int>;
-
-        struct compare_triangles {
-            bool operator()( const triangle& a, const triangle& b ) const {
-                return std::get<0>( a ) < std::get<0>( b );
-            }
-        };
-
-        using triangle_set = std::set<triangle, compare_triangles>;
 
         inline size_t sub_2_ind( const size_t x, const size_t y, const size_t xdim ) {
 
@@ -862,18 +876,18 @@ namespace fs {
 
             triangle_set triangles = {};
 
-            for ( size_t y = 1; y < ydim; ++y ) {
-                for ( size_t x = 1; x < xdim; ++x ) {
+            for ( size_t y = 0; y < ydim; ++y ) {
+                for ( size_t x = 0; x < xdim; ++x ) {
 
-                    int u = sub_2_ind( x, y - 1, xdim );
-                    int v = sub_2_ind( x + 1, y - 1, xdim ); 
-                    int w = sub_2_ind( x, y, xdim );
+                    int u = sub_2_ind( x, y, xdim );
+                    int v = sub_2_ind( x + 1, y, xdim ); 
+                    int w = sub_2_ind( x, y + 1, xdim );
 
                     triangles.insert( std::make_tuple( u, v, w ) );
 
                     u = sub_2_ind( x, y, xdim );
-                    v = sub_2_ind( x + 1, y - 1, xdim ); 
-                    w = sub_2_ind( x + 1, y, xdim );
+                    v = sub_2_ind( x + 1, y + 1, xdim ); 
+                    w = sub_2_ind( x, y + 1, xdim );
 
                     triangles.insert( std::make_tuple( u, v, w ) );
                 }
@@ -937,7 +951,7 @@ namespace fs {
             auto points = get_lattice_points( a, b, c, d, xdim, ydim );
             auto boundary = get_lattice_boundary( xdim, ydim );
             
-            auto tri = triangulation( std::move( points ), std::move( boundary ) );
+            auto tri = triangulation( std::move( lattice_triangles ), std::move( points ), std::move( boundary ) );
 
             return tri;
         }
@@ -1024,32 +1038,61 @@ namespace fs {
             return A;
         }
 
+        template<typename T>
+        struct zero_weight {};
+
+        inline const zero_weight<double> zw;
+
         template<typename I,typename T>
         std::pair<T,T> triangle_orthocenter( const triangulation<I,T>& tri, const triangle& t ) {
 
-            const std::pair<T,T> p = get_point( tri, std::get<0>( t ) );
-            const std::pair<T,T> q = get_point( tri, std::get<1>( t ) );
-            const std::pair<T,T> r = get_point( tri, std::get<2>( t ) );
+            const std::pair<T,T> p = tri.get_point( std::get<0>( t ) );
+            const std::pair<T,T> q = tri.get_point( std::get<1>( t ) );
+            const std::pair<T,T> r = tri.get_point( std::get<2>( t ) );
 
-            const T a = get_weight( tri, std::get<0>( t ) );
-            const T b = get_weight( tri, std::get<1>( t ) );
-            const T c = get_weight( tri, std::get<2>( t ) );
+            const T a = tri.get_weight( std::get<0>( t ) );
+            const T b = tri.get_weight( std::get<1>( t ) );
+            const T c = tri.get_weight( std::get<2>( t ) );
 
             const T A = triangle_area( p, q, r );
 
-            const T d_11 = dist_Sqr( p, r ) + c - a;
+            const T d_11 = dist_sqr( p, r ) + c - a;
             const T d_12 = p.second - r.second;
             const T d_21 = dist_sqr( q, r ) + c - b;
             const T d_22 = q.second - r.second;
             
             const T o_x = r.first + ( d_11 * d_22 - d_12 * d_21 ) / ( 4 * A );
-            const T e_11 = p.fist - r.first;
+            const T e_11 = p.first - r.first;
             const T e_12 = d_11;
             const T e_21 = q.first - r.first;
             const T e_22 = d_21;
             const T o_y = r.second + ( e_11 * e_22 - e_12 * e_21 ) / ( 4 * A );
 
             return { o_x, o_y };
+        }
+
+        /*
+            l_1, l_2, l_3: the squared lengths of the sides of a the triangle
+        */
+        template<typename T>
+        T triangle_area( const T l_1, const T l_2, const T l_3 ) {
+
+            // area squared
+            T A_2 = ( 4 * l_1 * l_2 - ( l_1 + l_2 - l_3) * ( l_1 + l_2 - l_3 ) ) / 16;
+
+            if ( A_2 < 0 ) {
+                T a = std::sqrt( l_1 );
+                T b = std::sqrt( l_2 );
+                T c = std::sqrt( l_3 );
+                
+                A_2 = ( a + ( b + c ) ) * ( c - ( a - b) ) * ( c + ( a - b ) ) * ( a + ( b - c ) ) / 16;
+            }
+
+            if ( A_2 < 0 ) {
+                return 0;
+            } else {
+                return std::sqrt( A_2 );
+            }
         }
 
     } // namespace fvm
