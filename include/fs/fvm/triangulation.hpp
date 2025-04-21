@@ -14,6 +14,10 @@
 #include <concepts>
 #include <type_traits>
 
+#ifndef M_PI
+#define M_PI ( 4 * std::atan( 1 ) )
+#endif
+
 namespace fs {
 
     namespace fvm {
@@ -1043,6 +1047,21 @@ namespace fs {
 
         inline const zero_weight<double> zw;
 
+        template<typename T>
+        std::tuple<T,T> min_max( const T& a, const T& b ) {
+            return std::make_tuple( std::min( a, b ), std::max( a, b ) );
+        }
+
+        template<typename T>
+        std::tuple<T,T,T> min_med_max( T& a, T& b, T& c ) {
+
+            std::tie( b, c ) = min_max( b, c );
+            std::tie( a, c ) = min_max( a, c );
+            std::tie( a, b ) = min_max( a, b );
+
+            return std::make_tuple( a, b, c );
+        }
+
         template<typename I,typename T>
         std::pair<T,T> triangle_orthocenter( const triangulation<I,T>& tri, const triangle& t ) {
 
@@ -1093,6 +1112,80 @@ namespace fs {
             } else {
                 return std::sqrt( A_2 );
             }
+        }
+
+        template<typename T>
+        std::tuple<T,T,T,size_t> squared_triangle_lengths_with_smallest_index(
+            const std::pair<T,T>& p,
+            const std::pair<T,T>& q,
+            const std::pair<T,T>& r
+        ) {
+
+            const T l_1 = dist_sqr( p, q );
+            const T l_2 = dist_sqr( q, r );
+            const T l_3 = dist_sqr( r, p );
+
+            auto [ l_min, l_med, l_max ] = min_med_max( l_1, l_2, l_3 );
+
+            size_t shortest_index{};
+
+            if ( l_min == l_2 ) {
+                shortest_index = 1;
+            }
+
+            if ( l_min == l_3 ) {
+                shortest_index = 2;
+            }
+            
+            return std::tuple( l_min, l_med, l_max, shortest_index );
+        }
+
+        template<typename T>
+        std::tuple<T,T,T> triangle_angles(
+            const std::pair<T,T>& p,
+            const std::pair<T,T>& q,
+            const std::pair<T,T>& r
+        ) {
+
+            const T A = triangle_area( p, q, r );
+
+            T a_x = p.first - q.first;
+            T b_y = p.second - q.second;
+            T b_x = p.first - r.first;
+            T a_y = p.second - r.second;
+
+            T dot_ab = a_x * b_x + a_y * b_y;
+            T theta_1 = dot_ab == 0 ? ( M_PI / 2.0 ) : std::atan( 2 * A / dot_ab );
+
+            if ( theta_1 < 0 ) {
+                theta_1 += M_PI;
+            }
+
+            a_x = q.first - p.first;
+            b_y = q.second - p.second;
+            b_x = q.first - r.first;
+            a_y = q.second - r.second;
+            
+            dot_ab = a_x * b_x + a_y * b_y;
+
+            T theta_2 = dot_ab == 0 ? ( M_PI / 2.0 ) : std::atan( 2 * A / dot_ab );
+
+            if ( theta_2 < 0 ) {
+                theta_2 += M_PI;
+            }
+
+            a_x = r.first - p.first;
+            b_y = r.second - p.second;
+            b_x = r.first - q.first;
+            a_y = r.second - q.second;
+
+            T theta_3 = dot_ab == 0 ? ( M_PI / 2.0 ) : std::atan( 2 * A / dot_ab );
+
+            if ( theta_3 < 0 ) {
+                theta_3 += M_PI;
+            }
+
+            return min_med_max( theta_1, theta_2, theta_3 );
         }
 
     } // namespace fvm
