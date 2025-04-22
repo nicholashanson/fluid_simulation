@@ -1053,7 +1053,7 @@ namespace fs {
         }
 
         template<typename T>
-        std::tuple<T,T,T> min_med_max( T& a, T& b, T& c ) {
+        std::tuple<T,T,T> min_med_max( T a, T b, T c ) {
 
             std::tie( b, c ) = min_max( b, c );
             std::tie( a, c ) = min_max( a, c );
