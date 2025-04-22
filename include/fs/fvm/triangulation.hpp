@@ -1188,6 +1188,102 @@ namespace fs {
             return min_med_max( theta_1, theta_2, theta_3 );
         }
 
+        template<typename T>
+        std::tuple<T,T,T> squared_triangle_lengths(
+            const std::pair<T,T>& p, 
+            const std::pair<T,T>& q, 
+            const std::pair<T,T>& r ) {
+
+            T l_1{};
+            T l_2{};
+            T l_3{};
+    
+            std::tie( l_1, l_2, l_3, std::ignore ) = squared_triangle_lengths_with_smallest_index( p, q, r );
+            
+            return std::make_tuple( l_1, l_2, l_3 );
+        }
+
+        template<typename T>
+        std::tuple<T,T,T> triangle_lengths(
+            const std::pair<T,T>& p, 
+            const std::pair<T,T>& q, 
+            const std::pair<T,T>& r ) {
+
+            T l_1{};
+            T l_2{};
+            T l_3{};
+    
+            std::tie( l_1, l_2, l_3, std::ignore ) = squared_triangle_lengths_with_smallest_index( p, q, r );
+            
+            return std::make_tuple( std::sqrt( l_1 ), std::sqrt( l_2 ), std::sqrt( l_3 ) );
+        }
+
+        template<typename T>
+        T triangle_perimeter(
+            const std::pair<T,T>& p, 
+            const std::pair<T,T>& q, 
+            const std::pair<T,T>& r ) {
+
+            T l_1{};
+            T l_2{};
+            T l_3{};
+    
+            std::tie( l_1, l_2, l_3 ) = triangle_lengths( p, q, r );
+            
+            return l_1 + l_2 + l_3;
+        }
+
+        template<typename T>
+        std::pair<T,T> triangle_circumcenter( 
+            const std::pair<T,T>& p, 
+            const std::pair<T,T>& q, 
+            const std::pair<T,T>& r,
+            const T A
+        ) {
+
+            T d_11 = dist_sqr( p, r );
+            T d_12 = p.second - r.second;
+            T d_21 = dist_sqr( q, r );
+            T d_22 = q.second - r.second;
+            T o_x = r.first + ( d_11 * d_22 - d_12 * d_21 ) / ( 4 * A );
+            T e_11 = p.first - r.first;
+            T e_12 = d_11;
+            T e_21 = q.first - r.first;
+            T e_22 = d_21;
+            T o_y = r.second + ( e_11 * e_22 - e_12 * e_21 ) / ( 4 * A );
+            return { o_x, o_y };
+        }
+
+        template<typename T>
+        std::pair<T,T> triangle_circumcenter( 
+            const std::pair<T,T>& p, 
+            const std::pair<T,T>& q, 
+            const std::pair<T,T>& r
+        ) {
+
+            T A = triangle_area( p, q, r );
+            return triangle_circumcenter( p, q, r, A );
+        }
+
+        template<typename T>
+        T triangle_inradius( const T A, const T perimeter ) {
+            return 2 * A / perimeter;
+        }
+
+        template<typename T>
+        T triangle_inradius( 
+            const std::pair<T,T>& p, 
+            const std::pair<T,T>& q, 
+            const std::pair<T,T>& r
+        ) {
+
+            T A = triangle_area( p, q, r );
+
+            T perimeter = triangle_perimeter( p, q, r );
+
+            return triangle_inradius( A, perimeter );
+        }
+
     } // namespace fvm
 
 } // namespace fs 

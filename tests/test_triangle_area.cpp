@@ -70,3 +70,47 @@ TEST( GeometryTests, SquaredTriangleLengthsWithSmallestIndex ) {
 
     EXPECT_EQ( index, 2 ); 
 }
+
+TEST( GeometryTests, TriangleCircumcenterTest ) {
+
+    std::pair<double, double> p = { 0.0, 0.0 }; 
+    std::pair<double, double> q = { 4.0, 0.0 }; 
+    std::pair<double, double> r = { 2.0, 4.0 }; 
+
+    std::pair<double, double> expected_circumcenter = { 2.0, 1.5 };
+
+    auto result = fs::fvm::triangle_circumcenter( p, q, r );
+
+    EXPECT_NEAR( result.first, expected_circumcenter.first, 1e-5 );
+    EXPECT_NEAR( result.second, expected_circumcenter.second, 1e-5 );
+}
+
+TEST( GeometryTests, InradiusOfEquilateralTriangle ) {
+
+    std::pair<double,double> p( 0.0, 0.0 );
+    std::pair<double,double> q( 2.0, 0.0 );
+    std::pair<double,double> r( 1.0, std::sqrt( 3.0 ) );
+
+    double expected_area = std::sqrt( 3.0 );
+    double expected_perimeter = 6.0;
+    double expected_inradius = expected_area / ( 0.5 * expected_perimeter );
+
+    double actual_inradius = fs::fvm::triangle_inradius( p, q, r );
+
+    EXPECT_NEAR( actual_inradius, expected_inradius, 1e-6 );
+}
+
+TEST( GeometryTests, InradiusOfRightAngleTriangle ) {
+
+    std::pair<double,double> p( 0.0, 0.0 );
+    std::pair<double,double> q( 3.0, 0.0 );
+    std::pair<double,double> r( 0.0, 4.0 );
+
+    double expected_area = 6.0;
+    double expected_perimeter = 12.0;
+    double expected_inradius = expected_area / ( 0.5 * expected_perimeter );
+
+    double actual_inradius = fs::fvm::triangle_inradius( p, q, r );
+
+    EXPECT_NEAR( actual_inradius, expected_inradius, 1e-6 );
+}
