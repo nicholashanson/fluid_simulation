@@ -114,3 +114,16 @@ TEST( GeometryTests, InradiusOfRightAngleTriangle ) {
 
     EXPECT_NEAR( actual_inradius, expected_inradius, 1e-6 );
 }
+
+TEST( GeometryTests, CircumRadius ) {
+
+    std::pair<double,double> p{ 0.0, 0.0 };
+    std::pair<double,double> q{ 4.0, 0.0 };
+    std::pair<double,double> r{ 0.0, 3.0 };
+
+    double expected_radius = 2.5; 
+
+    double actual_radius = fs::fvm::triangle_circumradius( p, q, r );
+
+    EXPECT_NEAR( actual_radius, expected_radius, 1e-8 );
+}

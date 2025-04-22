@@ -33,13 +33,13 @@ namespace fs {
         using triangle_set = std::set<triangle, compare_triangles>;
 
         template <typename... Ts, std::size_t... I>
-        auto tuple_to_array_impl(const std::tuple<Ts...>& t, std::index_sequence<I...>) {
-            return std::array{std::get<I>(t)...}; // Use index sequence to access elements
+        auto tuple_to_array_impl( const std::tuple<Ts...>& t, std::index_sequence<I...> ) {
+            return std::array{ std::get<I>( t )... }; 
         }
 
         template <typename... Ts>
-        auto tuple_to_array(const std::tuple<Ts...>& t) {
-            return tuple_to_array_impl(t, std::index_sequence_for<Ts...>{});
+        auto tuple_to_array( const std::tuple<Ts...>& t ) {
+            return tuple_to_array_impl( t, std::index_sequence_for<Ts...>{} );
         }
 
         template<typename T>
@@ -1278,10 +1278,23 @@ namespace fs {
         ) {
 
             T A = triangle_area( p, q, r );
-
             T perimeter = triangle_perimeter( p, q, r );
-
             return triangle_inradius( A, perimeter );
+        }
+
+        template<typename T>
+        T triangle_circumradius( const T A, const T l_min_sqr, const T l_med_sqr, const T l_max_sqr ) {
+            return std::sqrt( l_min_sqr * l_med_sqr * l_max_sqr ) / ( 4 * A );
+        }
+
+        template<typename T>
+        T triangle_circumradius( const std::pair<T,T>& p, 
+                                 const std::pair<T,T>& q, 
+                                 const std::pair<T,T>& r ) {
+
+            const auto [ l_1_sqr, l_2_sqr, l_3_sqr ] = squared_triangle_lengths( p, q, r );
+            T A = triangle_area( p, q, r );
+            return triangle_circumradius( A, l_1_sqr, l_2_sqr, l_3_sqr );
         }
 
     } // namespace fvm
