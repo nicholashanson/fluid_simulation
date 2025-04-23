@@ -2,14 +2,18 @@
 #define FVM_TRIANGULATION_HPP
 
 #include <cmath>
+
+#include <algorithm>
 #include <limits>
 #include <iterator>
 #include <optional>
+#include <numeric>
 
 #include <set>
 #include <map>
 #include <tuple>
 #include <vector>
+#include <ranges>
 
 #include <concepts>
 #include <type_traits>
@@ -40,6 +44,11 @@ namespace fs {
         template <typename... Ts>
         auto tuple_to_array( const std::tuple<Ts...>& t ) {
             return tuple_to_array_impl( t, std::index_sequence_for<Ts...>{} );
+        }
+
+        inline bool is_ghost( const triangle& t ) {
+            auto arr = tuple_to_array( t );
+            return std::any_of( arr.begin(), arr.end(), []( int value ) { return value < 0; } );
         }
 
         template<typename T>
@@ -123,6 +132,15 @@ namespace fs {
             T x;
             T y;
             T z;
+
+            three_d_point() = default;
+
+            three_d_point( T x, T y, T z ) 
+                : x( x ), y( y ), z( z ) {}
+
+            bool operator==( const three_d_point& rhs ) {
+                return x == rhs.x && y == rhs.y && z == rhs.z;
+            }
         };
 
         template<typename T>
@@ -744,9 +762,7 @@ namespace fs {
         }
 
         template<typename T>
-        T mid_point( T a, T b ) {
-
-            static_assert( a != b && "Can't get mid-point of equal numbers" );
+        T get_mid_point( T a, T b ) {
       
             if ( a < b ) {
                 return a + ( b - a ) / 2;
@@ -1295,6 +1311,238 @@ namespace fs {
             const auto [ l_1_sqr, l_2_sqr, l_3_sqr ] = squared_triangle_lengths( p, q, r );
             T A = triangle_area( p, q, r );
             return triangle_circumradius( A, l_1_sqr, l_2_sqr, l_3_sqr );
+        }
+
+        inline auto get_solid_triangles( const triangle_set& triangles ) {
+            return triangles | std::views::filter([]( const triangle& t ) { return !is_ghost( t ); });
+        }
+
+        template<typename T>
+        three_d_point<T> get_mid_point( const three_d_point<T>& p, 
+                                        const three_d_point<T>& q ) {
+
+            three_d_point<T> mid_point;
+
+            mid_point.x = get_mid_point( p.x, q.x );
+            mid_point.y = get_mid_point( p.y, q.y );
+            mid_point.z = get_mid_point( p.z, q.z );
+
+            return mid_point;
+        }
+
+        template<typename T>
+        three_d_point<T> get_cross_product( const three_d_point<T>& p, 
+                                            const three_d_point<T>& q ) {
+
+            three_d_point<T> cross_product;
+
+            cross_product.x = p.y * q.z - p.z * q.y;
+            cross_product.y = p.z * q.x - p.x * q.z;
+            cross_product.z = p.x * q.y - p.y * q.x;
+
+            return cross_product;
+        }
+
+        template<typename T>
+        three_d_point<T> sum( const three_d_point<T>& p, 
+                              const three_d_point<T>& q ) {
+            
+            three_d_point<T> sum;
+
+            sum.x = p.x + q.x;
+            sum.y = p.y + q.y;
+            sum.z = p.z + q.z;
+
+            return sum;
+        }
+
+        template<typename T>
+        three_d_point<T> difference( const three_d_point<T>& p, 
+                                     const three_d_point<T>& q ) {
+            
+            three_d_point<T> difference;
+
+            difference.x = p.x - q.x;
+            difference.y = p.y - q.y;
+            difference.z = p.z - q.z;
+
+            return difference;
+        }
+
+        template<typename T> 
+        bool is_zero_vector( const three_d_point<T>& v ) {
+            return ( v.x == 0 && v.y == 0 && v.z == 0 );
+        }
+
+        template<typename T>
+        T get_dot_product( const three_d_point<T>& p, const three_d_point<T>& q ) {
+            return p.x * q.x + p.y * q.y + p.z * q.z;
+        }
+
+        template<typename T>
+        three_d_point<T> scale( const T c, const three_d_point<T>& v ) {
+            return three_d_point( c * v.x, c * v.y, c * v.z );
+        } 
+
+        template<typename T>
+        struct matrix {
+            three_d_point<T> a;
+            three_d_point<T> b;
+            three_d_point<T> c;
+
+            matrix( const three_d_point<T>& p, const three_d_point<T>& q, const three_d_point<T>& r )
+                : a( p ), b( q ), c( r ) {}
+        };
+
+        template<typename T>
+        T get_determinant( const matrix<T>& m ) {
+            T a = m.b.y * m.c.z - m.b.z * m.c.y;
+            T b = m.b.x * m.c.z - m.b.z * m.c.x;
+            T c = m.b.x * m.c.y - m.b.y * m.c.x;
+
+            return m.a.x * a - m.a.y * b + m.a.z * c;
+        }
+
+        template<typename T>
+        three_d_point<T> solve_cramer( const matrix<T>& A, const three_d_point<T>& D ) {
+            
+            T A_det = get_determinant( A ); 
+
+            matrix<T> det_x = A;
+            det_x.a.x = D.x;
+            det_x.b.x = D.y;
+            det_x.c.x = D.z;
+
+            T x_num = get_determinant( det_x );
+            T x = x_num / A_det;
+
+            matrix<T> det_y = A;
+            det_x.a.y = D.x;
+            det_x.b.y = D.y;
+            det_x.c.y = D.z;
+
+            T y_num = get_determinant( det_y );
+            T y = y_num / A_det;
+
+            matrix<T> det_z = A;
+            det_x.a.z = D.x;
+            det_x.b.z = D.y;
+            det_x.c.z = D.z;
+
+            T z_num = get_determinant( det_z );
+            T z = z_num / A_det;
+
+            return three_d_point( x, y, z );
+        }
+
+        template<typename T>
+        T get_distance( const three_d_point<T>& p, const three_d_point<T>& q ) {
+
+            return std::sqrt( ( p.x - q.x ) * ( p.x - q.x ) + 
+                              ( p.y - q.y ) * ( p.y - q.y ) +
+                              ( p.z - q.z ) * ( p.z - q.z ) );
+        }
+
+        template<typename T>
+        std::tuple<three_d_point<T>,T> get_circumsphere( const three_d_point<T>& p, 
+                                                         const three_d_point<T>& q, 
+                                                         const three_d_point<T>& r ) {
+
+            return std::make_tuple( three_d_point<T>( 0.0, 0.0, 0.0 ), 0.0 );
+        }
+
+        template<typename T,size_t rows,size_t cols>
+        struct matrix_ {
+
+            std::array<T,rows*cols> elements;
+
+            matrix_() : elements{} {}
+
+            matrix_( const std::array<T,rows*cols>& elements )
+                : elements( elements ) {} 
+
+            T& operator[]( size_t row, size_t col ) {
+                return elements[ col + row * cols ];
+            }
+
+            void swap_rows( size_t row_a, size_t row_b ) {
+
+                if ( row_a == row_b ) return; 
+
+                std::swap_ranges( elements.begin() + row_a * cols, 
+                                  elements.begin() + row_a * cols + cols, 
+                                  elements.begin() + row_b * cols );
+            }
+        };
+
+        template<typename T,size_t R,size_t C>
+        std::array<size_t,R> pivot( matrix_<T,R,C>& m ) {
+
+            std::array<size_t,R> permutations;
+            std::iota( permutations.begin(), permutations.end(), 0 );
+
+            for ( size_t k = 0; k < R; ++k ) {
+                T max = std::abs( m[ k, k ] );
+                size_t max_index = k;
+                for ( size_t i = k; i < R; ++i ) {
+                    if ( std::abs( m[ i, k ] ) > max ) {
+                        max = std::abs( m[ i, k ] );
+                        max_index = i;
+                    }
+                }
+                if ( max_index != k ) {
+                    m.swap_rows( max_index, k );
+                    std::swap( permutations[ max_index ], permutations[ k ] );
+                }
+            }
+            return permutations;
+        }
+
+        template<typename T,size_t R,size_t C>
+        std::optional<
+            std::tuple<
+                matrix_<T,R,C>,
+                matrix_<T,R,C>,
+                std::array<size_t,R>>>
+        LU_decomposition( matrix_<T,R,C>& m, bool pivot_ = true ) {
+
+            if ( R != C ) {
+                return std::nullopt;
+            }
+
+            matrix_<T,R,C> L, U;
+
+            const size_t n = R;
+
+            std::array<size_t,n> permutations;
+            if ( pivot_ == false ) {
+                std::iota( permutations.begin(), permutations.end(), 0 );
+            } else {
+                permutations = pivot( m );
+            }
+
+            for ( size_t i = 0; i < n; ++i ) {
+                for ( size_t j = i; j < n; ++j ) {
+                    T sum{};
+                    for ( size_t k = 0; k < i; ++k ) {
+                        sum += L[ i, k] * U[ k, j ];
+                    }
+                    U[ i, j ] = m[ i, j ] - sum;
+                }
+                for ( size_t j = i; j < n; ++j ) {
+                    if ( i == j ) {
+                        L[ i, j ] = ( T )1;
+                    } else {
+                        T sum{};
+                        for ( size_t k = 0; k < i; ++k ) {
+                            sum += L[ j, k ] * U[ k, i ]; 
+                        }
+                        L[ j, i ] = ( m[ j, i ] - sum ) / U[ i, i ];
+                    }
+                }
+            }
+
+            return std::make_tuple( L, U, permutations );
         }
 
     } // namespace fvm

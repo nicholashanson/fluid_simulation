@@ -4,6 +4,8 @@
 
 #include <fs/fvm/triangulation.hpp>
 
+#include "test_constants.hpp"
+
 #ifndef M_PI
 #define M_PI ( 4 * std::atan( 1 ) )
 #endif
@@ -126,4 +128,75 @@ TEST( GeometryTests, CircumRadius ) {
     double actual_radius = fs::fvm::triangle_circumradius( p, q, r );
 
     EXPECT_NEAR( actual_radius, expected_radius, 1e-8 );
+}
+
+TEST( LinAlgTests, CramersRule ) {
+
+    fs::fvm::three_d_point<double> p( 1.0, 0.0, 0.0 );
+    fs::fvm::three_d_point<double> q( 0.0, 1.0, 0.0 );
+    fs::fvm::three_d_point<double> r( 0.0, 0.0, 1.0 );
+
+    fs::fvm::three_d_point<double> D( 1.0, 1.0, 1.0 );
+
+    fs::fvm::matrix<double> A( p, q, r );
+         
+    fs::fvm::three_d_point<double> solution = fs::fvm::solve_cramer( A, D );
+
+    EXPECT_NEAR( solution.x, 1.0, 1e-9 );
+    EXPECT_NEAR( solution.y, 1.0, 1e-9 );
+    EXPECT_NEAR( solution.z, 1.0, 1e-9 );
+}
+
+TEST( LinAlgTests, Privot ) {
+
+    const size_t rows = 3;
+    const size_t columns = 3;
+
+    const std::array<double,rows*columns> elemenents_before_pivot = {
+        0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0,
+    };
+
+    fs::fvm::matrix_<double,rows,columns> m( elemenents_before_pivot );
+
+    auto permutations = fs::fvm::pivot<double,rows,columns>( m );
+
+    const std::array<double,rows*columns> elemenents_after_pivot = {
+        1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0,
+    };
+
+    EXPECT_EQ( m.elements, elemenents_after_pivot );
+    EXPECT_EQ( permutations, ( std::array<size_t,rows>{ 1, 2, 0 } ) );
+}
+
+TEST( LinAlgTests, LUDecomposition ) {
+
+    const size_t rows = 3;
+    const size_t columns = 3;
+
+    const std::array<double,rows*columns> elements = {
+        2.0, -1.0, -2.0, -4.0, 6.0, 3.0, -4.0, -2.0, 8.0, 
+    };
+
+    fs::fvm::matrix_<double,rows,columns> m( elements );
+
+    auto result = fs::fvm::LU_decomposition<double,rows,columns>( m, false );
+
+    EXPECT_TRUE( result.has_value() );
+
+    auto [ lower_triangular, upper_triangular, permutations ] = result.value();
+
+    const std::array<double,rows*columns> expected_lower_triangular = {
+        1.0, 0.0, 0.0, -2.0, 1.0, 0.0, -2.0, -1.0, 1.0,
+    };
+
+    const std::array<double,rows*columns> expected_upper_triangular = {
+        2.0, -1.0, -2.0, 0.0, 4.0, -1.0, 0.0, 0.0, 3.0,
+    };
+
+    EXPECT_EQ( upper_triangular.elements, expected_upper_triangular );
+    EXPECT_EQ( lower_triangular.elements, expected_lower_triangular );
+
+    auto product = test::matrix_mult<double,rows>( lower_triangular.elements, upper_triangular.elements );
+
+    EXPECT_EQ( product, elements );
 }
