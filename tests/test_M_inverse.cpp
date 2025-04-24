@@ -6,6 +6,8 @@
 
 #include <fs/fs.hpp>
 
+#include "test_constants.hpp"
+
 template<typename T, size_t Dim>
 void print_matrix( const std::array<T, Dim * Dim>& matrix ) {
 
@@ -19,37 +21,16 @@ void print_matrix( const std::array<T, Dim * Dim>& matrix ) {
     }
 }
 
-// multiply two square matrices
-template<typename T, size_t Dim>
-std::array<T, Dim * Dim> matrix_mult( 
-    const std::array<T, Dim * Dim>& A,
-    const std::array<T, Dim * Dim>& B
-) {
-    
-    std::array<T, Dim * Dim> result = { ( T )0 };
-
-    for ( size_t i = 0; i < Dim; ++i ) {
-        for ( size_t j = 0; j < Dim; ++j ) {
-            for ( size_t k = 0; k < Dim; ++k ) {
-
-                result[ j + i * Dim ] += A[ k + i * Dim ] * B[ j + k * Dim ];
-            }
-        }
-    }
-
-    return result;
-}
-
 // test if square matrix is the identity matrix
 template<typename T, size_t Dim>
-bool is_identity_matrix( const std::array<T, Dim * Dim> matrix, T tol = 1e-9 ) {
+bool is_identity_matrix( const std::array<T, Dim * Dim>& matrix, T tol = 1e-9 ) {
 
     for ( size_t i = 0; i < Dim; ++i ) {
         for ( size_t j = 0; j < Dim; ++ j ) {
 
             T expected = ( i == j ) ? ( T )1 : ( T )0;
 
-            if ( std::fabs( matrix [ j + i * Dim ] - expected ) > tol ) {
+            if ( std::abs( matrix [ j + i * Dim ] - expected ) > tol ) {
 
                 return false;
             }
@@ -69,11 +50,11 @@ TEST( LBMTests, MInverse ) {
         0.6, -0.7, -0.2, 0.4
     };
 
-    auto result_T = matrix_mult<double, 2>( T, T_inv );
+    auto result_T = test::matrix_mult<double, 2>( T, T_inv );
 
     EXPECT_TRUE( ( is_identity_matrix<double, 2>( result_T ) ) ) << "T * T_inv is not identity";
 
-    auto result_M = matrix_mult<fs::lbm::T, 9>( fs::lbm::M, fs::lbm::M_inv );
+    auto result_M = test::matrix_mult<fs::lbm::T, 9>( fs::lbm::M, fs::lbm::M_inv );
 
     EXPECT_TRUE( ( is_identity_matrix<fs::lbm::T, 9>( result_M ) ) ) << "M * M_inv is not identity";
 } 
