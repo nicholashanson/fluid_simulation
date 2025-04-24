@@ -11,11 +11,13 @@
 
 const double epsilon_ = 1e-6; 
 
-bool approx_equal_cells_( const size_t y, const size_t x, const std::array<double, 9>& stateless, const std::array<double, 9>& stateful ) {
+bool approx_equal_cells_( const size_t y, const size_t x, 
+                          const std::array<fs::lbm::T, 9>& stateless, 
+                          const std::array<fs::lbm::T, 9>& stateful ) {
 
     bool approx_equal_ = true;
 
-    auto approx_equal = [=]( double a, double b ) {  
+    auto approx_equal = [=]( fs::lbm::T a, fs::lbm::T b ) {  
         return std::fabs( a - b ) < epsilon_;
     };
 
@@ -47,8 +49,8 @@ TEST( LBMTests, StatefulCollideAndStream ) {
     for ( size_t y = 0; y < fs::settings::ydim; ++y ) {
         for ( size_t x = 0; x < fs::settings::xdim; ++x ) {
 
-            const std::array<double, 9> stateful = stateful_grid.get_cell_state_array( y, x );
-            const std::array<double, 9> stateless = stateless_grid.get_cell_state_array( y, x );
+            const auto stateful = stateful_grid.get_cell_state_array( y, x );
+            const auto stateless = stateless_grid.get_cell_state_array( y, x );
 
             if ( !approx_equal_cells_( y, x, stateful, stateless ) ) { 
 
