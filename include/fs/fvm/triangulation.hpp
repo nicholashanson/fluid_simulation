@@ -1465,6 +1465,10 @@ namespace fs {
                 return elements[ col + row * cols ];
             }
 
+            const T& operator[]( size_t row, size_t col ) const {
+                return elements[ col + row * cols ];
+            }
+
             void swap_rows( size_t row_a, size_t row_b ) {
 
                 if ( row_a == row_b ) return; 
@@ -1543,6 +1547,42 @@ namespace fs {
             }
 
             return std::make_tuple( L, U, permutations );
+        }
+
+        template<typename T,size_t N>
+        std::array<T,N> LU_solve( 
+            const matrix_<T,N,N>& U, 
+            const matrix_<T,N,N>& L, 
+            const std::array<T,N>& b, 
+            const std::array<size_t,N>& ps
+        ) {
+
+            std::array<T,N> x;
+            std::array<T,N> y;
+
+            std::array<T,N> bp;
+
+            for ( size_t k = 0; k < N; ++k ) {
+                bp[ k ] = b[ ps[ k ] ];
+            } 
+
+            for ( size_t i = 0; i < N; ++i ) {
+                T sum{};
+                for ( size_t j = 0; j < i; ++j ) {
+                    sum += L[ i, j ] * y[ j ];
+                }
+                y[ i ] = ( ( T )1 / L[ i, i ] ) * ( bp[ i ] - sum ); 
+            }
+
+            for ( size_t i = N - 1; i != size_t( -1 ); --i ) {
+                T sum{};
+                for ( size_t j = i + 1; j < N; ++j ) {
+                    sum += U[ i, j ] * x[ j ];
+                }
+                x[ i ] = ( y[ i ] - sum ) / U[ i, i ];
+            }
+
+            return x;
         }
 
     } // namespace fvm
