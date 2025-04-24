@@ -166,6 +166,10 @@ namespace fs {
             three_d_point( T x, T y, T z ) 
                 : x( x ), y( y ), z( z ) {}
 
+            constexpr operator std::tuple<T,T,T>() const {
+                return { x, y, z };
+            }
+
             bool operator==( const three_d_point& rhs ) {
                 return x == rhs.x && y == rhs.y && z == rhs.z;
             }
@@ -889,8 +893,11 @@ namespace fs {
             using integer_type = I;
 
             triangulation( const triangle_set&& triangles,
-                           const std::vector<std::pair<T,T>>&& points, const std::vector<I>&& boundary ) 
-                : triangles( std::move( triangles ) ), points( std::move( points ) ), boundary( std::move( boundary ) ) {}
+                           const std::vector<std::pair<T,T>>&& points, 
+                           const std::vector<I>&& boundary ) 
+                : triangles( std::move( triangles ) ), 
+                  points( std::move( points ) ), 
+                  boundary( std::move( boundary ) ) {}
 
             // Rule-of-Zero
             BPL<I,T> get_representative_points() {
@@ -1385,8 +1392,8 @@ namespace fs {
         }
 
         template<typename T>
-        three_d_point<T> difference( const three_d_point<T>& p, 
-                                     const three_d_point<T>& q ) {
+        three_d_point<T> get_difference( const three_d_point<T>& p, 
+                                         const three_d_point<T>& q ) {
             
             three_d_point<T> difference;
 
@@ -1395,6 +1402,13 @@ namespace fs {
             difference.z = p.z - q.z;
 
             return difference;
+        }
+
+        template<typename T>
+        std::pair<T,T> get_difference( const std::pair<T,T>& p,
+                                       const std::pair<T,T>& q ) {
+
+            return { p.first - q.first, p.second - q.second };
         }
 
         template<typename T> 
@@ -1471,6 +1485,9 @@ namespace fs {
                               ( p.z - q.z ) * ( p.z - q.z ) );
         }
 
+        /*
+            get_circumsphere()
+        */
         template<typename T>
         std::tuple<three_d_point<T>,T> get_circumsphere( const three_d_point<T>& p, 
                                                          const three_d_point<T>& q, 
@@ -1479,34 +1496,39 @@ namespace fs {
             const size_t rows = 3;
             const size_t cols = 3;
 
-            auto q_p = difference( q, p );
-            auto r_p = difference( r, p );
-            auto norm = get_cross_product( q_p, r_p );
+            auto q_p = get_difference( q, p );              // ( q - p )
+            auto r_p = get_difference( r, p );              // ( r - p )
+            auto norm = get_cross_product( q_p, r_p );      // ( q - p ) X ( r - p )
 
+            auto [ a_00, a_01, a_02 ] = q_p;    // row 1 of coefficient matrix ( q - p ) 
+            auto [ a_10, a_11, a_12 ] = r_p;    // row 2 of coefficient matrix ( r - p )
+            auto [ a_20, a_21, a_22 ] = norm;   // row 3 of coefficient matrix ( q - p ) X ( r - p )
+
+            // matrix of coefficients
             std::array<T,rows*cols> elements = {
-                q_p.x, q_p.y, q_p.z,
-                r_p.x, r_p.y, r_p.z,
-                norm.x, norm.y, norm.z,
+                a_00, a_01, a_02,
+                a_10, a_11, a_12,
+                a_20, a_21, a_22,
             };
 
-            std::array<T,3> b = { 
-                0.5 * get_dot_product( q_p, q_p ),
-                0.5 * get_dot_product( r_p, r_p ),
-                ( T )0,
-            };
+            matrix_<T,rows,cols> A( elements );             // construct matrix of coefficients
 
-            matrix_<T,rows,cols> A( elements );
+            std::array<T,3> b = {                           
+                0.5 * get_dot_product( q_p, q_p ),          
+                0.5 * get_dot_product( r_p, r_p ),          
+                ( T )0,                                     
+            };                                              
 
-            auto LU_decomp = LU_decomposition( A );
+            auto LU_decomp = LU_decomposition( A );         // A = LU
             auto [ L, U, ps ] = LU_decomp.value();
 
-            auto x = LU_solve( U, L, b, ps );
+            auto [ x, y, z ] = LU_solve( L, U, b, ps );     // solve Ax = b
 
-            three_d_point<T> offset( x[ 0 ], x[ 1 ], x[ 2 ] );
+            three_d_point<T> offset( x, y, z );             // displacement between point p and circumcenter
 
-            three_d_point<T> center = sum( p, offset );
+            three_d_point<T> center = sum( p, offset );     // add the offset vector to p to get the circumcenter  
 
-            auto radius = std::sqrt( get_dot_product( offset, offset ) );
+            auto radius = std::sqrt( get_dot_product( offset, offset ) );   // radius of the circumsphere
 
             return std::make_tuple( center, radius );
         }
@@ -1534,30 +1556,57 @@ namespace fs {
             return permutations;
         }
 
+        /*
+            LU_decomposition()
+
+            decompose matrix A into the upper-triangular matrix U
+            and the lower-triangular matrix L using the Doolittle
+            Algorithm:
+
+                A = LU
+
+            use a permutation vector to keep track of any row-swaps
+            that take place during pivoting so that:
+
+                PA = LU
+
+            P is the permutation matrix that corresponds to the 
+            permutation vector
+        */
         template<typename T,size_t R,size_t C>
         std::optional<
             std::tuple<
-                matrix_<T,R,C>,
-                matrix_<T,R,C>,
-                std::array<size_t,R>>>
-        LU_decomposition( matrix_<T,R,C>& m, bool pivot_ = true ) {
+                matrix_<T,R,C>,         // lower-triangular matrix 
+                matrix_<T,R,C>,         // upper-triangular matrix
+                std::array<size_t,R>>>  // permutation vector
+        LU_decomposition( matrix_<T,R,C>& A, bool pivot_ = true ) {
 
             if ( R != C ) {
                 return std::nullopt;
             }
 
-            matrix_<T,R,C> L, U;
+            matrix_<T,R,C> L;   // lower-triangular matrix 
+            matrix_<T,R,C> U;   // upper-triangular matrix
 
             const size_t n = R;
 
-            std::array<size_t,n> permutations;
+            std::array<size_t,n> permutations;  // permutation vector
             if ( pivot_ == false ) {
+                // [ 0, 1, 2, ... , n - 1 ]:
+                // pivoting is switched-off so we return this dummy-vector
+                // as the permutation vector
                 std::iota( permutations.begin(), permutations.end(), 0 );
             } else {
-                permutations = pivot( m );
+                // pivot the matrix A
+                permutations = pivot( A );
             }
 
+            
+            // construct U and L in an inter-leaved way
+            // using Doolittle's algorithm
             for ( size_t i = 0; i < n; ++i ) {
+
+                // construct U
                 for ( size_t j = i; j < n; ++j ) {
                     T sum{};
                     for ( size_t k = 0; k < i; ++k ) {
@@ -1565,6 +1614,8 @@ namespace fs {
                     }
                     U[ i, j ] = m[ i, j ] - sum;
                 }
+
+                // construct L
                 for ( size_t j = i; j < n; ++j ) {
                     if ( i == j ) {
                         L[ i, j ] = ( T )1;
@@ -1581,23 +1632,46 @@ namespace fs {
             return std::make_tuple( L, U, permutations );
         }
 
+        /*
+            LU_solve()
+            take an LU decomposition of A and use forward 
+            and back-substitution to solve Ax = b
+            
+            before substitution, take the RHS vector b
+            and re-order it according to the permutation
+            vector derived from the LU decomposition
+
+            first we use forward substitution to solve for y
+            in the equality:
+
+                    Ly = b
+            
+            then we take the intermediate result y and use 
+            back substitution to solve for x in the equality:
+
+                    Ux = y
+
+            x is the solution vector in Ax = b
+        */
         template<typename T,size_t N>
         std::array<T,N> LU_solve( 
-            const matrix_<T,N,N>& U, 
-            const matrix_<T,N,N>& L, 
-            const std::array<T,N>& b, 
-            const std::array<size_t,N>& ps
+            const matrix_<T,N,N>& L,        // lower-triangular matrix
+            const matrix_<T,N,N>& U,        // upper-triangular matrix 
+            const std::array<T,N>& b,       // RHS vector
+            const std::array<size_t,N>& ps  // permutation vector
         ) {
 
-            std::array<T,N> x;
-            std::array<T,N> y;
+            std::array<T,N> x;      // final solution vector
+            std::array<T,N> y;      // intermediate solution vector
 
-            std::array<T,N> bp;
+            std::array<T,N> bp;     // permutated RHS
 
-            for ( size_t k = 0; k < N; ++k ) {
+            for ( size_t k = 0; k < N; ++k ) {  // re-odrer RHS according to the permutation vector
                 bp[ k ] = b[ ps[ k ] ];
             } 
 
+            // foward substitution with L:
+            // solve for y in Ly = b
             for ( size_t i = 0; i < N; ++i ) {
                 T sum{};
                 for ( size_t j = 0; j < i; ++j ) {
@@ -1606,6 +1680,8 @@ namespace fs {
                 y[ i ] = ( ( T )1 / L[ i, i ] ) * ( bp[ i ] - sum ); 
             }
 
+            // backward substitution with U:
+            // solve for x in Ux = y
             for ( size_t i = N - 1; i != size_t( -1 ); --i ) {
                 T sum{};
                 for ( size_t j = i + 1; j < N; ++j ) {
@@ -1615,6 +1691,47 @@ namespace fs {
             }
 
             return x;
+        }
+
+        template<typename I,typename T>
+        T triangle_orthoradius_squared( 
+            const std::pair<T,T>& p, 
+            const std::pair<T,T>& q,
+            const std::pair<T,T>& r,
+            const T a, const T b, const T c
+         ) {
+
+            T A = triangle_area( p, q, r );
+
+            T d_11 = dist_sqr( p, r ) + c - a;
+            T d_21 = dist_sqr( q, r ) + c - b;
+
+            T [ e_11, d_12 ] = get_difference( p, r );
+            T [ e_21, d_22 ] = get_difference( q, r );
+   
+            T e_12 = d_11;
+            T e_22 = d_21;
+
+            T t_1 = d_11 * d_22 - d_12 * d_21;
+            T t_2 = e_11 * e_22 - e_12 * e_21;
+
+            return ( t_1 * t_1 + t_2 * t_2 ) / ( 16 * A * A ) - c;
+        }
+
+        template<typename I,typename T>
+        T triangle_orthoradius_squared( 
+            const triangulation<I,T>& tri, 
+            const triangle& t ) {
+
+            const std::pair<T,T> p = tri.get_point( std::get<0>( t ) );
+            const std::pair<T,T> q = tri.get_point( std::get<1>( t ) );
+            const std::pair<T,T> r = tri.get_point( std::get<2>( t ) );
+
+            const T a = tri.get_weight( std::get<0>( t ) );
+            const T b = tri.get_weight( std::get<1>( t ) );
+            const T c = tri.get_weight( std::get<2>( t ) );
+
+            return triangle_orthoradius_squared( p, q, r, a, b, c );
         }
 
     } // namespace fvm
