@@ -84,7 +84,7 @@ TEST( LBMTests, StatefulCollideAndStream ) {
 
     ASSERT_NE( state, nullptr ) << "Initialization failed: 'state' is nullptr.";
 
-    // get grid dimenstions
+    // get grid dimensions
     const size_t ydim = stateful_grid.get_dim( 0 );
     const size_t xdim = stateful_grid.get_dim( 1 );
 
