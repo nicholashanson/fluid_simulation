@@ -26,6 +26,34 @@ namespace fs {
 
     namespace fvm {
 
+        template<typename T,size_t rows,size_t cols>
+        struct matrix_ {
+
+            std::array<T,rows*cols> elements;
+
+            matrix_() : elements{} {}
+
+            matrix_( const std::array<T,rows*cols>& elements )
+                : elements( elements ) {} 
+
+            T& operator[]( size_t row, size_t col ) {
+                return elements[ col + row * cols ];
+            }
+
+            const T& operator[]( size_t row, size_t col ) const {
+                return elements[ col + row * cols ];
+            }
+
+            void swap_rows( size_t row_a, size_t row_b ) {
+
+                if ( row_a == row_b ) return; 
+
+                std::swap_ranges( elements.begin() + row_a * cols, 
+                                  elements.begin() + row_a * cols + cols, 
+                                  elements.begin() + row_b * cols );
+            }
+        };
+
         using triangle = std::tuple<int,int,int>;
 
         struct compare_triangles {
@@ -1448,36 +1476,40 @@ namespace fs {
                                                          const three_d_point<T>& q, 
                                                          const three_d_point<T>& r ) {
 
-            return std::make_tuple( three_d_point<T>( 0.0, 0.0, 0.0 ), 0.0 );
+            const size_t rows = 3;
+            const size_t cols = 3;
+
+            auto q_p = difference( q, p );
+            auto r_p = difference( r, p );
+            auto norm = get_cross_product( q_p, r_p );
+
+            std::array<T,rows*cols> elements = {
+                q_p.x, q_p.y, q_p.z,
+                r_p.x, r_p.y, r_p.z,
+                norm.x, norm.y, norm.z,
+            };
+
+            std::array<T,3> b = { 
+                0.5 * get_dot_product( q_p, q_p ),
+                0.5 * get_dot_product( r_p, r_p ),
+                ( T )0,
+            };
+
+            matrix_<T,rows,cols> A( elements );
+
+            auto LU_decomp = LU_decomposition( A );
+            auto [ L, U, ps ] = LU_decomp.value();
+
+            auto x = LU_solve( U, L, b, ps );
+
+            three_d_point<T> offset( x[ 0 ], x[ 1 ], x[ 2 ] );
+
+            three_d_point<T> center = sum( p, offset );
+
+            auto radius = std::sqrt( get_dot_product( offset, offset ) );
+
+            return std::make_tuple( center, radius );
         }
-
-        template<typename T,size_t rows,size_t cols>
-        struct matrix_ {
-
-            std::array<T,rows*cols> elements;
-
-            matrix_() : elements{} {}
-
-            matrix_( const std::array<T,rows*cols>& elements )
-                : elements( elements ) {} 
-
-            T& operator[]( size_t row, size_t col ) {
-                return elements[ col + row * cols ];
-            }
-
-            const T& operator[]( size_t row, size_t col ) const {
-                return elements[ col + row * cols ];
-            }
-
-            void swap_rows( size_t row_a, size_t row_b ) {
-
-                if ( row_a == row_b ) return; 
-
-                std::swap_ranges( elements.begin() + row_a * cols, 
-                                  elements.begin() + row_a * cols + cols, 
-                                  elements.begin() + row_b * cols );
-            }
-        };
 
         template<typename T,size_t R,size_t C>
         std::array<size_t,R> pivot( matrix_<T,R,C>& m ) {

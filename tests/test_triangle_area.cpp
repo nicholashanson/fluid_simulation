@@ -130,6 +130,23 @@ TEST( GeometryTests, CircumRadius ) {
     EXPECT_NEAR( actual_radius, expected_radius, 1e-8 );
 }
 
+TEST( GeometryTests, CircumSphere ) {
+
+    fs::fvm::three_d_point<double> p( 1.0, 0.0, 0.0 );
+    fs::fvm::three_d_point<double> q( 0.0, 1.0, 0.0 );
+    fs::fvm::three_d_point<double> r( 0.0, 0.0, 1.0 );
+
+    auto [ center, radius ]  = fs::fvm::get_circumsphere( p, q, r );
+
+    double expected_radius = 0.816496580927726;
+    double pos = 0.333333333333333;
+
+    EXPECT_NEAR( radius, expected_radius, 1e-8 );
+    EXPECT_NEAR( center.x, pos, 1e-8 );
+    EXPECT_NEAR( center.y, pos, 1e-8 );
+    EXPECT_NEAR( center.z, pos, 1e-8 );
+}
+
 TEST( LinAlgTests, CramersRule ) {
 
     fs::fvm::three_d_point<double> p( 1.0, 0.0, 0.0 );
@@ -147,7 +164,7 @@ TEST( LinAlgTests, CramersRule ) {
     EXPECT_NEAR( solution.z, 1.0, 1e-9 );
 }
 
-TEST( LinAlgTests, Privot ) {
+TEST( LinAlgTests, Pivot ) {
 
     const size_t rows = 3;
     const size_t columns = 3;
