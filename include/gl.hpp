@@ -10,11 +10,25 @@
 #include <settings.hpp>
 #include <fs/fs.hpp>
 
-GLFWwindow* initialize_window();
+namespace app {
 
-unsigned int setup_openGL();
+    GLFWwindow* initialize_window();
 
-void projection( int shader_program );
+    unsigned int setup_openGL();
+
+    unsigned int setup_openGL_3D();
+
+    void projection( int shader_program );
+
+    void projection_3D( int shader_program );
+
+    void projection_3D_orth( int shader_program );
+
+    void view( int shader_program );
+
+    void model( int shader_program );
+
+}
 
 #endif
 

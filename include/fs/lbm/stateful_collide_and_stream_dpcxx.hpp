@@ -5,6 +5,7 @@
 
 #include <settings.hpp>
 
+#include <fs/lbm/bounce_back_dpcxx.hpp>
 #include <fs/lbm/collide_and_stream_dpcxx.hpp>
 
 namespace fs {
@@ -113,6 +114,28 @@ namespace fs {
                     stream( *( cs->gpu_queue ), cs->d_D2Q9, cs->d_D2Q9_n, cs->ydim, cs->xdim );
 
                     bounce_back( *( cs->gpu_queue ), cs->d_D2Q9_n, cs->d_obstacle, cs->ydim, cs->xdim ); 
+ 
+                    std::swap( cs->d_D2Q9, cs->d_D2Q9_n ); 
+                }
+            
+                cs->gpu_queue->memcpy( cs->D2Q9, cs->d_D2Q9, cs->vec_len * 9 * sizeof( T ) );
+
+                cs->gpu_queue->wait();
+            }
+
+            void stateful_collide_and_stream_( void* state, const size_t steps ) {
+
+                cs_state* cs = ( cs_state* )state;
+
+                set_boundaries( *( cs->gpu_queue ), cs->d_D2Q9, cs->ydim, cs->xdim );
+
+                for ( size_t z = 0; z < steps; ++z ) {
+            
+                    collide( *( cs->gpu_queue ), cs->d_D2Q9, cs->vec_len, cs->omega );
+
+                    stream( *( cs->gpu_queue ), cs->d_D2Q9, cs->d_D2Q9_n, cs->ydim, cs->xdim );
+
+                    bounce_back_( *( cs->gpu_queue ), cs->d_D2Q9_n, cs->d_obstacle, cs->ydim, cs->xdim ); 
  
                     std::swap( cs->d_D2Q9, cs->d_D2Q9_n ); 
                 }

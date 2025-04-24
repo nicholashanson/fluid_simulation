@@ -20,6 +20,20 @@ namespace fs {
 
     namespace lbm {
 
+        template<typename T,typename D2Q9>
+        std::pair<T,T> calculate_u_v_t( const D2Q9& f ) {
+
+            std::pair<T,T> u_v{};
+
+            for ( size_t q = 0; q < 9; ++q ) {
+
+                u_v.first += e[ q ].first * f[ q ];
+                u_v.second += e[ q ].second * f[ q ];
+            }
+
+            return u_v;
+        }
+
         inline std::pair<double,double> calculate_u_v( const std::span<double> f ) {
 
             std::pair<double,double> u_v{};

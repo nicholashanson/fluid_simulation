@@ -175,6 +175,39 @@ namespace fs {
                 gpu_queue.wait();
             }
 
+            void stream_( sycl::queue& gpu_queue, T* d_D2Q9, T* d_D2Q9_n, 
+                          const size_t ydim, const size_t xdim ) {
+
+                gpu_queue.submit( [&]( sycl::handler& h ) {
+                
+                    h.parallel_for( sycl::nd_range<2>{ { ydim, xdim }, 
+                                    { 32, 32 } }, [=]( sycl::nd_item<2> item ) {
+                        
+                        const size_t y = item.get_global_id( 0 );
+                        const size_t x = item.get_global_id( 1 );
+        
+                        const size_t base_index = ( x + y * xdim ) * 9;
+        
+                        bool is_boundary = ( y == 0 || x == 0 || y == ydim - 1 || x == xdim - 1 );
+        
+                        if ( !is_boundary ) {
+
+                            for ( size_t q = 0; q < 9; ++q ) {
+
+                                const size_t x_ = x + fs::lbm::e[ q ].first;
+                                const size_t y_ = y + fs::lbm::e[ q ].second;
+                                
+                                const size_t source_index = ( x_ + y_ * xdim ) * 9;
+
+                                d_D2Q9_n[ base_index + q ] = d_D2Q9[ source_index  + q ];
+                            }
+                        }
+                    });
+                });
+
+                gpu_queue.wait();
+            }
+
             void collide_and_stream_inline( T* D2Q9, unsigned char* obstacle, size_t steps ) {
 
                 const T viscosity = 0.005;

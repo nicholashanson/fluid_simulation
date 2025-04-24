@@ -599,6 +599,8 @@ namespace app {
 
     inline std::vector<float> property_to_vertex_data( double* property_data, int colormap ) {
 
+        // start vertex
+
         // number of vertices per grid square
         const size_t vertex_n = 6;
 
@@ -609,8 +611,12 @@ namespace app {
 
         const size_t elem_n = fs::settings::ydim * fs::settings::xdim;
 
+        // start min max
+
         double min_property = *std::min_element( property_data, property_data + elem_n );
         double max_property = *std::max_element( property_data, property_data + elem_n );
+
+        // end min max
 
         const size_t ydim = fs::settings::ydim;
         const size_t xdim = fs::settings::xdim;
@@ -619,13 +625,21 @@ namespace app {
 
         const float cell_size = 2.0f / std::max( ydim, xdim );
 
+        // start matrix scale
+
         cv::Mat colors( ydim, xdim, CV_64F, ( void* )property_data );
 
         double scale = 255.0 / ( max_property - min_property );
 
         colors.convertTo( colors, CV_8U, scale, -min_property * scale );
 
+        // end matrix scale 
+
+        // start apply colormap
+
         cv::applyColorMap( colors, colors, colormap );
+
+        // end apply colornap
 
         tbb::parallel_for(
             tbb::blocked_range<size_t>( 0, ydim ),
@@ -633,6 +647,8 @@ namespace app {
         
                 for ( size_t y = range.begin(); y < range.end(); ++y ) {
                     for ( size_t x = 0; x < xdim; ++x ) {
+
+                        // start thread
         
                         cv::Vec3b color = colors.at<cv::Vec3b>( y, x );
         
@@ -642,6 +658,8 @@ namespace app {
                         float r = color[ 2 ] / 255.0f; 
                         float g = color[ 1 ] / 255.0f;
                         float b = color[ 0 ] / 255.0f;
+
+                        // start array construction
         
                         std::array<float, data_n> vertex_data = {
                             // first triangle
@@ -655,9 +673,15 @@ namespace app {
                             x_ + cell_size, y_ - cell_size, r, g, b,
                         };
 
+                        // end array construction
+
+                        // start vertex assignment
+
                         const size_t starting_index = ( x + y * xdim ) * data_n;
 
                         std::copy( vertex_data.begin(), vertex_data.end(), vertices.begin() + starting_index );
+
+                        // end vertex assignment
                     }
                 }
             }

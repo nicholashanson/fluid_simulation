@@ -14,17 +14,26 @@
 
 namespace app {
 
-    extern std::map<int, std::function<double( std::span<double> )>> properties;
+    namespace gui {
 
-    extern int selected_colormap;
+        extern std::map<int, std::function<double( std::span<double> )>> physical_properties;
 
-    extern const int opencv_colormaps[];
+        extern int selected_property;
+
+        extern int selected_colormap;
+
+        extern const int opencv_colormaps[];
+        
+        extern const char* colormaps[];
+
+        extern const char* properties[];
+
+        void init_imgui( GLFWwindow* window );
+
+        void setup_imgui( bool& simulation_running );
     
-    extern const char* colormaps[];
+    } // gui
 
-    void init_imgui( GLFWwindow* window );
-
-    void setup_imgui( bool& simulation_running );
-}
+} // app
 
 #endif

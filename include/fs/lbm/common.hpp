@@ -133,6 +133,7 @@ namespace fs {
                 double d_dx = static_cast<double>( dx );
 
                 double camber = 0.0;
+
                 if ( dx < camber_position_pixels ) {
 
                     camber = ( max_camber_pixels / ( camber_position_pixels * camber_position_pixels ) ) *
@@ -143,6 +144,7 @@ namespace fs {
                 }
 
                 double dy_dx = 0.0;
+
                 if ( dx < camber_position_pixels ) {
 
                     dy_dx = ( 2 * max_camber_pixels / ( camber_position_pixels * camber_position_pixels ) ) *
@@ -158,7 +160,11 @@ namespace fs {
                 double d_dx_n = d_dx / chord_length;
 
                 double y_t = 5.0 * max_thickness_pixels * 
-                             ( 0.2969 * std::sqrt( d_dx_n ) - 0.1260 * d_dx_n - 0.3516 * d_dx_n * d_dx_n + 0.2843 * d_dx_n * d_dx_n * d_dx_n - 0.1036 * d_dx_n * d_dx_n * d_dx_n * d_dx_n );
+                             ( 0.2969 * std::sqrt( d_dx_n ) 
+                             - 0.1260 * d_dx_n 
+                             - 0.3516 * d_dx_n * d_dx_n 
+                             + 0.2843 * d_dx_n * d_dx_n * d_dx_n 
+                             - 0.1036 * d_dx_n * d_dx_n * d_dx_n * d_dx_n );
                 
                 size_t x = start_x + dx;
 
@@ -213,6 +219,7 @@ namespace fs {
                 double d_dx = static_cast<double>( dx );
 
                 double camber = 0.0;
+
                 if ( dx < camber_position_pixels ) {
 
                     camber = ( max_camber_pixels / ( camber_position_pixels * camber_position_pixels ) ) *
@@ -223,6 +230,7 @@ namespace fs {
                 }
 
                 double dy_dx = 0.0;
+                
                 if ( dx < camber_position_pixels ) {
 
                     dy_dx = ( 2 * max_camber_pixels / ( camber_position_pixels * camber_position_pixels ) ) *
@@ -238,7 +246,11 @@ namespace fs {
                 double d_dx_n = d_dx / chord_length;
 
                 double y_t = 5.0 * max_thickness_pixels * 
-                             ( 0.2969 * std::sqrt( d_dx_n ) - 0.1260 * d_dx_n - 0.3516 * d_dx_n * d_dx_n + 0.2843 * d_dx_n * d_dx_n * d_dx_n - 0.1036 * d_dx_n * d_dx_n * d_dx_n * d_dx_n );
+                             ( 0.2969 * std::sqrt( d_dx_n ) 
+                             - 0.1260 * d_dx_n 
+                             - 0.3516 * d_dx_n * d_dx_n 
+                             + 0.2843 * d_dx_n * d_dx_n * d_dx_n 
+                             - 0.1036 * d_dx_n * d_dx_n * d_dx_n * d_dx_n );
 
                 double x = d_start_x + d_dx;
 
@@ -372,7 +384,7 @@ namespace fs {
             speed of sound squared
             pre-calculated for efficiency
         */
-        constexpr double c_s2 = c_s * c_s;
+        constexpr T c_s2 = c_s * c_s;
 
     } // lbm
 

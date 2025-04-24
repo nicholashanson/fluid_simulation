@@ -45,7 +45,7 @@ int main() {
 
     fs::lbm::initialize_grid( D2Q9_grid );
 	
-    fs::lbm::obstacle_coords = fs::lbm::get_airfoil_coords_aoa( 0.02, 0.4, 0.12, 3.0 );
+    fs::lbm::obstacle_coords = fs::lbm::get_airfoil_coords_aoa( 0.04, 0.4, 0.12, 0.0 );
 
     std::vector<unsigned char> barrier( fs::settings::ydim * fs::settings::xdim, 0 ); 
 
@@ -53,19 +53,19 @@ int main() {
 	    barrier[ xy.second + xy.first * fs::settings::xdim ] = 1;
     }
 
-#ifdef GPU
+#ifdef SF
 
-    // void* cs_state = fs::dpcxx::lbm::init_cs( D2Q9_grid, barrier, 0.05 );
+    void* cs_state = fs::dpcxx::lbm::init_cs( D2Q9_grid, barrier, 0.005 );
 #endif
 
     // initialize GLFW and OpenGL context
-    GLFWwindow* window = initialize_window();
+    GLFWwindow* window = app::initialize_window();
 
-    unsigned int shader_program = setup_openGL();
+    unsigned int shader_program = app::setup_openGL();
 
     std::vector<float> barrier_vertices = app::obstacle_to_vertex_data<fs::settings::ydim,fs::settings::xdim>( barrier );
 
-    projection( shader_program ); 
+    app::projection( shader_program ); 
     
     std::vector<float> vertices;
 
@@ -96,11 +96,15 @@ int main() {
 
         if ( simulation_running ) {
 
+            
+#ifndef SF
+
             // start boundary setting
 
             fs::lbm::set_boundaries( D2Q9_grid );
 
             // end boundary setting
+#endif
 
             // start grid copy
 
@@ -119,13 +123,19 @@ int main() {
                 fs::lbm::collide_and_stream_tbb( D2Q9_grid.get_data_handle(), barrier.data(), steps_per_frame );
             
                 // end collide and stream
-#else
-                // start collide and stream
-            
+#else // GPU
+
+                // start collide and stream       
+#ifdef SF
+
+                fs::dpcxx::lbm::stateful_collide_and_stream_c( cs_state, steps_per_frame );
+#else // SF
+
                 fs::dpcxx::lbm::collide_and_stream( D2Q9_grid, barrier.data(), steps_per_frame );
-            
+#endif // SF
+
                 // end collide and stream
-#endif
+#endif // GPU
             });
 
             group.run( [&]() {
@@ -175,28 +185,33 @@ int main() {
                 glClear( GL_COLOR_BUFFER_BIT );
 
                 // end render set up
+
+                // start render
+
+                app::render_grid( VAO, vertices.size() );
+
+                // end render
+        
+                frame_counter++;
+
+                // start imgui render
+
+                ImGui::Render();
+
+                ImGui_ImplOpenGL3_RenderDrawData( ImGui::GetDrawData() );
+
+                // end imgui render
             });
 
             group.wait();
 
             // end parallel tasks
+        } else {
 
-            // start render
+            ImGui::Render();
 
-            app::render_grid( VAO, vertices.size() );
-
-            // end render
-        
-            frame_counter++;
+            ImGui_ImplOpenGL3_RenderDrawData( ImGui::GetDrawData() );
         }
-
-        // start imgui render
-
-        ImGui::Render();
-
-        ImGui_ImplOpenGL3_RenderDrawData( ImGui::GetDrawData() );
-
-        // end imgui render
 
         int display_w;
         int display_h;
@@ -222,8 +237,9 @@ int main() {
 
     glfwTerminate();
 
-#ifdef GPU
-    // fs::dpcxx::lbm::terminate_cs_c( cs_state );
+#ifdef SF
+
+    fs::dpcxx::lbm::terminate_cs_c( cs_state );
 #endif
 
     return 0;

@@ -9,6 +9,8 @@ import subprocess
 import os
 import itertools
 
+import time
+
 from scripts.python.compile_main import compile_for_windows
 from scripts.python.compile_main_for_linux import compile_and_run_linux
 
@@ -307,19 +309,36 @@ def profile_main_parallel( gpu, comp ):
     run_on_windows()
 
 def profile_main_parallel_abs( gpu, comp, state ):
-    insert_profiling_abs( 'main_parallel.cpp', 'main_parallel_profiled.cpp', 'profile_output_paralell_abs.txt', 'profile_output_paralell_gpu_abs.txt', 'profile_output_paralell_state_abs.txt', gpu, state, sections_par )
+    insert_profiling_abs( 'main_parallel.cpp', 
+                          'main_parallel_profiled.cpp', 
+                          'profile_output_paralell_abs.txt', 
+                          'profile_output_paralell_gpu_abs.txt', 
+                          'profile_output_paralell_state_abs.txt', 
+                          gpu, 
+                          state, 
+                          sections_par )
 
     if comp:
+        start_time = time.time()
         compile_for_windows( 'main_parallel_profiled.cpp', gpu, state )
+        end_time = time.time()
+        elapsed = end_time - start_time
+        print( f"Compilation completed in {elapsed:.2f} seconds." )
 
     run_on_windows()
 
     if state:
-        plot_profiling_data_abs( 'profile_output_paralell_state_abs.txt', 'profiling_data_parallel_state_abs.png', par = True )
+        plot_profiling_data_abs( 'profile_output_paralell_state_abs.txt', 
+                                 'profiling_data_parallel_state_abs.png', 
+                                 par = True )
     elif gpu:
-        plot_profiling_data_abs( 'profile_output_paralell_gpu_abs.txt', 'profiling_data_parallel_gpu_abs.png', par = True )
+        plot_profiling_data_abs( 'profile_output_paralell_gpu_abs.txt', 
+                                 'profiling_data_parallel_gpu_abs.png', 
+                                 par = True )
     else:
-        plot_profiling_data_abs( 'profile_output_paralell_abs.txt', 'profiling_data_parallel_abs.png', par = True )
+        plot_profiling_data_abs( 'profile_output_paralell_abs.txt', 
+                                 'profiling_data_parallel_abs.png', 
+                                 par = True )
 
 def profile_main_abs( gpu, comp, state ):
     insert_profiling_abs( 'main.cpp', 'main_profiled.cpp', 'profile_output_abs.txt', 'profile_output_gpu_abs.txt', 'dummy.txt', gpu, state, sections )

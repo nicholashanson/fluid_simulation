@@ -949,29 +949,29 @@ if (Check-NvidiaGPU) {
     Write-Host "No NVIDIA GPU found."
 }
 
-Setup-VSEnvironment
+# Setup-VSEnvironment
 
-Install-Chocolatey
-Install-Curl
-Install-MSYS2 -Action $Action
-MSYS2-Checks
-Install-OpenCV
-Install-TBB
-Install-TBBINTEL
-Install-GLFW
-Download-Files
-Download-mdspan
-Download-GLM
-Install-ImGui
+# Install-Chocolatey
+# Install-Curl
+# Install-MSYS2 -Action $Action
+# MSYS2-Checks
+# Install-OpenCV
+# Install-TBB
+# Install-TBBINTEL
+# Install-GLFW
+# Download-Files
+# Download-mdspan
+# Download-GLM
+# Install-ImGui
 
-Install-VisualStudio -Action $Action
+# Install-VisualStudio -Action $Action
 # Install-Handle
-Install-DPCPP -Action $Action
+# Install-DPCPP -Action $Action
 
 Write-Host "Current script root: $PSScriptRoot"
 $currentRoot = $PSScriptRoot
-Download-Googletest
-Setup-GoogleTest -scriptRoot $currentRoot
+# Download-Googletest
+# Setup-GoogleTest -scriptRoot $currentRoot
 
 if ($GPU) {
     if ($Profile) {
@@ -982,12 +982,12 @@ if ($GPU) {
         Compile-And-Run-Tests -GPU
     } else {
         # Setup-OpenCV -scriptRoot $currentRoot
-        Build-DLL -scriptRoot $currentRoot
-        Compile-And-Run-DPCPP-Tests-Debug -scriptRoot $currentRoot
-        Compile-And-Run-DPCPP-Tests -scriptRoot $currentRoot
+        # Build-DLL -scriptRoot $currentRoot
+        # Compile-And-Run-DPCPP-Tests-Debug -scriptRoot $currentRoot
+        # Compile-And-Run-DPCPP-Tests -scriptRoot $currentRoot
         Compile-And-Run-Tests -GPU 
-        Compile-Program -GPU -PAR
-        Disassemble
+        # Compile-Program -GPU -PAR
+        # Disassemble
     }
 } elseif ($ThreeD) {
     Compile-Program -ThreeD 

@@ -53,13 +53,13 @@ int main() {
 #endif
 
     // initialize GLFW and OpenGL context
-    GLFWwindow* window = initialize_window();
+    GLFWwindow* window = app::initialize_window();
 
-    unsigned int shader_program = setup_openGL();
+    unsigned int shader_program = app::setup_openGL();
 
     std::vector<float> barrier_vertices = app::obstacle_to_vertex_data<fs::settings::ydim,fs::settings::xdim>( barrier );
 
-    projection( shader_program ); 
+    app::projection( shader_program ); 
     
     std::vector<float> vertices;
 
@@ -124,7 +124,7 @@ int main() {
                 fs::lbm::calculate_curl_v_tbb( D2Q9_grid.get_data_handle(), property_grid.get_data_handle() );
             } else {
                 fs::lbm::calculate_property_v_tbb( D2Q9_grid.get_data_handle(), property_grid.get_data_handle(),
-                                                    app::gui::physical_properties[ app::gui::selected_property ] );    
+                                                   app::gui::physical_properties[ app::gui::selected_property ] );    
             }
 
             // end property calculation
@@ -162,15 +162,15 @@ int main() {
             glClear( GL_COLOR_BUFFER_BIT );
 
             // end render set up
-
-            // start render
-
-            app::render_grid( VAO, vertices.size() );
-
-            // end render
         
             frame_counter++;
         }
+
+        // start render
+
+        app::render_grid( VAO, vertices.size() );
+
+        // end render
 
         // start imgui render
 

@@ -29,8 +29,6 @@ namespace fs {
 
             extern "C" {
 
-                DLL_API void check_for_extension_c();
-
                 DLL_API char** get_available_devices( int * num_devices );       
 
                 DLL_API void free_device_list( char** device_list, int num_devices );

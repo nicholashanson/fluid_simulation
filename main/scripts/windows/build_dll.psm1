@@ -7,7 +7,7 @@ function Build-DLL {
 
     Write-Host $scriptRoot
 
-    $icpxArgs = "-v -fsycl -fsycl-targets=nvptx64-nvidia-cuda -std=c++23 -DDPCPP_COMPILER -DGPU"
+    $icpxArgs = "-O3 -v -qopt-report=max -qopt-report-phase=vec -emit-llvm -fsycl -fsycl-targets=nvptx64-nvidia-cuda -std=c++23 -DDPCPP_COMPILER -DGPU"
     $cudaPath = "`"C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v12.0`""
 
     # List of source files to compile

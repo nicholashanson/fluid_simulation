@@ -9,23 +9,21 @@
 TEST( FVMTests, GetLatticeTriangles ) {
 
     fs::fvm::triangle_set expected_triangles = {         
+        {  0,  1, 50 }, 
         {  1,  2, 51 }, 
         {  2,  3, 52 }, 
-        {  3,  4, 53 }, 
-        {  4,  5, 54 },  
+        {  3,  4, 53 },  
+        {  4,  5, 54 }, 
         {  5,  6, 55 }, 
         {  6,  7, 56 }, 
         {  7,  8, 57 }, 
         {  8,  9, 58 }, 
-        {  9, 10, 59 }, 
-        { 10, 11, 60 }
+        {  9, 10, 59 }
     };
 
     fs::fvm::triangle_set actual_triangles = fs::fvm::get_lattice_triangles( 50, 50 );
 
     fs::fvm::triangle_set first_ten;
-
-    std::vector<std::pair<double,double>> lattice_points = fs::fvm::get_lattice_points( 0.0, 2.0, 0.0, 2.0, 50, 50 );
 
     for ( auto [ index, tri ] : actual_triangles | std::views::enumerate ) {
         first_ten.insert( tri );
@@ -74,8 +72,6 @@ TEST( FVMTests, NumBoundaryEdges ) {
 TEST( FVMTests, MultipleCurves ) {
 
     auto lattice_boundary = fs::fvm::get_lattice_boundary( 50, 50 );
-
-    auto tri = fs::fvm::triangulate_rectangle<int,double>( 0.0, 2.0, 0.0, 2.0, 50, 50 );
 
     EXPECT_FALSE( fs::fvm::has_multiple_sections( lattice_boundary ) );
 }

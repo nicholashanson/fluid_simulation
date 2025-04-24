@@ -5,12 +5,13 @@ function Compile-Program {
     param(
         [switch]$GPU,
         [switch]$PAR,
-        [switch]$ThreeD
+        [switch]$ThreeD,
+        [switch]$Profile
     )
 
     Write-Host "Compiling program..."
 
-    $gppArgs = "-g -O0 -v -std=c++23"
+    $gppArgs = "-g -O1 -v -std=c++23"
 
     if ($GPU) {
         $gppArgs += " -DGPU"
@@ -29,6 +30,8 @@ function Compile-Program {
         $files += "main_parallel.cpp"
     } elseif ($ThreeD) {
         $files += "main_3D.cpp"
+    } elseif ($Profile) {
+        $files += "../performance_profiling/profile_MRT.cpp"
     } else {
         $files += "main.cpp"
     }

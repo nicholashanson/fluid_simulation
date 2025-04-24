@@ -48,6 +48,17 @@ namespace fs {
             return f_eq;
         }
 
+        T calculate_f_eq_fma( const size_t q, const T rho, const T u_x, const T u_y ) {
+
+            T e_dot_u = std::fma( e[ q ].first, u_x, e[ q ].second * u_y );
+
+            T u_dot_u = u_x * u_x + u_y * u_y;          // |u|^2
+
+            T f_eq = w[ q ] * rho * ( ( T )1 + e_dot_u / c_s2 + ( e_dot_u * e_dot_u ) / ( 2 * c_s2 * c_s2 ) - u_dot_u / ( 2 * c_s2 ) );
+
+            return f_eq;
+        }
+
     } // lbm
 
 } // fs

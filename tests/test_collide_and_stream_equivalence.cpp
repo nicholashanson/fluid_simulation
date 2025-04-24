@@ -1,3 +1,5 @@
+#ifdef GPU
+
 #include <gtest/gtest.h>
 
 #include <fs/fs.hpp>
@@ -12,7 +14,9 @@
 
 const double epsilon = 1e-6; 
 
-bool approx_equal_cells( const size_t y, const size_t x, const std::array<double, 9>& dpcxx_state, const std::array<double, 9>& tbb_state ) {
+bool approx_equal_cells( const size_t y, const size_t x, 
+                         const std::array<double, 9>& dpcxx_state, 
+                         const std::array<double, 9>& tbb_state ) {
 
     bool approx_equal_ = true;
 
@@ -70,8 +74,8 @@ TEST( LBMTests, CollideAndStreamEquivalence ) {
     for ( size_t y = 0; y < fs::settings::ydim; ++y ) {
         for ( size_t x = 0; x < fs::settings::xdim; ++x ) {
 
-            const std::array<double, 9> tbb_state = grid_tbb.get_cell_state_array( y, x );
-            const std::array<double, 9> dpcxx_state = grid_dpcxx.get_cell_state_array( y, x );
+            const auto tbb_state = grid_tbb.get_cell_state_array( y, x );
+            const auto dpcxx_state = grid_dpcxx.get_cell_state_array( y, x );
 
             if ( !approx_equal_cells( y, x, dpcxx_state, tbb_state ) ) { 
 
@@ -102,8 +106,8 @@ TEST( LBMTests, CollideAndStreamEquivalence ) {
     for ( size_t y = 0; y < fs::settings::ydim; ++y ) {
         for ( size_t x = 0; x < fs::settings::xdim; ++x ) {
 
-            const std::array<double, 9> tbb_state = grid_tbb.get_cell_state_array( y, x );
-            const std::array<double, 9> dpcxx_state = grid_dpcxx.get_cell_state_array( y, x );
+            const auto tbb_state = grid_tbb.get_cell_state_array( y, x );
+            const auto dpcxx_state = grid_dpcxx.get_cell_state_array( y, x );
 
             if ( !approx_equal_cells( y, x, dpcxx_state, tbb_state ) ) { 
 
@@ -115,3 +119,5 @@ TEST( LBMTests, CollideAndStreamEquivalence ) {
     ASSERT_TRUE( equivalent_values ) << "values are not equivalent";
     ASSERT_EQ( grid_tbb, grid_dpcxx ) << "collide-and-stream results are inconsistent";
 } 
+
+#endif // GPU
