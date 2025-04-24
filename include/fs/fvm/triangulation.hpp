@@ -1559,19 +1559,16 @@ namespace fs {
         /*
             LU_decomposition()
 
-            decompose matrix A into the upper-triangular matrix U
-            and the lower-triangular matrix L using the Doolittle
-            Algorithm:
+            decompose matrix A into the upper-triangular matrix U and the lower-triangular matrix L using 
+            the Doolittle Algorithm:
 
                 A = LU
 
-            use a permutation vector to keep track of any row-swaps
-            that take place during pivoting so that:
+            use a permutation vector to keep track of any row-swaps that take place during pivoting so that:
 
                 PA = LU
 
-            P is the permutation matrix that corresponds to the 
-            permutation vector
+            P is the permutation matrix that corresponds to the permutation vector
         */
         template<typename T,size_t R,size_t C>
         std::optional<
@@ -1634,20 +1631,16 @@ namespace fs {
 
         /*
             LU_solve()
-            take an LU decomposition of A and use forward 
-            and back-substitution to solve Ax = b
+            take an LU decomposition of A and use forward and back-substitution to solve Ax = b
             
-            before substitution, take the RHS vector b
-            and re-order it according to the permutation
-            vector derived from the LU decomposition
+            before substitution, take the RHS vector b and re-order it according to the permutation vector 
+            derived from the LU decomposition
 
-            first we use forward substitution to solve for y
-            in the equality:
+            first we use forward substitution to solve for y in the equality:
 
                     Ly = b
             
-            then we take the intermediate result y and use 
-            back substitution to solve for x in the equality:
+            then we take the intermediate result y and use back substitution to solve for x in the equality:
 
                     Ux = y
 
