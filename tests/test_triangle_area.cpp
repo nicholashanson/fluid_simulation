@@ -215,15 +215,29 @@ TEST( LinAlgTests, LUSolve ) {
 
 TEST( GeometryTests, Orient ) {
 
-    std::pair<double,double> p( 0.0, 0.0 );
-    std::pair<double,double> q( 1.0, 0.0 );
-    std::pair<double,double> r( 0.0, 1.0 );
+    using dp = std::pair<double,double>;
 
-    auto expected_true = fs::fvm::orient( p, q, r );        // modifies p, q, r
-    auto expected_false = fs::fvm::orient( p, r, q );       // modifies p, q, r
+    /*
+        the triangle ( p, q, r ) is positively oriented
+        the triangle ( p, r, q ) is negatively oriented
+    */
+    dp p( 0.0, 0.0 );
+    dp q( 1.0, 0.0 );
+    dp r( 0.0, 1.0 );
+
+    auto expected_positive = fs::fvm::get_orient( p, q, r );        // modifies p, q, r
+    auto expected_negative = fs::fvm::get_orient( p, r, q );        // modifies p, q, r
+
+    ASSERT_EQ( expected_positive, fs::fvm::orient::POSITIVE );
+    ASSERT_EQ( expected_negative, fs::fvm::orient::NEGATIVE );  
+
+    p = { 0.0, 0.0 }; // make the vertices of the triangle co-linear
+    q = { 0.0, 1.0 }; // so that get_orient returns orient::DEGENERATE
+    r = { 0.0, 2.0 };
+
+    auto expected_degenerate = fs::fvm::get_orient( p, q, r );
     
-    ASSERT_TRUE( expected_true );
-    ASSERT_FALSE( expected_false );   
+    ASSERT_EQ( expected_degenerate, fs::fvm::orient::DEGENERATE );  
 }
 
 TEST( GeometryTests, ConstructPositivelyOrientedTriangle ) {
@@ -238,11 +252,11 @@ TEST( GeometryTests, ConstructPositivelyOrientedTriangle ) {
 
     auto tri = fs::fvm::construct_positively_oriented_triangle<double>( points, 0, 1, 2 );
 
-    auto [ v, u, w ] = tri;
+    auto [ v, u, w ] = tri.value();
 
     std::tie( p, q, r ) = fs::fvm::get_triangle_points( points, v, u, w );
 
-    auto expected_true = fs::fvm::orient( p, q, r );
+    auto expected_positive = fs::fvm::get_orient( p, q, r );
 
-    ASSERT_TRUE( expected_true ); 
+    ASSERT_EQ( expected_positive, fs::fvm::orient::POSITIVE );
 }

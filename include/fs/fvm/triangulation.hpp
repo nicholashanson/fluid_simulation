@@ -8,6 +8,7 @@
 #include <iterator>
 #include <optional>
 #include <numeric>
+#include <random>
 
 #include <set>
 #include <map>
@@ -25,6 +26,18 @@
 namespace fs {
 
     namespace fvm {
+
+        enum class orient {
+            POSITIVE,
+            DEGENERATE,
+            NEGATIVE
+        };
+
+        template<typename T>
+        using VectorOfPairs = std::vector<std::pair<T,T>>;
+
+        template<typename T>
+        using PairOfVectors = std::pair<std::vector<T>,std::vector<T>>; 
 
         template<typename T>
         T exterior_product( const std::pair<T,T>& p, const std::pair<T,T>& q ) {
@@ -898,19 +911,7 @@ namespace fs {
         template<typename I,typename T>
         using BPL = std::map<I, representative_coords<I,T>>;
 
-        template<typename I,typename T>
-        class triangulation;
-        
-        template<typename I,typename T>
-        void reset_representative_coordinates( triangulation<I,T>& tri ) {
-            for ( auto& representative_point : tri.get_representative_points() ) {
-                representative_point.x = ( T )0;
-                representative_point.y = ( T )0;
-                representative_point.n = ( I )0; 
-            } 
-        }
-
-        template<typename I,typename T>
+        template<typename I,typename T,typename Points = VectorOfPairs<T>>
         class triangulation {
         public:
 
@@ -936,15 +937,36 @@ namespace fs {
                 return points[ i ];
             } 
 
-            triangle_set get_triangles() const {
+            const Points& get_points() const {
+                return points;
+            }
+
+            const triangle_set& get_triangles() const {
                 return triangles;
+            }
+
+            const size_t num_points() const {
+                if constexpr ( std::is_same_v<Points,std::vector<std::pair<T,T>>> ) {
+                    return points.size();  
+                } else if constexpr ( std::is_same_v<Points,std::pair<std::vector<T>,std::vector<T>>> ) {
+                    return points.first.size();  
+                }
             }
         private:
             triangle_set triangles;
             BPL<I,T> representative_points;
-            std::vector<std::pair<T,T>> points;
+            Points points;
             std::vector<I> boundary;
         };
+
+        template<typename I,typename T>
+        void reset_representative_coordinates( triangulation<I,T>& tri ) {
+            for ( auto& representative_point : tri.get_representative_points() ) {
+                representative_point.x = ( T )0;
+                representative_point.y = ( T )0;
+                representative_point.n = ( I )0; 
+            } 
+        }
 
         inline size_t sub_2_ind( const size_t x, const size_t y, const size_t xdim ) {
 
@@ -1772,88 +1794,26 @@ namespace fs {
             return { cx, cy };
         }
 
-        /*
-
-        template<typename I,typename T>
-        void unconstrained_triangulation(
-            triangulation<I,T>& tri,
-            bool randomise = true,
-            bool try_last_inserted_point = true
-        ) {
-
-            std::vector<size_t> insertion_order = get_insertion_order( tri, randomise );
-            initialise_bowyer_watson( tri, insertion_order );
-            std::vector<std::pair<T,T>> remaining_points = insertion_order[ 3 : insertion_order.end() ];
-
-            for ( auto [ num_points, new_point ] | std::enumerate( remaining_points ) ) {
+        template<typename T>
+        orient get_orient( const std::pair<T,T>& p, const std::pair<T,T>& q, const std::pair<T,T>& r ) {
             
-                std::pair<T,T> initial_search_point = get_initial_search_point(
-                    tri, num_points, new_point, insertion_order, try_last_inserted_point
-                );
+            auto p_r = get_difference( p, r );
+            auto q_r = get_difference( q, r );
 
-                add_point_bowyer_watson( tri, new_point, initial_search_point );
+            auto ext = exterior_product( p_r, q_r );
+
+            const T epsilon = static_cast<T>( 1e-9 );
+
+            if ( std::abs( ext ) < epsilon ) {
+                return orient::DEGENERATE;
             }
 
-            convex_hull( tri, reconstruct = false );
-        }
-
-        template<typename I,typename T>
-        void add_ghost_triangles( triangulation<I,T>& tri ) {
-
-            for ( auto ghost_vertex | get_ghost_vertices( tri ) ) {
-                for ( auto edge | get_edges( getadjacent_2_vertex( tri, ghost_vertex ) ) ) {   
-                    auto [ u, v ] = get_edge_vertices( edge ); 
-
-                    add_adjacent( tri, v, ghost_vertex, u );
-                    add_adjacent( tri, ghost_vertex, u, v );
-                    add_adjacent_2_vertex( tri, u, v, ghost_vertex );
-                    add_adjacent_2_vertex( tri, v, ghost_vertex, u );
-
-                    tri.add_triangle( u, v, ghost_vertex );
-                }
-            }
-        }
-
-        template<typename T>
-        concept SignedIntegral = std::is_integral_v<T> && std::is_signed_v<T>;
-
-        template<SignedIntegral I>
-        std::map<I,std::pair<I,I>> 
-        construct_ghost_vertex_ranges_contiguous() {
-            
-            const I current_ghost_vertex = -1;
-
-            std::map<I,std::pair<I,I>> ghost_vertex_ranges;
-            ghost_vertex_ranges[ current_ghost_vertex ] = { current_ghost_vertex, current_ghost_vertex };
-            return ghost_vertex_ranges;
-        }
-
-
-
-    
-
-        template<typename I,typename T>
-        triangle construct_positively_oriented_triangle(
-            triangulation<I,T>& tri,
-            const size_t i, const size_t j, const size_t k
-        ) {
-            
-        }
-        */
-
-        template<typename T>
-        bool orient( std::pair<T,T>& p, std::pair<T,T>& q, std::pair<T,T>& r ) {
-            
-            p = get_difference( p, r );
-            q = get_difference( q, r );
-
-            auto ext = exterior_product( p, q );
-
-            return sign( ext ) > 0 ? true : false; 
+            return sign( ext ) > 0 ? orient::POSITIVE : orient::NEGATIVE; 
         }
 
         template<typename T,typename Points>
-        triangle construct_positively_oriented_triangle(
+        std::optional<triangle>
+        construct_positively_oriented_triangle(
             const Points& points,
             const size_t i, const size_t j, const size_t k
         ) {
@@ -1861,12 +1821,16 @@ namespace fs {
             auto [ p, q, r ] = get_triangle_points( points, i, j, k );
 
             /*
-                if orientation = true then the triangle is positively
+                if orientation = orient::POSITIVE then the triangle is positively
                 oreintated
             */
-            auto orientation = orient( p, q, r );
+            auto orientation = get_orient( p, q, r );
 
-            if ( orientation ) {
+            if ( orientation == orient::DEGENERATE ) {
+                return std::nullopt;
+            }
+
+            if ( orientation == orient::POSITIVE ) {
                 return triangle( i, j, k );
             } else {
                 /*
@@ -1878,18 +1842,33 @@ namespace fs {
             }
         }
 
+        inline std::vector<size_t> get_insertion_order( 
+            const size_t num_points,
+            const bool randomize
+        ) {
+            
+            std::vector<size_t> indices( num_points );
 
-        /*
-        template<typename T,typename I>
-        void get_initial_triangle( triangulation<I,T>& tri, std::vector<size_t> insertion_order ) {
-            const size_t i = insertion_order[ 0 ];
-            const size_t j = insertion_order[ 1 ];
-            const size_t k = insertion_order[ 2 ];
+            std::iota( indices.begin(), indices.end(), 0 );
 
-            auto initial_triangle = construct_positively_oriented_triangle( tri, i, j, k );
+            if ( !randomize ) return indices;
 
+            std::random_device rand_device;
+            std::mt19937 generator( rand_device() );
+
+            std::shuffle( indices.begin(), indices.end(), generator );
+
+            return indices;
         }
-        */
+
+        template<typename I,typename T>
+        std::vector<size_t> get_insertion_order( 
+            const triangulation<I,T>& tri,
+            const bool randomize
+        ) {    
+
+            return get_insertion_order( tri.num_points, randomize );
+        }
 
     } // namespace fvm
 
