@@ -204,11 +204,24 @@ TEST( LinAlgTests, LUSolve ) {
 
     auto [ L, U, ps ] = LU_decomp.value();
 
-    auto x = fs::fvm::LU_solve<double,rows>( U, L, b, ps );
+    auto x = fs::fvm::LU_solve<double,rows>( L, U, b, ps );
 
     std::array<double,rows> expected_x{1.0, 2.0, 3.0};
     
     for ( size_t i = 0; i < rows; ++i ) {
         EXPECT_NEAR( x[ i ], expected_x[ i ], 1e-9 ); 
     }
+}
+
+TEST( GeometryTests, Orient ) {
+
+    std::pair<double,double> p( 0.0, 0.0 );
+    std::pair<double,double> q( 1.0, 0.0 );
+    std::pair<double,double> r( 0.0, 1.0 );
+
+    auto expected_true = fs::fvm::orient( p, q, r );        // modifies p, q, r
+    auto expected_false = fs::fvm::orient( p, r, q );       // modifies p, q, r
+    
+    ASSERT_TRUE( expected_true );
+    ASSERT_FALSE( expected_false );   
 }

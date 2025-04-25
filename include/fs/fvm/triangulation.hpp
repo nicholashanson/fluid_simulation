@@ -26,6 +26,20 @@ namespace fs {
 
     namespace fvm {
 
+        template<typename T>
+        T exterior_product( const std::pair<T,T>& p, const std::pair<T,T>& q ) {
+            return p.first * q.second - p.second * q.first;   
+        }
+
+        template<typename I,typename Edge>
+        struct adjacent_2_vertex { 
+            std::map<I,Edge> adjacent_2_vertex_map;
+
+            std::map<I,Edge>& get_adjacent_2_vertex() {
+                return adjacent_2_vertex_map;
+            }
+        };
+
         template<typename T,size_t rows,size_t cols>
         struct matrix_ {
 
@@ -997,10 +1011,10 @@ namespace fs {
         }
 
         template<typename I,typename T>
-        inline triangulation<I,T> triangulate_rectangle( const T a, const T b, 
-                                                         const T c, const T d,
-                                                         const size_t xdim, const size_t ydim,  
-                                                         bool single_boundary = false ) {
+        triangulation<I,T> triangulate_rectangle( const T a, const T b, 
+                                                  const T c, const T d,
+                                                  const size_t xdim, const size_t ydim,  
+                                                  bool single_boundary = false ) {
 
             auto lattice_triangles = get_lattice_triangles( ydim, xdim );
             auto points = get_lattice_points( a, b, c, d, xdim, ydim );
@@ -1392,6 +1406,12 @@ namespace fs {
         }
 
         template<typename T>
+        std::pair<T,T> get_sum( const std::pair<T,T>& p, 
+                                const std::pair<T,T>& q ) {
+            return { p.first + q.first, p.second + q.second };
+        }
+
+        template<typename T>
         three_d_point<T> get_difference( const three_d_point<T>& p, 
                                          const three_d_point<T>& q ) {
             
@@ -1609,7 +1629,7 @@ namespace fs {
                     for ( size_t k = 0; k < i; ++k ) {
                         sum += L[ i, k] * U[ k, j ];
                     }
-                    U[ i, j ] = m[ i, j ] - sum;
+                    U[ i, j ] = A[ i, j ] - sum;
                 }
 
                 // construct L
@@ -1621,7 +1641,7 @@ namespace fs {
                         for ( size_t k = 0; k < i; ++k ) {
                             sum += L[ j, k ] * U[ k, i ]; 
                         }
-                        L[ j, i ] = ( m[ j, i ] - sum ) / U[ i, i ];
+                        L[ j, i ] = ( A[ j, i ] - sum ) / U[ i, i ];
                     }
                 }
             }
@@ -1699,8 +1719,8 @@ namespace fs {
             T d_11 = dist_sqr( p, r ) + c - a;
             T d_21 = dist_sqr( q, r ) + c - b;
 
-            T [ e_11, d_12 ] = get_difference( p, r );
-            T [ e_21, d_22 ] = get_difference( q, r );
+            auto [ e_11, d_12 ] = get_difference( p, r );
+            auto [ e_21, d_22 ] = get_difference( q, r );
    
             T e_12 = d_11;
             T e_22 = d_21;
@@ -1725,6 +1745,32 @@ namespace fs {
             const T c = tri.get_weight( std::get<2>( t ) );
 
             return triangle_orthoradius_squared( p, q, r, a, b, c );
+        }
+
+        template<typename T>
+        std::pair<T,T> triangle_centroid( 
+            const std::pair<T,T>& p, 
+            const std::pair<T,T>& q,
+            const std::pair<T,T>& r
+        ) {
+
+            auto [ qx_prime, qy_prime ] = get_difference( q, p );
+            auto [ rx_prime, ry_prime ] = get_difference( r, p );
+            auto cx_prime = 2 * get_mid_point( qx_prime, rx_prime ) / 3;
+            auto cy_prime = 2 * get_mid_point( qy_prime, ry_prime ) / 3;
+            auto [ cx, cy ] = get_sum( { cx_prime, cy_prime }, p );
+            return { cx, cy };
+        }
+
+        template<typename T>
+        bool orient( std::pair<T,T>& p, std::pair<T,T>& q, std::pair<T,T>& r ) {
+            
+            p = get_difference( p, r );
+            q = get_difference( q, r );
+
+            auto ext = exterior_product( p, q );
+
+            return sign( ext ) > 0 ? true : false; 
         }
 
     } // namespace fvm
