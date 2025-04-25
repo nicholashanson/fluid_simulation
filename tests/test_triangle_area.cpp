@@ -225,3 +225,24 @@ TEST( GeometryTests, Orient ) {
     ASSERT_TRUE( expected_true );
     ASSERT_FALSE( expected_false );   
 }
+
+TEST( GeometryTests, ConstructPositivelyOrientedTriangle ) {
+
+    std::pair<double,double> p( 0.0, 0.0 );
+    std::pair<double,double> q( 1.0, 0.0 );
+    std::pair<double,double> r( 0.0, 1.0 );
+
+    std::pair<std::vector<double>,std::vector<double>> points( 
+        { p.first, r.first, q.first }, { p.second, r.second, q.second }
+    );
+
+    auto tri = fs::fvm::construct_positively_oriented_triangle<double>( points, 0, 1, 2 );
+
+    auto [ v, u, w ] = tri;
+
+    std::tie( p, q, r ) = fs::fvm::get_triangle_points( points, v, u, w );
+
+    auto expected_true = fs::fvm::orient( p, q, r );
+
+    ASSERT_TRUE( expected_true ); 
+}

@@ -567,6 +567,16 @@ namespace fs {
         }
 
         template<typename T>
+        std::array<std::pair<T,T>,3> get_triangle_points( 
+            const std::pair<std::vector<T>,std::vector<T>>& points, 
+            const size_t i, const size_t j, const size_t k 
+        ) {
+            return { std::pair<T,T>( points.first[ i ], points.second[ i ] ) , 
+                     std::pair<T,T>( points.first[ j ], points.second[ j ] ) ,
+                     std::pair<T,T>( points.first[ k ], points.second[ k ] ) };
+        }
+
+        template<typename T>
         T get_boundary_nodes( const std::vector<T>& boundary_nodes, const size_t m ) {
             return boundary_nodes[ m ];
         }
@@ -1762,6 +1772,75 @@ namespace fs {
             return { cx, cy };
         }
 
+        /*
+
+        template<typename I,typename T>
+        void unconstrained_triangulation(
+            triangulation<I,T>& tri,
+            bool randomise = true,
+            bool try_last_inserted_point = true
+        ) {
+
+            std::vector<size_t> insertion_order = get_insertion_order( tri, randomise );
+            initialise_bowyer_watson( tri, insertion_order );
+            std::vector<std::pair<T,T>> remaining_points = insertion_order[ 3 : insertion_order.end() ];
+
+            for ( auto [ num_points, new_point ] | std::enumerate( remaining_points ) ) {
+            
+                std::pair<T,T> initial_search_point = get_initial_search_point(
+                    tri, num_points, new_point, insertion_order, try_last_inserted_point
+                );
+
+                add_point_bowyer_watson( tri, new_point, initial_search_point );
+            }
+
+            convex_hull( tri, reconstruct = false );
+        }
+
+        template<typename I,typename T>
+        void add_ghost_triangles( triangulation<I,T>& tri ) {
+
+            for ( auto ghost_vertex | get_ghost_vertices( tri ) ) {
+                for ( auto edge | get_edges( getadjacent_2_vertex( tri, ghost_vertex ) ) ) {   
+                    auto [ u, v ] = get_edge_vertices( edge ); 
+
+                    add_adjacent( tri, v, ghost_vertex, u );
+                    add_adjacent( tri, ghost_vertex, u, v );
+                    add_adjacent_2_vertex( tri, u, v, ghost_vertex );
+                    add_adjacent_2_vertex( tri, v, ghost_vertex, u );
+
+                    tri.add_triangle( u, v, ghost_vertex );
+                }
+            }
+        }
+
+        template<typename T>
+        concept SignedIntegral = std::is_integral_v<T> && std::is_signed_v<T>;
+
+        template<SignedIntegral I>
+        std::map<I,std::pair<I,I>> 
+        construct_ghost_vertex_ranges_contiguous() {
+            
+            const I current_ghost_vertex = -1;
+
+            std::map<I,std::pair<I,I>> ghost_vertex_ranges;
+            ghost_vertex_ranges[ current_ghost_vertex ] = { current_ghost_vertex, current_ghost_vertex };
+            return ghost_vertex_ranges;
+        }
+
+
+
+    
+
+        template<typename I,typename T>
+        triangle construct_positively_oriented_triangle(
+            triangulation<I,T>& tri,
+            const size_t i, const size_t j, const size_t k
+        ) {
+            
+        }
+        */
+
         template<typename T>
         bool orient( std::pair<T,T>& p, std::pair<T,T>& q, std::pair<T,T>& r ) {
             
@@ -1772,6 +1851,45 @@ namespace fs {
 
             return sign( ext ) > 0 ? true : false; 
         }
+
+        template<typename T,typename Points>
+        triangle construct_positively_oriented_triangle(
+            const Points& points,
+            const size_t i, const size_t j, const size_t k
+        ) {
+
+            auto [ p, q, r ] = get_triangle_points( points, i, j, k );
+
+            /*
+                if orientation = true then the triangle is positively
+                oreintated
+            */
+            auto orientation = orient( p, q, r );
+
+            if ( orientation ) {
+                return triangle( i, j, k );
+            } else {
+                /*
+                    switching the first and second vertex switches the 
+                    orientation of the triangle, in this case from
+                    negative to positive
+                */
+                return triangle( j, i, k );
+            }
+        }
+
+
+        /*
+        template<typename T,typename I>
+        void get_initial_triangle( triangulation<I,T>& tri, std::vector<size_t> insertion_order ) {
+            const size_t i = insertion_order[ 0 ];
+            const size_t j = insertion_order[ 1 ];
+            const size_t k = insertion_order[ 2 ];
+
+            auto initial_triangle = construct_positively_oriented_triangle( tri, i, j, k );
+
+        }
+        */
 
     } // namespace fvm
 
