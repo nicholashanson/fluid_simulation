@@ -275,6 +275,15 @@ TEST( GeometryTests, ConstructPositivelyOrientedTriangle ) {
     ASSERT_EQ( expected_positive, fs::fvm::orient::POSITIVE );
 }
 
+/*
+    TEST: TwoSum
+
+    1e16 and 1.0 are perfectly representable in binary ( both for float and double )
+
+    1e16 + 1.0 = 1e16
+
+    so the error term should be 1.0
+*/
 TEST( AdaptivePredicates, TwoSum ) {
 
     double a = 1e16;
