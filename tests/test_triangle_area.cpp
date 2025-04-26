@@ -190,12 +190,26 @@ TEST( LinAlgTests, LUSolve ) {
     const size_t rows = 3;
     const size_t columns = 3;
 
+    /*
+        A = [ 1.0, 1.0, 1.0       x +  y + z = 6.0
+              2.0, 3.0, 1.0      2x + 3y + z = 11.0
+              3.0, 2.0, 1.0 ]    3x + 2y + z = 10.0
+
+        solution:
+            x = 1.0
+            y = 2.0
+            z = 3.0
+    */
     const std::array<double,rows*columns> coefficients = {
-        1.0, 1.0, 1.0, 2.0, 3.0, 1.0, 3.0, 2.0, 1.0,
+        1.0, 1.0, 1.0, 
+        2.0, 3.0, 1.0, 
+        3.0, 2.0, 1.0,
     };
 
     const std::array<double,rows> b = {
-        6.0, 11.0, 10.0,
+        6.0,    //  x +  y + z = 6.0
+        11.0,   // 2x + 3y + z = 11.0
+        10.0,   // 3x + 2y + z = 10.0 
     };
 
     fs::fvm::matrix_<double,rows,columns> A( coefficients );
@@ -204,12 +218,12 @@ TEST( LinAlgTests, LUSolve ) {
 
     auto [ L, U, ps ] = LU_decomp.value();
 
-    auto x = fs::fvm::LU_solve<double,rows>( L, U, b, ps );
+    auto solution = fs::fvm::LU_solve<double,rows>( L, U, b, ps );
 
-    std::array<double,rows> expected_x{1.0, 2.0, 3.0};
+    std::array<double,rows> expected_solution{ 1.0, 2.0, 3.0 };
     
     for ( size_t i = 0; i < rows; ++i ) {
-        EXPECT_NEAR( x[ i ], expected_x[ i ], 1e-9 ); 
+        EXPECT_NEAR( solution[ i ], expected_solution[ i ], 1e-9 ); 
     }
 }
 
@@ -225,8 +239,8 @@ TEST( GeometryTests, Orient ) {
     dp q( 1.0, 0.0 );
     dp r( 0.0, 1.0 );
 
-    auto expected_positive = fs::fvm::get_orient( p, q, r );        // modifies p, q, r
-    auto expected_negative = fs::fvm::get_orient( p, r, q );        // modifies p, q, r
+    auto expected_positive = fs::fvm::get_orient( p, q, r );       
+    auto expected_negative = fs::fvm::get_orient( p, r, q );        
 
     ASSERT_EQ( expected_positive, fs::fvm::orient::POSITIVE );
     ASSERT_EQ( expected_negative, fs::fvm::orient::NEGATIVE );  
@@ -259,4 +273,15 @@ TEST( GeometryTests, ConstructPositivelyOrientedTriangle ) {
     auto expected_positive = fs::fvm::get_orient( p, q, r );
 
     ASSERT_EQ( expected_positive, fs::fvm::orient::POSITIVE );
+}
+
+TEST( AdaptivePredicates, TwoSum ) {
+
+    double a = 1e16;
+    double b = 1.0; 
+
+    auto [ sum, err ] = fs::fvm::two_sum( a, b );
+
+    ASSERT_EQ( sum, a );
+    ASSERT_EQ( err, b );
 }

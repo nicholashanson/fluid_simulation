@@ -142,7 +142,7 @@ namespace fs {
             const T x = a + b;
             const T y = two_sum_tail( a, b, x );
             
-            return std::make_tuple( x, y );
+            return { x, y };
         }
 
         template<typename T>
@@ -1821,8 +1821,7 @@ namespace fs {
             auto [ p, q, r ] = get_triangle_points( points, i, j, k );
 
             /*
-                if orientation = orient::POSITIVE then the triangle is positively
-                oreintated
+                if orientation = orient::POSITIVE then the triangle is positively oreintated
             */
             auto orientation = get_orient( p, q, r );
 
@@ -1834,9 +1833,8 @@ namespace fs {
                 return triangle( i, j, k );
             } else {
                 /*
-                    switching the first and second vertex switches the 
-                    orientation of the triangle, in this case from
-                    negative to positive
+                    switching the first and second vertex switches the  orientation of the triangle, in this 
+                    case from negative to positive
                 */
                 return triangle( j, i, k );
             }
