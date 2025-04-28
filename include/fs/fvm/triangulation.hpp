@@ -27,11 +27,32 @@ namespace fs {
 
     namespace fvm {
 
+        template<typename T>
+        std::pair<T,T> get_difference( const std::pair<T,T>& p,
+                                       const std::pair<T,T>& q ) {
+
+            return { p.first - q.first, p.second - q.second };
+        }
+
         enum class orient {
             POSITIVE,
             DEGENERATE,
             NEGATIVE
         };
+
+        enum class in_circle {
+            INSIDE,
+            ON,
+            OUTSIDE
+        };
+
+        template<typename T>
+        T inner_product(
+            const std::pair<T,T>& p,
+            const std::pair<T,T>& q
+        ) {
+            return p.first * q.first + p.second * q.second;
+        }
 
         template<typename T>
         using VectorOfPairs = std::vector<std::pair<T,T>>;
@@ -46,10 +67,36 @@ namespace fs {
 
         template<typename I,typename Edge>
         struct adjacent_2_vertex { 
-            std::map<I,Edge> adjacent_2_vertex_map;
+            std::map<I,std::set<Edge>> adjacent_2_vertex_map;
 
-            std::map<I,Edge>& get_adjacent_2_vertex() {
+            std::map<I,std::set<Edge>>& get_adjacent_2_vertex() {
                 return adjacent_2_vertex_map;
+            }
+
+            void add( const I u, const I v, const I w ) {
+                adjacent_2_vertex_map[ u ] = construct_edge( v, w );
+            }
+
+            void remove( const I u, const I v, const I w ) {
+                Edge e = construct_edge( v,  w );
+                adjacent_2_vertex_map[ u ].erase( e );
+            }
+        };
+
+        template<typename I,typename Edge>
+        struct adjacent {
+            std::map<Edge,I> adjacent_map;
+
+            std::map<Edge,I>& get_adjacent() {
+                return adjacent_map;
+            }
+
+            void add( const I u, const I v, const I w ) {
+                adjacent_map[ construct_edge( u, v ) ] = w;
+            }
+
+            void remove( const I u, const I v ) {
+                adjacent_map.remove( construct_edge( u, v ) );
             }
         };
 
@@ -448,12 +495,8 @@ namespace fs {
         template<typename T>
         T orient_2_adapt( const std::pair<T,T>& p, const std::pair<T,T>& q, const std::pair<T,T>& r, const T detsum ) {
 
-            std::cout << "called backup" << std::endl;
-
-            const T ac_x = p.first - r.first;
-            const T bc_x = q.first - r.first;
-            const T ac_y = p.second - r.second;
-            const T bc_y = q.second - r.second;
+            auto [ ac_x, ac_y ] = get_difference( p, r );
+            auto [ bc_x, bc_y ] = get_difference( q, r );
 
             auto [ det_left, det_left_tail ] = two_product( ac_x, bc_y );
             auto [ det_right, det_right_tail ] = two_product( ac_y, bc_x );
@@ -569,16 +612,40 @@ namespace fs {
             using type = int32_t;
         };
 
+        /*
+            get_point()
+            get the ( x, y ) co-ordinates of a vertex
+
+            i: index of the point in the "points" data-structure
+
+            return the ( x, y ) co-ordinates of the vertices as a pair
+        */
         template<typename T>
         std::pair<T,T> get_point( const std::vector<std::pair<T,T>>& points, const size_t i ) {
             return points[ i ];
         }
 
+        /*
+            get_point()
+            get the ( x, y ) co-ordinates of a vertex
+
+            i: index of the point in the "points" data-structure
+
+            return the ( x, y ) co-ordinates of the vertices as a pair
+        */
         template<typename T>
         std::pair<T,T> get_point( const std::vector<std::vector<T>>& points, const size_t i ) {
             return { points[ 0 ][ i ], points[ 1 ][ i ] };
         }
 
+        /*
+            get_triangle_points()
+            get the ( x, y ) co-ordinates of each vertex in the triangle
+
+            i, j, k: indices of the points in the "points" data-structure
+
+            return the ( x, y ) co-ordinates of the vertices and array of 3 elements
+        */
         template<typename T>
         std::array<std::pair<T,T>,3> get_triangle_points( 
             const std::pair<std::vector<T>,std::vector<T>>& points, 
@@ -679,12 +746,10 @@ namespace fs {
         }
 
         /*
-            does a horizontal line that extends from the point p
-            intersect a line segment extending between the points
-            q and r?
+            does a horizontal line that extends from the point p intersect a line segment extending between
+            the points q and r?
 
-            If so, at what x co-ordinate does that horizontal
-            line intersect with that line segment?
+            If so, at what x co-ordinate does that horizontal line intersect with that line segment?
 
         */
         template<typename T,typename Points,typename BoundaryNodes>
@@ -760,7 +825,7 @@ namespace fs {
                                                  const Points& points,
                                                  const BoundaryNodes& boundary_nodes,
                                                  bool is_in_outer = false, 
-                                                 bool return_sqrt = true ) {
+                                                 const bool return_sqrt = true ) {
 
             using InnerBoundaryNodess = std::decay_t<decltype(boundary_nodes[0])>;
 
@@ -901,21 +966,153 @@ namespace fs {
 
         template<typename I,typename T>
         struct representative_coords {
-            T x;
-            T y;
-            I n;
 
-            representative_coords( T x, T y, T n ) : x( x ), y( y ), n( n ) {}
+            representative_coords( T x, T y, T n ) : x_( x ), y_( y ), n_( n ) {}
+
+            void add_point( const std::pair<T,T>& p ) {
+                x_ = 1 / ( n_ + 1 ) * ( n_ * x_ + p.first );
+                y_ = 1 / ( n_ + 1 ) * ( n_ * y_ + p.second );
+                n_ += 1;
+            }
+
+            void delete_point( const std::pair<T,T>& p ) {
+                x_ = 1 / ( n_ - 1 ) * ( n_ * x_ - p.first );
+                y_ = 1 / ( n_ - 1 ) * ( n_ * y_ - p.second );
+                n_ += 1;
+            }
+
+            void reset() {
+                x_ = ( T )0;
+                y_ = ( T )0;
+                n_ = ( I )0; 
+            }
+
+            void compute_centroid( const VectorOfPairs<T>& points ) {
+                reset();
+
+                for ( auto& p : points ) {
+                    add_point( p );
+                }
+            }
+
+            T x_;
+            T y_;
+            I n_;
         };
 
         template<typename I,typename T>
         using BPL = std::map<I, representative_coords<I,T>>;
+
+        template<typename I,typename Edge>
+        struct graph {
+
+            bool has_vertex( const I val ) {
+
+                if ( vertices.find( val ) != vertices.end() ) {
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+
+            bool has_ghost_vertices() {
+                return std::any_of( vertices.begin(), vertices.end(), []( const auto& vertex ) {
+                    vertex == -1;
+                });
+            }
+
+            void add_neighbor( I u, I v ) {
+                neighbors[ u ].insert( v );
+            }
+
+            template<typename... Args>
+            void add_neighbor( I u, Args... v) {
+                ( add_neighbor( u, v ), ... );  
+            }
+
+            void add_vertex( I u, I v ) {
+                if ( has_vertex( v ) ) return;
+
+                vertices.insert( v);
+                if ( neighbors.find( u ) == neighbors.end() ) {
+                    neighbors[ v ] = std::set<I>();
+                }
+            }
+
+            template<typename... Args>
+            void add_vertex( I u, Args... v) {
+                ( add_vertex( u, v ), ... );  
+            }
+
+            void add_edge( const I u, const I v ) {
+                edges.insert( construct_edge( v, u ) );
+            }
+
+            void delete_edge( const I u, const I v ) {
+                edges.erase( construct_edge( u, v ) );
+                edges.erase( construct_edge( v, u ) );
+            }
+
+            void delete_neighbor( const I u, const I v ) {
+                _delete( u, v );
+                _delete( v, u );
+                delete_edge( u, v );
+
+            } 
+
+            template<typename... Args>
+            void delete_neighbor( I u, Args... v) {
+                ( delete_neighbor( u, v ), ... );  
+            }
+
+            void add_triangle( const I u, const I v, const I w ) {
+
+                add_vertex( u, v, w );
+                add_neighbor( u, v, w );
+                add_neighbor( v, w );
+            }
+
+            void delete_triangle( const I u, const I v, const I w ) {
+
+                delete_neighbor( u, v, w );
+                delete_neighbor( v, w );
+            }
+
+            void clear_empty_vertices() {
+                for ( auto v : vertices ) {
+                    const size_t n = neighbors[ v ].size();
+                    if ( n == 0 ) {
+                        vertices.remove( v );
+                    }
+                }
+            }
+
+            void delete_( const I u, const I v ) {
+
+                if ( neighbors.find( u ) == neighbors.end() ) {
+                    neighbors[ u ] = std::set<I>();
+                }
+
+                neighbors[ u ].erase( v );
+
+                if ( neighbors[ u ].empty() ) {
+                    vertices.erase( u );
+                }
+            }
+
+            std::set<I> vertices;
+            std::set<Edge> edges;
+            std::map<I,std::set<I>> neighbors;
+        };
 
         template<typename I,typename T,typename Points = VectorOfPairs<T>>
         class triangulation {
         public:
 
             using integer_type = I;
+
+            triangulation( const std::vector<std::pair<T,T>>&& points ) 
+                : points( std::move( points ) ) {}
 
             triangulation( const triangle_set&& triangles,
                            const std::vector<std::pair<T,T>>&& points, 
@@ -925,7 +1122,7 @@ namespace fs {
                   boundary( std::move( boundary ) ) {}
 
             // Rule-of-Zero
-            BPL<I,T> get_representative_points() {
+            BPL<I,T>& get_representative_points() {
                 return representative_points;
             }
 
@@ -958,6 +1155,41 @@ namespace fs {
             Points points;
             std::vector<I> boundary;
         };
+
+        template<typename I,typename T>
+        void update_centroid_after_addition
+        (
+            triangulation<I,T>& tri,  
+            const size_t curve_index, 
+            const std::pair<T,T>& p
+        ) {
+            auto representative_points = tri.get_representative_points();
+            auto centroid = representative_points[ curve_index ];
+            centroid.add_point( p );
+        }
+
+        template<typename I,typename T>
+        void update_centroid_after_deletion
+        (
+            triangulation<I,T>& tri,  
+            const size_t curve_index, 
+            const std::pair<T,T>& p
+        ) {
+            auto representative_points = tri.get_representative_points();
+            auto centroid = representative_points[ curve_index ];
+            centroid.delete_point( p );
+        }
+
+        template<typename I,typename T>
+        std::pair<T,T> get_representative_point_coordinates
+        (
+            triangulation<I,T>& tri,  
+            const size_t curve_index
+        ) {
+            auto representative_points = tri.get_representative_points();
+            auto centroid = representative_points[ curve_index ];
+            return { centroid.x_, centroid.y_ };
+        }
 
         template<typename I,typename T>
         void reset_representative_coordinates( triangulation<I,T>& tri ) {
@@ -997,6 +1229,9 @@ namespace fs {
             return triangles;
         }
 
+        /*
+            get_lattice_points()
+        */
         template<typename T>
         std::vector<std::pair<T,T>> get_lattice_points( const T a, const T b, 
                                                         const T c, const T d, 
@@ -1438,12 +1673,6 @@ namespace fs {
         }
 
         template<typename T>
-        std::pair<T,T> get_sum( const std::pair<T,T>& p, 
-                                const std::pair<T,T>& q ) {
-            return { p.first + q.first, p.second + q.second };
-        }
-
-        template<typename T>
         three_d_point<T> get_difference( const three_d_point<T>& p, 
                                          const three_d_point<T>& q ) {
             
@@ -1457,10 +1686,9 @@ namespace fs {
         }
 
         template<typename T>
-        std::pair<T,T> get_difference( const std::pair<T,T>& p,
-                                       const std::pair<T,T>& q ) {
-
-            return { p.first - q.first, p.second - q.second };
+        std::pair<T,T> get_sum( const std::pair<T,T>& p, 
+                                const std::pair<T,T>& q ) {
+            return { p.first + q.first, p.second + q.second };
         }
 
         template<typename T> 
@@ -1779,8 +2007,17 @@ namespace fs {
             return triangle_orthoradius_squared( p, q, r, a, b, c );
         }
 
+        /*
+            get_triangle_centroid()
+
+            the centroid of a triangle is the point where the three medians of the traingle intersect
+
+            a median is a line segment that connects a vertex to the mid-point of the opposite edge
+
+            return the ( x, y ) co-ordinates of the centroid
+        */
         template<typename T>
-        std::pair<T,T> triangle_centroid( 
+        std::pair<T,T> get_triangle_centroid( 
             const std::pair<T,T>& p, 
             const std::pair<T,T>& q,
             const std::pair<T,T>& r
@@ -1788,12 +2025,29 @@ namespace fs {
 
             auto [ qx_prime, qy_prime ] = get_difference( q, p );
             auto [ rx_prime, ry_prime ] = get_difference( r, p );
+
             auto cx_prime = 2 * get_mid_point( qx_prime, rx_prime ) / 3;
             auto cy_prime = 2 * get_mid_point( qy_prime, ry_prime ) / 3;
+
             auto [ cx, cy ] = get_sum( { cx_prime, cy_prime }, p );
+
             return { cx, cy };
         }
 
+        /*
+            get_orient()
+
+            takes three points representing a triangle and uses those points to determine if the triangle is
+            positively-oriented or not
+
+            a triangle represented by the points ( p, q, r ) is positively-oriented if when traversing in
+            the order p -> q -> r the interior of the triangle is on the right-hand side
+
+            in the case that the three points are co-linear, the triangle is determined to be degenerate
+        
+            return an enum value that indicates if the triangle is poistively-oriented, negatively-oriented 
+            or degenerate
+        */
         template<typename T>
         orient get_orient( const std::pair<T,T>& p, const std::pair<T,T>& q, const std::pair<T,T>& r ) {
             
@@ -1821,7 +2075,7 @@ namespace fs {
             auto [ p, q, r ] = get_triangle_points( points, i, j, k );
 
             /*
-                if orientation = orient::POSITIVE then the triangle is positively oreintated
+                if orientation = orient::POSITIVE then the triangle is positively oreinted
             */
             auto orientation = get_orient( p, q, r );
 
@@ -1833,7 +2087,7 @@ namespace fs {
                 return triangle( i, j, k );
             } else {
                 /*
-                    switching the first and second vertex switches the  orientation of the triangle, in this 
+                    switching the first and second vertex switches the orientation of the triangle, in this 
                     case from negative to positive
                 */
                 return triangle( j, i, k );
@@ -1866,6 +2120,29 @@ namespace fs {
         ) {    
 
             return get_insertion_order( tri.num_points, randomize );
+        }
+
+        template<typename T>
+        in_circle point_in_circle(
+            const std::pair<T,T>& p,
+            const std::pair<T,T>& q,
+            const std::pair<T,T>& r, 
+            const std::pair<T,T>& a 
+        ) {
+
+            auto q_p = get_difference( q, p );
+            auto r_p = get_difference( r, p );
+            auto a_p = get_difference( a, p );
+            auto a_q = get_difference( a, q );
+            auto r_q = get_difference( r, q );
+
+            auto result = exterior_product( q_p, a_p ) * inner_product( r_p, r_q ) -
+                          exterior_product( q_p, r_p ) * inner_product( a_p, a_q );
+
+            if ( result == 0 )
+                return in_circle::ON;
+
+            return result > 0 ? in_circle::INSIDE : in_circle::OUTSIDE;
         }
 
     } // namespace fvm
