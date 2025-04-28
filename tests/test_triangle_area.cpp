@@ -339,11 +339,34 @@ TEST( GeometryTests, InCircle ) {
 
     auto expected_inside = fs::fvm::point_in_circle( p, q, r, a );
 
-    a = { 0.0, -1.0 };
-
     ASSERT_EQ( expected_inside, fs::fvm::in_circle::INSIDE );
+
+    a = { 0.0, -1.0 };
 
     auto expected_on = fs::fvm::point_in_circle( p, q, r, a );
 
     ASSERT_EQ( expected_on, fs::fvm::in_circle::ON );
+}
+
+TEST( GeometryTests, PointRelativeToLine ) {
+
+    std::pair<double,double> a( 0.0, -1.0 );
+    std::pair<double,double> b( 0.0, 1.0 );
+    std::pair<double,double> p( -1.0, 0.0 );
+
+    auto expected_left = fs::fvm::get_relaive_position_of_point_to_line( a, b, p );
+
+    ASSERT_EQ( expected_left, fs::fvm::relative_position::LEFT );
+
+    p = { 1.0, 0.0 };
+
+    auto expected_right = fs::fvm::get_relaive_position_of_point_to_line( a, b, p );
+
+    ASSERT_EQ( expected_right, fs::fvm::relative_position::RIGHT );
+
+    p = { 0.0, 0.0 };
+
+    auto expected_on = fs::fvm::get_relaive_position_of_point_to_line( a, b, p );
+
+    ASSERT_EQ( expected_on, fs::fvm::relative_position::ON );
 }

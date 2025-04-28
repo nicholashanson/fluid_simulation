@@ -34,6 +34,12 @@ namespace fs {
             return { p.first - q.first, p.second - q.second };
         }
 
+        enum class relative_position {
+            LEFT,
+            ON,
+            RIGHT
+        };
+
         enum class orient {
             POSITIVE,
             DEGENERATE,
@@ -1813,6 +1819,24 @@ namespace fs {
             return std::make_tuple( center, radius );
         }
 
+        /*
+            pivot()
+
+            re-arranges the rows of matrix m so that the abosolute value of each element on the diagonal of
+            the matrix is the largest value in that column
+
+            re-arranging the rows of the matrix in this way helps to improve the stability of LU_solve
+
+            the permutations vector represents the order of the rows in the new permutated matrix. It starts
+            as [ 0, 1, 2, ... n ], representing the rows in their original order. Each time rows in the 
+            matrix are swapped, the corresponding elements in the permutations vector are aslo swapped. For
+            example, if row 0 is swapped with row 2, then the 0th element in the permuations vector is 
+            swapped with the second.
+
+            the matrix is modified in place. 
+            
+            returns the permuation vector
+        */
         template<typename T,size_t R,size_t C>
         std::array<size_t,R> pivot( matrix_<T,R,C>& m ) {
 
@@ -2122,6 +2146,11 @@ namespace fs {
             return get_insertion_order( tri.num_points, randomize );
         }
 
+        /*
+            point_in_circle()
+
+            determines if the the point a is inside, outside or on the circle formed by the points p, q, r
+        */
         template<typename T>
         in_circle point_in_circle(
             const std::pair<T,T>& p,
@@ -2143,6 +2172,39 @@ namespace fs {
                 return in_circle::ON;
 
             return result > 0 ? in_circle::INSIDE : in_circle::OUTSIDE;
+        }
+
+        template<typename T>
+        relative_position
+        get_relaive_position_of_point_to_line(
+            const std::pair<T,T>& a,
+            const std::pair<T,T>& b,
+            const std::pair<T,T>& p
+        ) {
+            /*
+                get the orientation of the triangle formed by a, b, p
+            */
+            auto orientation = get_orient( a, b, p );
+
+            /* 
+                a, b, p form a degnerate triangle, therefore they are colinear, therefore p lies on the 
+                segment between a and b
+            */
+            if ( orientation == orient::DEGENERATE ) 
+                return relative_position::ON;
+            else if ( orientation == orient::POSITIVE ) {
+                /*
+                    a, b, p form a positively-oriented triangle, therefore p lies to the left of the segment
+                    between a and b
+                */
+                return relative_position::LEFT;
+            } else {
+                 /*
+                    a, b, p form a negatively-oriented triangle, therefore p lies to the right of the segment
+                    between a and b
+                */
+                return relative_position::RIGHT;
+            }
         }
 
     } // namespace fvm
