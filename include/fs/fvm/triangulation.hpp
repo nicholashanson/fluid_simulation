@@ -2146,34 +2146,6 @@ namespace fs {
             return get_insertion_order( tri.num_points, randomize );
         }
 
-        /*
-            point_in_circle()
-
-            determines if the the point a is inside, outside or on the circle formed by the points p, q, r
-        */
-        template<typename T>
-        in_circle point_in_circle(
-            const std::pair<T,T>& p,
-            const std::pair<T,T>& q,
-            const std::pair<T,T>& r, 
-            const std::pair<T,T>& a 
-        ) {
-
-            auto q_p = get_difference( q, p );
-            auto r_p = get_difference( r, p );
-            auto a_p = get_difference( a, p );
-            auto a_q = get_difference( a, q );
-            auto r_q = get_difference( r, q );
-
-            auto result = exterior_product( q_p, a_p ) * inner_product( r_p, r_q ) -
-                          exterior_product( q_p, r_p ) * inner_product( a_p, a_q );
-
-            if ( result == 0 )
-                return in_circle::ON;
-
-            return result > 0 ? in_circle::INSIDE : in_circle::OUTSIDE;
-        }
-
         template<typename T>
         relative_position
         get_relaive_position_of_point_to_line(
