@@ -8,7 +8,9 @@ TEST( LinAlgTests, LUDecomposition ) {
     const size_t columns = 3;
 
     const std::array<double,rows*columns> elements = {
-        2.0, -1.0, -2.0, -4.0, 6.0, 3.0, -4.0, -2.0, 8.0, 
+         2.0, -1.0, -2.0, 
+        -4.0,  6.0,  3.0, 
+        -4.0, -2.0,  8.0, 
     };
 
     fs::fvm::matrix_<double,rows,columns> m( elements );
@@ -20,11 +22,15 @@ TEST( LinAlgTests, LUDecomposition ) {
     auto [ lower_triangular, upper_triangular, permutations ] = result.value();
 
     const std::array<double,rows*columns> expected_lower_triangular = {
-        1.0, 0.0, 0.0, -2.0, 1.0, 0.0, -2.0, -1.0, 1.0,
+         1.0,  0.0, 0.0, 
+        -2.0,  1.0, 0.0, 
+        -2.0, -1.0, 1.0,
     };
 
     const std::array<double,rows*columns> expected_upper_triangular = {
-        2.0, -1.0, -2.0, 0.0, 4.0, -1.0, 0.0, 0.0, 3.0,
+        2.0, -1.0, -2.0, 
+        0.0,  4.0, -1.0, 
+        0.0,  0.0,  3.0,
     };
 
     EXPECT_EQ( upper_triangular.elements, expected_upper_triangular );

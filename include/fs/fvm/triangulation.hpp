@@ -2064,8 +2064,8 @@ namespace fs {
             takes three points representing a triangle and uses those points to determine if the triangle is
             positively-oriented or not
 
-            a triangle represented by the points ( p, q, r ) is positively-oriented if when traversing in
-            the order p -> q -> r the interior of the triangle is on the right-hand side
+            a triangle represented by the points ( p, q, r ) is positively-oriented if, when traversing in
+            the order p -> q -> r, the interior of the triangle is on the right-hand side
 
             in the case that the three points are co-linear, the triangle is determined to be degenerate
         
@@ -2206,6 +2206,340 @@ namespace fs {
                 return relative_position::RIGHT;
             }
         }
+
+                 /*
+
+        template<typename I,typename Edge>
+        void add_boundary_edges_single(
+            const I u, const I v, const I w,
+            const Edge& uv_bnd, const Edge& vw_bnd, const Edge& wu_bnd,
+            triangle_set& triangles, 
+            adjacent_2_vertex<I,Edge>& adj_2_v,
+            adjacent<Edge,I>& adj, 
+            graph<I,Edge>& graph,
+            const bool update_ghost_edges = true
+        ) {
+
+            const int g = -1;
+
+            std::tie( u, v, w ) = choose_uvw( uv_bnd, vw_bnd, wu_bnd );
+            
+            adj.add( u, w, g );
+            adj.add( w, v, g );
+            
+            adj_2_v.add( g, u, w );
+            adj_2_v.remove( g, w, v );
+            adj_2_v.remove( g, u, v );
+            
+            graph.add_neighbor( g, w );
+
+            if ( update_ghost_edges ) {
+            
+                adj.add( w, g, u );
+                adj.add( g, u, w );
+                adj.add( v, g, w );
+                adj.add( g, w, v );
+                adj_2_v.add( u, w, g );
+                adj_2_v.add( w, g, u );
+                adj_2_v.add( w, v, g );
+                adj_2_v.add( v, g, w );
+                adj_2_v.remove( u, v, g );
+                adj_2_v.remove( v, g, u );
+
+                add_triangle( triangles, u, w, g );
+                add_triangle( triangles, w, v, g );
+
+                delete_triangle( triangles, u, v, g );
+            }
+        }
+
+        template<typename I>
+        std::pair<I,I> construct_edge( const I u, const I v ) {
+            return { u, v };
+        }
+
+        template<typename I>
+        std::tuple<I,I,I> choose_uvw( 
+            const bool e_1, const bool e_2, const bool e_3, 
+            const I u, const I v, const I w ) {
+
+            std::tuple<I,I,I> result;
+
+            if ( e_1 ) { 
+                result = std::make_tuple( u, v, w );
+            } else if ( e_2 ) {
+                result = std::make_tuple( v, w, u );
+            } else {
+                result = std::make_tuple( w, u, v );
+            }
+
+            return result;
+        } 
+
+        template<typename I,typename Edge>
+        void delete_triangle( 
+            adjacent_2_vertex<I,Edge>& adj_2_v, 
+            const I u, const I v, const I w
+        ) {
+            adj_2_v.remove( u, v, w );
+            adj_2_v.remove( v, w, u );
+            adj_2_v.remove( w, u, v );
+        }
+
+        template<typename I,typename T>
+        triangle 
+        get_initial_triangle(
+            const triangulation<I,T>& tri,
+            const std::vector<size_t>& insertion_order,
+            size_t iter = 0 
+        ) {
+
+            auto [ i, j, k ] = std::array{ insertion_order[ 0 ], insertion_order[ 1 ], insertion_order[ 2 ] };
+
+            auto initial_triangle = construct_positively_oriented_triangle( tri, i, j, k );
+
+            std::tie( i, j, k ) = initial_triangle;
+
+            auto [ p, q, r ] = get_trinagle_points( tri, i, j, k );
+
+            auto orientation = triangle_orientation( p, q, r );
+
+            if ( insertion_order.size() > 3 && orientation == orient::DEGENERATE
+                 || triangle_area( p, q, r ) < std::numeric_limits<T>::epsilon() && iter <= insertion_order.size() ) {
+                
+                    get_initial_triangle( tri, insertion_order, iter + 1 ); 
+            }
+
+            return initial_triangle;
+        }
+
+        template<typename I,tpyename T>
+        void add_point_bowyer_watson(
+            triangulation<I,T>& tri, 
+            I new_point, 
+            I initial_search_point, 
+            bool update_representative_point = true,
+            bool peek = false
+        ) {
+            
+            std::pair<T,T> q = tri.get_point( new_point );
+            auto v = find_triangle( tri, q, initial_search_point );
+
+
+    V = find_triangle(tri, q; predicates, m = nothing, point_indices = nothing, try_points = nothing, k = initial_search_point, rng)
+    if is_weighted(tri)
+        cert = point_position_relative_to_circumcircle(predicates, tri, V, _new_point; cache = get_orient3_cache(tri)) # redirects to point_position_relative_to_witness_plane
+        is_outside(cert) && return V # If the point is submerged, then we don't add it
+    end
+    flag = point_position_relative_to_triangle(predicates, tri, V, q)
+    add_point_bowyer_watson_and_process_after_found_triangle!(tri, _new_point, V, q, flag, update_representative_point, store_event_history, event_history, peek, predicates)
+    return V
+end
+
+        template<typename I,typename T>
+        void
+        initialise_bowyer_watson(
+            triangulation<I,T>& tri,
+            const std::vector<size_t>& insertion_order
+        ) {
+
+            auto initial_triangle = get_initial_triangle( tri, insertion_order );
+
+            auto [ p, q, r ] = initial_triangle;
+
+            const int g = -1;
+
+            add_triangle( p, q, r, tri, true, false );
+            add_triangle( q, p, g, tri, true, false );
+            add_triangle( r, q, g, tri, true, false );
+            add_triangle( p, r, g, tri, true, false );
+            
+            new_representative_point( tri, 1 );
+
+            for ( auto i : initial_triangle ) {
+                auto p = tri.get_point( i );
+                update_centroid_after_addition( tri, 1, p );
+            }
+        }
+
+        template<typename I,typename T>
+        size_t get_initial_search_point(
+            tiangulation<I,T>& tri, 
+            size_t num_points, 
+            size_t new_point, 
+            std::vector<size_t> insertion_order, 
+            const bool try_last_inserted_point
+        ) {
+
+            size_t num_currently_inserted = num_points + 3 - 1;
+            size_t last_inserted_point_index = insertion_order[ num_currently_inserted ];
+            currently_inserted_points = each_solid_vertex( tri );
+            m = num_sample_rule(num_currently_inserted)
+            try_points = try_last_inserted_point ? (last_inserted_point_index,) : (oftype(last_inserted_point_index, ∅),)
+            initial_search_point = select_initial_point(tri, new_point; m, point_indices = currently_inserted_points, rng, try_points)
+            return initial_search_point
+        }
+
+        template<typename I,typename T>
+        void unconstrained_triangulation(
+            triangulation<I,T>& tri,
+            bool randomise = true,
+            bool try_last_inserted_point = true
+        ) {
+
+            std::vector<size_t> insertion_order = get_insertion_order( tri, randomise );
+            initialise_bowyer_watson( tri, insertion_order );
+            std::vector<size_t> remaining_points( insertion_order.begin() + 3, insertion_order.end() );
+
+            for ( auto [ num_points, new_point ] | std::enumerate( remaining_points ) ) {
+            
+                std::pair<T,T> initial_search_point = get_initial_search_point(
+                    tri, num_points, new_point, insertion_order, try_last_inserted_point
+                );
+
+                add_point_bowyer_watson( tri, new_point, initial_search_point );
+            }
+
+            convex_hull( tri, reconstruct = false );
+        }
+
+        template<typename I,typename T,typename Points>
+        triangulation<I,T> triangulate( const Points& points ) {
+
+            auto tri = triangulaton( points );
+            unconstrained_triangulation( tri );
+        }
+   
+
+        template<typename T>
+        concept SignedIntegral = std::is_integral_v<T> && std::is_signed_v<T>;
+
+        template<SignedIntegral I>
+        std::map<I,std::pair<I,I>> 
+        construct_ghost_vertex_ranges_contiguous() {
+            
+            const I current_ghost_vertex = -1;
+
+            std::map<I,std::pair<I,I>> ghost_vertex_ranges;
+            ghost_vertex_ranges[ current_ghost_vertex ] = { current_ghost_vertex, current_ghost_vertex };
+            return ghost_vertex_ranges;
+        }
+
+        template<typename I,typename T>
+        void
+        initialise_bowyer_watson(
+            triangulation<I,T>& tri,
+            const std::vector<size_t>& insertion_order
+        ) {
+
+            auto initial_triangle = get_initial_triangle( tri, insertion_order );
+
+            auto [ p, q, r ] = initial_triangle;
+
+            const int g = -1;
+
+            tri.add_triangle( p, q, r, tri, true, false );
+            tri.add_triangle( q, p, g, tri, true, false );
+            tri.add_triangle( r, q, g, tri, true, false );
+            tri.add_triangle( p, r, g, tri, true, false );
+            
+            new_representative_point( tri, 1 );
+
+            for ( auto i | initial_triangle ) {
+                auto p = tri.get_point( i );
+                update_centroid_after_addition( tri, 1, p );
+            }
+        }
+
+        template<typename I,typename T>
+        void 
+        add_triangle(
+            triangulation<I,T> tri,
+            const int p, const int q, const int r,
+            const bool protect_boundary = false,
+            const bool update_ghost_edges = false
+        ) {
+            auto adj = get_adjacent( tri );
+            auto adj_2_vertex = get_adjacent_2_vertex( tri );
+            auto graph = get_graph( tri );
+            
+            const auto& triangles = tri.get_triangles();
+
+            auto pq_bnd = is_boundary_edge( tri, q, p );
+            auto qr_bnd = is_boundary_edge( tri, r, q );
+            auto rp_bnd = is_boundary_edge( tri, p, r );
+
+            add_triangle( adj, p, q, r );
+            add_triangle( adj_2_vertex, p, q, r );
+            add_triangle( graph, p, q, r );
+            add_triangle( triangles, p, q, r );
+
+            const size_t num_bnd_edges = protect_boundary ? 0 : count( pq_bnd, qr_bnd, rp_bnd );
+
+            if ( num_bnd_edges == 1 ) {
+                add_boundary_edges_single( p, q, r, 
+                                           pq_bnd, qr_bnd, rp_bnd,
+                                           triangles, adj, adj_2_vertex, graph,
+                                           update_ghost_edges );
+            } else if ( num_bnd_edges == 2 ) {
+                add_boundary_edges_double( p, q, r, 
+                                           pq_bnd, qr_bnd, rp_bnd,
+                                           triangles, adj, adj_2_vertex, graph,
+                                           update_ghost_edges );
+            } else if ( num_bnd_edges == 3 || tri.num_triangles == 1 
+                        && !protect_boundary ) {
+                add_boundary_edges_triple( p, q, r, 
+                                           triangles, adj, adj_2_vertex, graph,
+                                           update_ghost_edges );
+            }
+        }
+
+
+
+
+        template<typename I,typename T>
+       
+
+        template<typename I,typename T>
+        void add_ghost_triangles( triangulation<I,T>& tri ) {
+
+            for ( auto ghost_vertex | get_ghost_vertices( tri ) ) {
+                for ( auto edge | get_edges( getadjacent_2_vertex( tri, ghost_vertex ) ) ) {   
+                    auto [ u, v ] = get_edge_vertices( edge ); 
+
+                    add_adjacent( tri, v, ghost_vertex, u );
+                    add_adjacent( tri, ghost_vertex, u, v );
+                    add_adjacent_2_vertex( tri, u, v, ghost_vertex );
+                    add_adjacent_2_vertex( tri, v, ghost_vertex, u );
+
+                    tri.add_triangle( u, v, ghost_vertex );
+                }
+            }
+        }
+
+
+
+    
+
+        template<typename I,typename T>
+        triangle construct_positively_oriented_triangle(
+            triangulation<I,T>& tri,
+            const size_t i, const size_t j, const size_t k
+        ) {
+            
+        }
+  
+        template<typename T,typename I>
+        void get_initial_triangle( triangulation<I,T>& tri, std::vector<size_t> insertion_order ) {
+            const size_t i = insertion_order[ 0 ];
+            const size_t j = insertion_order[ 1 ];
+            const size_t k = insertion_order[ 2 ];
+
+            auto initial_triangle = construct_positively_oriented_triangle( tri, i, j, k );
+
+        }
+        */
+
 
     } // namespace fvm
 

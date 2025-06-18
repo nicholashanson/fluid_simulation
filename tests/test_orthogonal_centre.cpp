@@ -4,7 +4,11 @@
 
 TEST( GeometryTests, TriangleOrthoCentre ) {
 
-    auto tri = fs::fvm::triangulate_rectangle<int,double>( 0.0, 2.0, 0.0, 2.0, 50, 50 );
+    auto tri = fs::fvm::triangulate_rectangle<int,double>( 
+        0.0, 2.0, // xmin, xmax
+        0.0, 2.0, // ymin, ymax
+        50, 50    // lattic points in x-dimension, lattice points in y-direction   
+    );
 
     auto triangles = tri.get_triangles();
 
