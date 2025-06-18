@@ -3,7 +3,7 @@
 #include <cmath>
 
 #include <fs/fvm/triangulation.hpp>
-#include <fs/mesh/circle.hpp>
+#include <geometry/circle.hpp>
 
 #include "test_constants.hpp"
 

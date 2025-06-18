@@ -1,7 +1,7 @@
 #ifndef CIRCLE_HPP
 #define CIRCLE_HPP
 
-#include <fvm/triangulation.hpp>
+#include <fs/fvm/triangulation.hpp>
 
 namespace geometry {
 
@@ -18,7 +18,7 @@ namespace geometry {
         const std::pair<T,T>& a 
     ) {
 
-        auto q_p = fvm::get_difference( q, p );
+        auto q_p = fs::fvm::get_difference( q, p );
         auto r_p = fs::fvm::get_difference( r, p );
         auto a_p = fs::fvm::get_difference( a, p );
         auto a_q = fs::fvm::get_difference( a, q );
