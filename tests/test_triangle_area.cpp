@@ -76,9 +76,9 @@ TEST( GeometryTests, SquaredTriangleLengthsWithSmallestIndex ) {
 
 TEST( GeometryTests, TriangleCircumcenterTest ) {
 
-    std::pair<double, double> p = { 0.0, 0.0 }; 
-    std::pair<double, double> q = { 4.0, 0.0 }; 
-    std::pair<double, double> r = { 2.0, 4.0 }; 
+    std::pair<double,double> p = { 0.0, 0.0 }; 
+    std::pair<double,double> q = { 4.0, 0.0 }; 
+    std::pair<double,double> r = { 2.0, 4.0 }; 
 
     std::pair<double, double> expected_circumcenter = { 2.0, 1.5 };
 

@@ -985,13 +985,13 @@ if ($GPU) {
         # Build-DLL -scriptRoot $currentRoot
         # Compile-And-Run-DPCPP-Tests-Debug -scriptRoot $currentRoot
         # Compile-And-Run-DPCPP-Tests -scriptRoot $currentRoot
-        Compile-And-Run-Tests -GPU 
+        Compile-And-Run-Tests-Incremental -GPU 
         # Compile-Program -GPU -PAR
         # Disassemble
     }
 } elseif ($ThreeD) {
     Compile-Program -ThreeD 
 } else {
-    Compile-And-Run-Tests
-    Compile-Program -PAR
+    Compile-And-Run-Tests-Incremental
+    Compile-Program-Incremental -PAR
 }
