@@ -358,6 +358,7 @@ compile_code() {
 }
 
 check_gpp_version
+setup_googletest
 download_and_unzip_mdspan
 install_curl
 install_opencv
@@ -366,4 +367,4 @@ download_files
 download_glm
 install_imgui
 install_tbb
-compile_code
+compile_codeg++
