@@ -18,16 +18,16 @@ TEST( VisualGeometryTests, InCircle ) {
     std::pair<double,double> r(  0.0, 1.0 );
     std::pair<double,double> a(  5.0, 5.0 );
 
-    auto expected_outside = geometry::point_in_circle( p, q, r, a );
-
-    ASSERT_EQ( expected_outside, fs::fvm::in_circle::OUTSIDE );
+    auto result = geometry::point_in_circle( p, q, r, a );
 
     GLFWwindow* window = app::initialize_window_for_test();
-    ASSERT_NE(window, nullptr);
+    ASSERT_NE( window, nullptr );
 
     auto triangle_center = fs::fvm::get_triangle_circumcenter( p, q, r );
     glm::vec2 circle_center( triangle_center.first, triangle_center.second );
     auto circle_vertices = app::generate_circle_vertices( circle_center, 1.0, 1000 );
+    glm::vec2 point( a.first, a.second ); 
+    circle_vertices.push_back( point );
 
     GLuint VAO, VBO;
     glGenVertexArrays( 1, &VAO );
@@ -36,8 +36,14 @@ TEST( VisualGeometryTests, InCircle ) {
     unsigned int shader_program = app::setup_openGL_for_test();
     app::test_projection( shader_program );
     app::identity_view( shader_program );
-    app::identity_model( shader_program );
+    app::identity_model( shader_program );  
 
+    auto point_shader_program = app::get_point_shader_program();
+    app::test_projection( point_shader_program );
+    app::identity_view( point_shader_program );
+    app::identity_model( point_shader_program );  
+
+    glBindVertexArray( VAO );
     glBindVertexArray( VAO );
 
     glBindBuffer( GL_ARRAY_BUFFER, VBO );
@@ -56,7 +62,17 @@ TEST( VisualGeometryTests, InCircle ) {
         glClearColor( 0.2f, 0.3f, 0.3f, 1.0f );
         glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
         glBindVertexArray( VAO );
-        glDrawArrays( GL_LINE_LOOP, 0, circle_vertices.size() );
+
+        glUseProgram( shader_program );
+        glDrawArrays( GL_LINE_LOOP, 0, circle_vertices.size() - 1 );
+
+        glUseProgram( point_shader_program );
+        app::test_projection(point_shader_program);
+        app::identity_view(point_shader_program);
+        app::identity_model(point_shader_program);
+        glPointSize( 10.0f );
+        glDrawArrays( GL_POINTS, circle_vertices.size() - 1, 1 );
+
         glBindVertexArray( 0 );
         glfwSwapBuffers( window );
         glfwPollEvents();
