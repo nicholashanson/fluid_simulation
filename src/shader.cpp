@@ -82,6 +82,26 @@ namespace app {
         return program;
     }
 
+    unsigned int get_point_shader_program() {
+
+        std::string vertex_path = "../shaders/test_vertex.glsl";
+        std::string fragment_path = "../shaders/point_fragment.glsl";
+
+        auto point_shader_program = setup_shaders( vertex_path, fragment_path );
+
+        return point_shader_program;
+    }
+
+    unsigned int get_text_shader_program() {
+    
+        std::string vertex_path = "../shaders/text_vertex.glsl";
+        std::string fragment_path = "../shaders/text_fragment.glsl";
+        
+        auto text_shader_program = app::setup_shaders( vertex_path, fragment_path );
+        
+        return text_shader_program;
+    }
+
 }
 
 

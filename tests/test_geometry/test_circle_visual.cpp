@@ -11,6 +11,18 @@
 #include <fs/fvm/triangulation.hpp>
 #include <geometry/circle.hpp>
 
+std::string in_circle_result( fs::fvm::in_circle result ) {
+    switch ( result ) {
+        case fs::fvm::in_circle::INSIDE:
+            return "Point is inside circle";
+        case fs::fvm::in_circle::OUTSIDE:
+            return "Point is outside circle";
+        case fs::fvm::in_circle::ON:
+            return "Point is on circle";
+    }
+    return "";
+} 
+
 TEST( VisualGeometryTests, InCircle ) {
 
     std::pair<double,double> p( -1.0, 0.0 );
@@ -19,6 +31,9 @@ TEST( VisualGeometryTests, InCircle ) {
     std::pair<double,double> a(  5.0, 5.0 );
 
     auto result = geometry::point_in_circle( p, q, r, a );
+    auto message = in_circle_result( result );
+
+    std::cout << message.size() << std::endl;
 
     GLFWwindow* window = app::initialize_window_for_test();
     ASSERT_NE( window, nullptr );
@@ -38,6 +53,15 @@ TEST( VisualGeometryTests, InCircle ) {
     glGenVertexArrays( 1, &VAO );
     glGenBuffers( 1, &VBO );
 
+    GLuint text_VAO, text_VBO;
+    app::init_text_vao_vbo( text_VAO, text_VBO );
+    
+    // text rendering parameters
+    float padding = 10.0f;
+    float approx_char_width = 8.0f;
+    float x = 10.0f;
+    float y = 10.0f;
+
     unsigned int shader_program = app::setup_openGL_for_test();
     app::test_projection( shader_program );
     app::identity_view( shader_program );
@@ -47,6 +71,8 @@ TEST( VisualGeometryTests, InCircle ) {
     app::test_projection( point_shader_program );
     app::identity_view( point_shader_program );
     app::identity_model( point_shader_program );  
+
+    auto text_shader_program = app::get_text_shader_program();
 
     glBindVertexArray( VAO );
     glBindVertexArray( VAO );
@@ -60,7 +86,6 @@ TEST( VisualGeometryTests, InCircle ) {
     glBindBuffer( GL_ARRAY_BUFFER, 0 );
     glBindVertexArray( 0 );
 
-    // Your drawing loop
     double start_time = glfwGetTime();
     while ( !glfwWindowShouldClose(window) && glfwGetTime() - start_time < 3.0 ) {
 
@@ -77,8 +102,19 @@ TEST( VisualGeometryTests, InCircle ) {
         app::identity_model( point_shader_program );
         glPointSize( 10.0f );
         glDrawArrays( GL_POINTS, circle_vertices.size(), points.size() );
-
         glBindVertexArray( 0 );
+
+        glUseProgram(text_shader_program);
+        app::test_projection(text_shader_program);
+        app::identity_view(text_shader_program);
+        app::identity_model(text_shader_program);
+
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glDisable(GL_DEPTH_TEST);
+
+        app::render_text( message, x, y, text_shader_program, text_VAO, text_VBO, 500, 500 );
+
         glfwSwapBuffers( window );
         glfwPollEvents();
     }

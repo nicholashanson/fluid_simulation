@@ -5,6 +5,7 @@
 #include <GLFW/glfw3.h>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <stb/stb_easy_font.h>
 
 #include <shader.hpp>
 
@@ -44,6 +45,10 @@ namespace app {
     void identity_view( int shader_program );
 
     void identity_model( int shader_program );
+
+    void init_text_vao_vbo(GLuint &VAO, GLuint &VBO);
+
+    void render_text( const std::string& text, float x, float y, unsigned int shader_program, GLuint VAO, GLuint VBO, int window_width, int window_height );
 
 } // namespace app
 

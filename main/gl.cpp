@@ -211,15 +211,80 @@ namespace app {
     void identity_view( int shader_program ) {
         glm::mat4 view = glm::mat4( 1.0f ); 
 
-        GLuint loc = glGetUniformLocation(shader_program, "view");
-        glUniformMatrix4fv(loc, 1, GL_FALSE, glm::value_ptr(view));
+        GLuint loc = glGetUniformLocation( shader_program, "view" );
+        glUniformMatrix4fv( loc, 1, GL_FALSE, glm::value_ptr( view ) );
     }
 
     void identity_model( int shader_program ) {
         glm::mat4 model = glm::mat4( 1.0f ); 
 
-        GLuint loc = glGetUniformLocation(shader_program, "model");
-        glUniformMatrix4fv(loc, 1, GL_FALSE, glm::value_ptr(model));
+        GLuint loc = glGetUniformLocation( shader_program, "model" );
+        glUniformMatrix4fv( loc, 1, GL_FALSE, glm::value_ptr( model ) );
+    }
+
+    static unsigned char stb_buffer[ 99999 ]; 
+
+    static unsigned char tri_buffer[ 99999 * 3 / 2 ]; 
+
+    void init_text_vao_vbo( GLuint &VAO, GLuint &VBO ) {
+        glGenVertexArrays( 1, &VAO );
+        glGenBuffers( 1, &VBO );
+
+        glBindVertexArray( VAO );
+        glBindBuffer( GL_ARRAY_BUFFER, VBO );
+
+        glBufferData( GL_ARRAY_BUFFER, sizeof(stb_buffer) * 3 / 2, NULL, GL_DYNAMIC_DRAW ); 
+
+        glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, 16, ( void* )0 );
+        glEnableVertexAttribArray( 0 );
+
+        glVertexAttribPointer( 1, 4, GL_UNSIGNED_BYTE, GL_TRUE, 16, ( void* )( 3 * sizeof( float ) ) );
+        glEnableVertexAttribArray( 1 );
+
+        glBindVertexArray( 0 );
+    }
+
+    void render_text( const std::string& text, float x, float y,
+                      GLuint shader_program, GLuint VAO, GLuint VBO,
+                      int window_width, int window_height ) {
+
+        int num_quads = stb_easy_font_print( x, y, ( char* )text.c_str(), NULL, stb_buffer, sizeof( stb_buffer ) );
+        int num_triangles = num_quads * 2;
+        int num_vertices = num_triangles * 3;
+
+        for ( int i = 0; i < num_quads; i++ ) {
+            unsigned char* v_0 = stb_buffer + i * 4 * 16 + 0 * 16;
+            unsigned char* v_1 = stb_buffer + i * 4 * 16 + 1 * 16;
+            unsigned char* v_2 = stb_buffer + i * 4 * 16 + 2 * 16;
+            unsigned char* v_3 = stb_buffer + i * 4 * 16 + 3 * 16;
+
+            memcpy( tri_buffer + ( i * 6     ) * 16, v_0, 16 );
+            memcpy( tri_buffer + ( i * 6 + 1 ) * 16, v_1, 16 );
+            memcpy( tri_buffer + ( i * 6 + 2 ) * 16, v_2, 16 );
+
+            memcpy( tri_buffer + ( i * 6 + 3 ) * 16, v_2, 16 );
+            memcpy( tri_buffer + ( i * 6 + 4 ) * 16, v_3, 16 );
+            memcpy( tri_buffer + ( i * 6 + 5 ) * 16, v_0, 16 );
+        }
+
+        glUseProgram( shader_program );
+
+        float ortho[ 4 ][ 4 ] = {
+            { 2.0f / window_width, 0, 0, 0 },
+            { 0, -2.0f / window_height, 0, 0 },
+            { 0, 0, -1.0f, 0 },
+            { -1.0f, 1.0f, 0, 1.0f }
+        };
+
+        GLint u_projection = glGetUniformLocation( shader_program, "projection" );
+        glUniformMatrix4fv( u_projection, 1, GL_FALSE, &ortho[ 0 ][ 0 ] );
+
+        glBindVertexArray( VAO );
+        glBindBuffer( GL_ARRAY_BUFFER, VBO );
+        glBufferData( GL_ARRAY_BUFFER, num_vertices * 16, tri_buffer, GL_DYNAMIC_DRAW );
+        glDrawArrays( GL_TRIANGLES, 0, num_vertices );
+        glBindVertexArray( 0 );
     }
 
 } // namespace app
+
