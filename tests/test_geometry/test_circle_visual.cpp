@@ -75,7 +75,6 @@ TEST( VisualGeometryTests, InCircle ) {
     auto text_shader_program = app::get_text_shader_program();
 
     glBindVertexArray( VAO );
-    glBindVertexArray( VAO );
 
     glBindBuffer( GL_ARRAY_BUFFER, VBO );
     glBufferData( GL_ARRAY_BUFFER, vertices.size() * sizeof( glm::vec2 ), vertices.data(), GL_STATIC_DRAW );
@@ -104,14 +103,14 @@ TEST( VisualGeometryTests, InCircle ) {
         glDrawArrays( GL_POINTS, circle_vertices.size(), points.size() );
         glBindVertexArray( 0 );
 
-        glUseProgram(text_shader_program);
-        app::test_projection(text_shader_program);
-        app::identity_view(text_shader_program);
-        app::identity_model(text_shader_program);
+        glUseProgram( text_shader_program );
+        app::test_projection( text_shader_program );
+        app::identity_view( text_shader_program );
+        app::identity_model( text_shader_program );
 
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-        glDisable(GL_DEPTH_TEST);
+        glEnable( GL_BLEND );
+        glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
+        glDisable( GL_DEPTH_TEST );
 
         app::render_text( message, x, y, text_shader_program, text_VAO, text_VBO, 500, 500 );
 
