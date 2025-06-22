@@ -149,6 +149,14 @@ namespace app {
         glUniformMatrix4fv( projection_loc, 1, GL_FALSE, glm::value_ptr( projection ) );
     }
 
+    void get_projection( int shader_program, float left, float right, float bottom, float top ) {
+
+        glm::mat4 projection = glm::ortho( left, right, bottom, top );
+
+        GLuint projection_loc = glGetUniformLocation( shader_program, "projection" );
+        glUniformMatrix4fv( projection_loc, 1, GL_FALSE, glm::value_ptr( projection ) );
+    }
+
     void projection_3D( int shader_program ) {
 
         float aspect_ratio = ( float )fs::settings::window_width / ( float )fs::settings::window_height;

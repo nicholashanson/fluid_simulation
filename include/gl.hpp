@@ -32,6 +32,8 @@ namespace app {
     
     void test_projection( int shader_program );
 
+    void get_projection( int shader_program, float left, float right, float bottom, float top );
+
     void projection_3D( int shader_program );
 
     void projection_3D_orth( int shader_program );

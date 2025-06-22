@@ -12,6 +12,8 @@ namespace app {
 
     unsigned int get_text_shader_program();
 
+    unsigned int get_triangle_shader_program();
+
 }
 
 #endif

@@ -1215,8 +1215,8 @@ namespace fs {
 
             triangle_set triangles = {};
 
-            for ( size_t y = 0; y < ydim; ++y ) {
-                for ( size_t x = 0; x < xdim; ++x ) {
+            for ( size_t y = 0; y < ydim - 1; ++y ) {
+                for ( size_t x = 0; x < xdim - 1; ++x ) {
 
                     int u = sub_2_ind( x, y, xdim );
                     int v = sub_2_ind( x + 1, y, xdim ); 
@@ -1572,7 +1572,7 @@ namespace fs {
         }
 
         template<typename T>
-        std::pair<T,T> triangle_circumcenter( 
+        std::pair<T,T> get_triangle_circumcenter( 
             const std::pair<T,T>& p, 
             const std::pair<T,T>& q, 
             const std::pair<T,T>& r,
@@ -1593,14 +1593,14 @@ namespace fs {
         }
 
         template<typename T>
-        std::pair<T,T> triangle_circumcenter( 
+        std::pair<T,T> get_triangle_circumcenter( 
             const std::pair<T,T>& p, 
             const std::pair<T,T>& q, 
             const std::pair<T,T>& r
         ) {
 
             T A = triangle_area( p, q, r );
-            return triangle_circumcenter( p, q, r, A );
+            return get_triangle_circumcenter( p, q, r, A );
         }
 
         template<typename T>
@@ -2177,6 +2177,26 @@ namespace fs {
                 */
                 return relative_position::RIGHT;
             }
+        }
+
+        template<typename T>
+        std::vector<float> get_triangle_vertices( const triangle_set& tri_vertices, const std::vector<std::pair<T,T>>& lattice_points ) {
+
+            std::vector<float> vertices;
+
+            for ( auto& triangle: tri_vertices ) {
+
+                auto [ v_1, v_2, v_3 ] = triangle;
+
+                for ( auto v : { v_1, v_2, v_3 } ) {
+                    const auto& lattice_point = lattice_points[ v ];
+                    vertices.push_back( lattice_point.first );
+                    vertices.push_back( lattice_point.second );
+                }
+
+            }
+
+            return vertices;
         }
 
     } // namespace fvm
