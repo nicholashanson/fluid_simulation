@@ -5,13 +5,19 @@
 
 namespace geometry {
 
+    enum class in_circle {
+        INSIDE,
+        ON,
+        OUTSIDE
+    };
+
     /*
         point_in_circle()
 
         determines if the the point a is inside, outside or on the circle formed by the points p, q, r
     */
     template<typename T>
-    fs::fvm::in_circle point_in_circle(
+    in_circle point_in_circle(
         const std::pair<T,T>& p,
         const std::pair<T,T>& q,
         const std::pair<T,T>& r, 
@@ -28,9 +34,9 @@ namespace geometry {
                       fs::fvm::exterior_product( q_p, r_p ) * fs::fvm::inner_product( a_p, a_q );
 
         if ( result == 0 )
-            return fs::fvm::in_circle::ON;
+            return in_circle::ON;
 
-        return result > 0 ? fs::fvm::in_circle::INSIDE : fs::fvm::in_circle::OUTSIDE;
+        return result > 0 ? in_circle::INSIDE : in_circle::OUTSIDE;
     }
 
 } // namespace geometry

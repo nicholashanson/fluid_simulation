@@ -46,12 +46,6 @@ namespace fs {
             NEGATIVE
         };
 
-        enum class in_circle {
-            INSIDE,
-            ON,
-            OUTSIDE
-        };
-
         template<typename T>
         T inner_product(
             const std::pair<T,T>& p,

@@ -11,13 +11,13 @@
 #include <fs/fvm/triangulation.hpp>
 #include <geometry/circle.hpp>
 
-std::string in_circle_result( fs::fvm::in_circle result ) {
+std::string in_circle_result( geometry::in_circle result ) {
     switch ( result ) {
-        case fs::fvm::in_circle::INSIDE:
+        case geometry::in_circle::INSIDE:
             return "Point is inside circle";
-        case fs::fvm::in_circle::OUTSIDE:
+        case geometry::in_circle::OUTSIDE:
             return "Point is outside circle";
-        case fs::fvm::in_circle::ON:
+        case geometry::in_circle::ON:
             return "Point is on circle";
     }
     return "";

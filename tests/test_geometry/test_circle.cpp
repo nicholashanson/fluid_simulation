@@ -2,7 +2,6 @@
 
 #include <cmath>
 
-#include <fs/fvm/triangulation.hpp>
 #include <geometry/circle.hpp>
 
 /*
@@ -19,17 +18,17 @@ TEST( GeometryTests, InCircle ) {
 
     auto expected_outside = geometry::point_in_circle( p, q, r, a );
 
-    ASSERT_EQ( expected_outside, fs::fvm::in_circle::OUTSIDE );
+    ASSERT_EQ( expected_outside, geometry::in_circle::OUTSIDE );
 
     a = { 0.0, 0.0 };
 
     auto expected_inside = geometry::point_in_circle( p, q, r, a );
 
-    ASSERT_EQ( expected_inside, fs::fvm::in_circle::INSIDE );
+    ASSERT_EQ( expected_inside, geometry::in_circle::INSIDE );
 
     a = { 0.0, -1.0 };
 
     auto expected_on = geometry::point_in_circle( p, q, r, a );
 
-    ASSERT_EQ( expected_on, fs::fvm::in_circle::ON );
+    ASSERT_EQ( expected_on, geometry::in_circle::ON );
 }
