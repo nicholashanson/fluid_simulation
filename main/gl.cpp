@@ -45,6 +45,46 @@ namespace app {
         return window;
     }
 
+        GLFWwindow* initialize_window_for_test( const std::string& window_name ) {
+
+        // initialize GLFW
+        if ( !glfwInit() ) {
+            glfwTerminate();
+            throw std::runtime_error( "Failed to create GLFW window" );
+        }
+
+        // configure GLFW
+        glfwWindowHint( GLFW_CONTEXT_VERSION_MAJOR, 3 );
+        glfwWindowHint( GLFW_CONTEXT_VERSION_MINOR, 3 );
+        glfwWindowHint( GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE );
+
+        // create a GLFW window
+        GLFWwindow* window = glfwCreateWindow( 500, 500, window_name.c_str(), nullptr, nullptr );
+
+        if ( !window ) {
+            glfwTerminate();
+            throw std::runtime_error( "Failed to create GLFW window" );
+        }
+
+        int win_width, win_height;
+        glfwGetWindowSize(window, &win_width, &win_height);
+
+        glfwMakeContextCurrent( window );
+
+        // initialize GLAD
+        if ( !gladLoadGLLoader( ( GLADloadproc)glfwGetProcAddress ) ) {
+            glfwDestroyWindow( window );
+            glfwTerminate();
+            throw std::runtime_error( "Failed to initialize GLAD" );
+        }
+
+        glViewport( 0, 0, 500, 500 );
+
+        glfwSetFramebufferSizeCallback( window, framebuffer_size_callback );
+
+        return window;
+    }
+
     GLFWwindow* initialize_window_for_test() {
 
         // initialize GLFW

@@ -12,6 +12,7 @@
 #include <string>
 #include <vector>
 #include <iostream>
+#include <string>
 
 #include <settings.hpp>
 //#include <fs/fs.hpp>
@@ -23,6 +24,8 @@
 namespace app {
 
     GLFWwindow* initialize_window();
+
+    GLFWwindow* initialize_window_for_test( const std::string& window_name );
 
     GLFWwindow* initialize_window_for_test();
 

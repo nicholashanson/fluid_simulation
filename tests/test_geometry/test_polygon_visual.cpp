@@ -23,7 +23,7 @@ TEST( VisualGeometryTests, DistanceToSingleSegment1 ) {
         boundary_nodes          // the nodes that define the single segement
     );
 
-    GLFWwindow* window = app::initialize_window_for_test();
+    GLFWwindow* window = app::initialize_window_for_test( "Distance from Point to Segment" );
     ASSERT_NE( window, nullptr );
 
     std::vector<glm::vec2> square; 
