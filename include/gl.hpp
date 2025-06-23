@@ -16,6 +16,10 @@
 #include <settings.hpp>
 //#include <fs/fs.hpp>
 
+#ifndef M_PI
+#define M_PI ( 4 * std::atan( 1 ) )
+#endif
+
 namespace app {
 
     GLFWwindow* initialize_window();

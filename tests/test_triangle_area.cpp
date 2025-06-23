@@ -82,7 +82,7 @@ TEST( GeometryTests, TriangleCircumcenterTest ) {
 
     std::pair<double, double> expected_circumcenter = { 2.0, 1.5 };
 
-    auto result = fs::fvm::triangle_circumcenter( p, q, r );
+    auto result = fs::fvm::get_triangle_circumcenter( p, q, r );
 
     EXPECT_NEAR( result.first, expected_circumcenter.first, 1e-5 );
     EXPECT_NEAR( result.second, expected_circumcenter.second, 1e-5 );

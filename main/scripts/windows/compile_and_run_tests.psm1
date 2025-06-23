@@ -15,18 +15,6 @@ function Compile-And-Run-Tests {
     }
 
     $files = @(
-        "../tests/test_collide_and_stream_equivalence.cpp",
-        "../tests/test_vertex_data_equivalence.cpp",
-        "../tests/test_stateful_collide_and_stream.cpp",
-        "../tests/test_M_inverse.cpp",
-        "../tests/test_get_lattice_triangles.cpp",
-        "../tests/test_squared_distance_to_segment.cpp",
-        "../tests/test_distance_to_polygon_single_segment.cpp",
-        "../tests/test_distance_to_polygon_multiple_segments.cpp",
-        "../tests/test_orthogonal_centre.cpp",
-        "../tests/test_geometry.cpp",
-        "../tests/test_triangle_area.cpp",
-        "../tests/test_LU_decomposition.cpp",
         "gl.cpp",
         "../src/lbm/common.cpp",
         "../src/grid_renderer.cpp",
@@ -34,6 +22,16 @@ function Compile-And-Run-Tests {
         "../src/glad.c",
         "../src/gui.cpp"
     )
+    
+    $directoryPath = "../tests" 
+
+    $cppFiles = Get-ChildItem -Path $directoryPath -Filter "*.cpp" -Recurse
+
+    foreach ($file in $cppFiles) {
+        $files += $file.FullName
+    }
+
+    $files
 
     $files += $imGuiSrc
 
@@ -95,7 +93,7 @@ function Compile-And-Run-Tests-Incremental {
         [switch]$GPU
     )
 
-    Write-Host "Compiling tests..."
+    Write-Host "Compiling tests... for real"
 
     $gppArgs = "-g -O0 -v -std=c++23"
 
@@ -104,18 +102,6 @@ function Compile-And-Run-Tests-Incremental {
     }
 
     $files = @(
-        "../tests/test_collide_and_stream_equivalence.cpp",
-        "../tests/test_vertex_data_equivalence.cpp",
-        "../tests/test_stateful_collide_and_stream.cpp",
-        "../tests/test_M_inverse.cpp",
-        "../tests/test_get_lattice_triangles.cpp",
-        "../tests/test_squared_distance_to_segment.cpp",
-        "../tests/test_distance_to_polygon_single_segment.cpp",
-        "../tests/test_distance_to_polygon_multiple_segments.cpp",
-        "../tests/test_orthogonal_centre.cpp",
-        "../tests/test_geometry.cpp",
-        "../tests/test_triangle_area.cpp",
-        "../tests/test_LU_decomposition.cpp",
         "gl.cpp",
         "../src/lbm/common.cpp",
         "../src/grid_renderer.cpp",
@@ -123,6 +109,16 @@ function Compile-And-Run-Tests-Incremental {
         "../src/glad.c",
         "../src/gui.cpp"
     )
+    
+    $directoryPath = "../tests" 
+
+    $cppFiles = Get-ChildItem -Path $directoryPath -Filter "*.cpp" -Recurse
+
+    foreach ($file in $cppFiles) {
+        $files += $file.FullName
+    }
+
+    $files
 
     $files += $imGuiSrc
 

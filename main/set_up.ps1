@@ -985,7 +985,7 @@ if ($GPU) {
         # Build-DLL -scriptRoot $currentRoot
         # Compile-And-Run-DPCPP-Tests-Debug -scriptRoot $currentRoot
         # Compile-And-Run-DPCPP-Tests -scriptRoot $currentRoot
-        Compile-And-Run-Tests-Incremental -GPU 
+        Compile-And-Run-Tests -GPU 
         # Compile-Program -GPU -PAR
         # Disassemble
     }

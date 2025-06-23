@@ -74,7 +74,7 @@ TEST( VisualGeometryTests, LatticeTriangles ) {
 
     fs::fvm::triangle_set triangle_vertex_indices = fs::fvm::get_lattice_triangles( 50, 50 );
 
-    std::cout << triangle_vertex_indices.size() << std::endl;
+    ASSERT_EQ( triangle_vertex_indices.size(), 4802 );
 
     std::vector<std::pair<double,double>> lattice_points = fs::fvm::get_lattice_points( 0.0, 2.0, 0.0, 2.0, 50, 50 );
 

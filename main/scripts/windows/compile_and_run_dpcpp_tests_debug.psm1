@@ -14,7 +14,7 @@ function Compile-And-Run-DPCPP-Tests-Debug {
     # List of source files to compile
     $files = @(
         "../src/lbm/common.cpp",
-        "../tests/test_collide_and_stream_state.cpp"
+        "../dpcpp_tests/test_collide_and_stream_state.cpp"
     )
 
     # Include directories

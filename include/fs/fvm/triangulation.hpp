@@ -138,7 +138,9 @@ namespace fs {
 
         struct compare_triangles {
             bool operator()( const triangle& a, const triangle& b ) const {
-                return std::get<0>( a ) < std::get<0>( b );
+                if ( std::get<0>( a ) != std::get<0>( b ) ) return std::get<0>( a ) < std::get<0>( b );
+                if ( std::get<1>( a ) != std::get<1>( b ) ) return std::get<1>( a ) < std::get<1>( b );
+                return std::get<2>( a ) < std::get<2>( b );
             }
         };
 
@@ -1208,7 +1210,7 @@ namespace fs {
 
         inline size_t sub_2_ind( const size_t x, const size_t y, const size_t xdim ) {
 
-            return std::fma( y, xdim, x );
+            return y * xdim + x;
         }
 
         inline triangle_set get_lattice_triangles( const size_t ydim, const size_t xdim ) {
@@ -1223,11 +1225,11 @@ namespace fs {
                     int w = sub_2_ind( x, y + 1, xdim );
 
                     triangles.insert( std::make_tuple( u, v, w ) );
-
-                    u = sub_2_ind( x, y, xdim );
-                    v = sub_2_ind( x + 1, y + 1, xdim ); 
-                    w = sub_2_ind( x, y + 1, xdim );
-
+  
+                    u = sub_2_ind( x, y + 1, xdim );
+                    v = sub_2_ind( x + 1, y, xdim ); 
+                    w = sub_2_ind( x + 1, y + 1, xdim ); 
+                    
                     triangles.insert( std::make_tuple( u, v, w ) );
                 }
             }
