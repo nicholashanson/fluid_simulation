@@ -54,6 +54,17 @@ TEST( VisualGeometryTests, DistanceToSingleSegment1 ) {
 
     auto point_shader_program = app::get_point_shader_program();
 
+    auto text_shader_program = app::get_text_shader_program();
+
+    // text rendering parameters
+    float padding = 10.0f;
+    float approx_char_width = 8.0f;
+    float x = 10.0f;
+    float y = 10.0f;
+
+    GLuint text_VAO, text_VBO;
+    app::init_text_vao_vbo( text_VAO, text_VBO );
+
     glBindVertexArray( VAO );
     glBindBuffer( GL_ARRAY_BUFFER, VBO );
 
@@ -81,6 +92,17 @@ TEST( VisualGeometryTests, DistanceToSingleSegment1 ) {
         app::get_projection( point_shader_program, -20.0, 20.0, -20.0, 20.0 );
         app::identity_view( point_shader_program );
         app::identity_model( point_shader_program );
+
+        glUseProgram( text_shader_program );
+        app::test_projection( text_shader_program );
+        app::identity_view( text_shader_program );
+        app::identity_model( text_shader_program );
+
+        glEnable( GL_BLEND );
+        glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
+        glDisable( GL_DEPTH_TEST );
+
+        app::render_text( "Distance from point to segment: " + std::to_string( dist ), x, y, text_shader_program, text_VAO, text_VBO, 500, 500 );
 
         glPointSize( 10.0f );
         glDrawArrays( GL_POINTS, 4, 3 );
