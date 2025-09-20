@@ -19,7 +19,6 @@ namespace lin_alg {
 
     template<typename T,size_t rows,size_t cols>
     struct matrix_ {
-
         std::array<T,rows*cols> elements;
 
         matrix_() : elements{} {}
@@ -36,9 +35,7 @@ namespace lin_alg {
         }
 
         void swap_rows( size_t row_a, size_t row_b ) {
-
             if ( row_a == row_b ) return; 
-
             std::swap_ranges( elements.begin() + row_a * cols, 
                               elements.begin() + row_a * cols + cols, 
                               elements.begin() + row_b * cols );
@@ -107,14 +104,11 @@ namespace lin_alg {
             matrix_<T,R,C>,         // upper-triangular matrix
             std::array<size_t,R>>>  // permutation vector
     LU_decomposition( matrix_<T,R,C>& A, bool pivot_ = true ) {
-
         if ( R != C ) {
             return std::nullopt;
         }
-
         matrix_<T,R,C> L;   // lower-triangular matrix 
         matrix_<T,R,C> U;   // upper-triangular matrix
-
         const size_t n = R;
 
         std::array<size_t,n> permutations;  // permutation vector
@@ -127,12 +121,9 @@ namespace lin_alg {
             // pivot the matrix A
             permutations = pivot( A );
         }
-
-        
         // construct U and L in an inter-leaved way
         // using Doolittle's algorithm
         for ( size_t i = 0; i < n; ++i ) {
-
             // construct U
             for ( size_t j = i; j < n; ++j ) {
                 T sum{};
@@ -141,7 +132,6 @@ namespace lin_alg {
                 }
                 U[ i, j ] = A[ i, j ] - sum;
             }
-
             // construct L
             for ( size_t j = i; j < n; ++j ) {
                 if ( i == j ) {
@@ -155,7 +145,6 @@ namespace lin_alg {
                 }
             }
         }
-
         return std::make_tuple( L, U, permutations );
     }
 
@@ -183,16 +172,13 @@ namespace lin_alg {
         const std::array<T,N>& b,       // RHS vector
         const std::array<size_t,N>& ps  // permutation vector
     ) {
-
         std::array<T,N> x;      // final solution vector
         std::array<T,N> y;      // intermediate solution vector
-
         std::array<T,N> bp;     // permutated RHS
 
         for ( size_t k = 0; k < N; ++k ) {  // re-odrer RHS according to the permutation vector
             bp[ k ] = b[ ps[ k ] ];
         } 
-
         // foward substitution with L:
         // solve for y in Ly = b
         for ( size_t i = 0; i < N; ++i ) {
@@ -202,7 +188,6 @@ namespace lin_alg {
             }
             y[ i ] = ( ( T )1 / L[ i, i ] ) * ( bp[ i ] - sum ); 
         }
-
         // backward substitution with U:
         // solve for x in Ux = y
         for ( size_t i = N - 1; i != size_t( -1 ); --i ) {
@@ -212,7 +197,6 @@ namespace lin_alg {
             }
             x[ i ] = ( y[ i ] - sum ) / U[ i, i ];
         }
-
         return x;
     }
 
