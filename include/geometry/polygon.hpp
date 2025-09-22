@@ -5,13 +5,21 @@
 
 namespace geometry {
 
+    // ======================
+    //  Is A Between B And C
+    // ======================
+
+    template<typename T>    
+    bool is_a_between_b_and_c( const T a, cont T b, const T c ) {
+        return ( c > a ) != ( b > a ); 
+    }
+
     // =====================
     //  Get Boundary Points
     // =====================
 
     template<typename I,typename T>
-    std::vector<std::pair<T,T>> get_boundary_points( const std::vector<std::pair<T,T>>& points,
-                                                     const std::vector<I> boundary ) {
+    std::vector<std::pair<T,T>> get_boundary_points( const std::vector<std::pair<T,T>>& points, const std::vector<I> boundary ) {
         std::vector<std::pair<T,T>> boundary_points;
         for ( auto& point_index : boundary ) {
             boundary_points.push_back( points[ point_index ] );
@@ -70,11 +78,32 @@ namespace geometry {
 
     // ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     template<typename I,typename T>
-    bounding_box<T> get_bounding_box( const std::vector<std::pair<T,T>>& points,
-                                      const std::vector<I> boundary ) {
+    bounding_box<T> get_bounding_box( const std::vector<std::pair<T,T>>& points, const std::vector<I> boundary ) {
         auto boundary_points = get_boundary_points( points, boundary );
         return get_bounding_box( boundary_points );
     } 
+
+    // =================================
+    //  Polygon Features Single Segment
+    // =================================
+
+    template<typename I,typename T>
+    std::pair<T,std::pair<T,T>> get_polygon_featues_single_segment( const std::vector<std::pair<T,T>>& points, 
+                                                                    const std::vector<I>& boundary ) {
+        std::pair<T,T> centroid;
+        T area;
+        auto a = points[ boundary.front() ];
+        for ( std::size_t i = 1; i < boundary.size(); ++i ) {
+            auto b = points[ boundary[ i % boundary.size() ] ];
+            T area_contribution = get_cross_product( a, b );
+            centroid = get_sum( centroid, scale( area_contribution, get_sum( a, b ) ) );
+            area += area_contribution;
+            a = b;
+        }
+        T signed_area = area / 2.0;
+        T factor = ( 3.0 * area != 0 ) ? ( 1.0 / ( 3.0 * area ) ) : 0;
+        return { signed_area, scale( factor, centroid ) };
+    }
 
     // ==============
     //  Polygon Tree
@@ -111,16 +140,22 @@ namespace geometry {
         const std::vector<std::vector<I>>& boundaries;
     };
 
+    // =====================
+    //  Point Is In Polygon
+    // =====================
+
     template<typename I,typename T>
-    bool point_is_in_polygon( const std::vector<std::pair<T,T>>& points, const std::vector<I>& boundary,
-                              const std::pair<T,T>& point ) {
+    bool point_is_in_polygon( const std::vector<std::pair<T,T>>& points, const std::vector<I>& boundary, const std::pair<T,T>& point ) {
         bool inside = false;
         for ( std::size_t i = 0; i < boundary.size(); ++i ) {
-            auto& vi = points[ boundary[ i ] ];
-            auto& vj = points[ boundary[ ( i + 1 ) % boundary.size() ] ];
-            bool condition = ( vi.second > point.second ) != ( vj.second > point.second );
+            auto& a = points[ boundary[ i ] ];
+            auto& b = points[ boundary[ ( i + 1 ) % boundary.size() ] ];
+            if ( vi.second == vj.second ) {
+                continue;
+            }
+            bool condition = is_a_between_b_and_c( point, a, b );
             if ( condition ) {
-                T x_intersect = vi.first + ( point.second - vi.second) * ( vj.first - vi.first ) / ( vj.second - vi.second );
+                T x_intersect = a.first + ( point.second - a.second) * ( b.first - a.first ) / ( b.second - a.second );
                 if ( point.first < x_intersect ) {
                     inside = !inside;
                 }
@@ -139,10 +174,8 @@ namespace geometry {
         I index = tree->index;
         if ( index < context.hierarchy.bounding_boxes.size() ) {
             auto& bb = context.hierarchy.bounding_boxes[ index ];
-            if ( representative_point.first < bb.xmin   ||
-                 representative_point.first > bb.xmax   || 
-                 representative_point.second < bb.ymin  ||
-                 representative_point.second > bb.ymax ) {
+            if ( representative_point.first < bb.xmin  || representative_point.first > bb.xmax   || 
+                 representative_point.second < bb.ymin || representative_point.second > bb.ymax ) {
                 return false;
             }
         }
@@ -160,15 +193,19 @@ namespace geometry {
     template<typename I,typename T>
     polygon_tree<I>* find_deepest_containing_polygon_tree( const polygon_heirarchy_context<I,T>& context, polygon_tree<I>* tree,
                                                            const std::pair<T,T>& representative_point ) {
+        polygon_tree<I>* deepest = nullptr;
         for ( polygon_tree<I>* child : tree->children ) {
             if ( point_is_in_polygon_tree( context, child, representative_point ) ) {
-                return find_deepest_containing_polygon_tree( context, child, representative_point );
+                auto result = find_deepest_containing_polygon_tree( context, child, representative_point );
+                if ( result ) {
+                    deepest = result;
+                }
             }
         }
         if ( point_is_in_polygon_tree( context, tree, representative_point ) ) {
-            return tree;
+            deepest = tree;
         }
-        return nullptr;
+        return deepest;
     }
 
     // ===========
@@ -228,8 +265,8 @@ namespace geometry {
     //  Construct Polygon Hierarchy Single Curve
     // ==========================================
 
-    template<typename I, typename T>
-    polygon_heirarchy<I, T> construct_polygon_hierarchy_single_curve( const std::vector<std::pair<T,T>>& points,
+    template<typename I,typename T>
+    polygon_heirarchy<I,T> construct_polygon_hierarchy_single_curve( const std::vector<std::pair<T,T>>& points, 
                                                                       const std::vector<I>& boundary ) {
         polygon_heirarchy<I,T> hierarchy;
         bounding_box<T> bb;
@@ -248,8 +285,14 @@ namespace geometry {
         return hierarchy;
     }
 
+    // =================
+    //  Reorder Subtree
+    // =================
+
     template<typename I,typename T>
     void reorder_subtree( polygon_heirarchy_context<I,T>& context, polygon_tree<I>* parent, polygon_tree<I>* tree ) {
+        context.hierarchy.trees[ tree->index ] = tree;
+        parent->children.insert( tree );
         return;
     }
 
@@ -295,35 +338,21 @@ namespace geometry {
     // the points q and r?
     // If so, at what x co-ordinate does that horizontal line intersect with that line segment?
     template<typename I,typename T>
-    T get_distance_to_polygon_with_single_segment( const std::pair<T,T>& p, 
-                                                   const std::vector<std::pair<T,T>>& points,
-                                                   const std::vector<I>& boundary,
-                                                   bool is_in_outer = false, 
-                                                   bool return_sqrt = true ) {
-        T p_x = p.first;
-        T p_y = p.second;
+    T get_distance_to_polygon_with_single_segment( const std::pair<T,T>& p, const std::vector<std::pair<T,T>>& points,
+                                                   const std::vector<I>& boundary, bool is_in_outer = false, bool return_sqrt = true ) {
         T dist = std::numeric_limits<T>::max();
-        auto q = points[ boundary.front() ];
-        T q_x = q.first;
-        T q_y = q.second;
+        auto a = points[ boundary.front() ];
         for ( std::size_t i = 1; i < boundary.size(); ++i ) {
-            auto r = points[ boundary[ i ] ];
-            T r_x = r.first; 
-            T r_y = r.second;
-            // p_y lies between q_y and r_y
-            if ( ( r_y > p_y ) != ( q_y > p_y ) ) {
-                // the point where the hypothetical hotizontal line 
-                // intersects with the line segment
-                T x_intersect = ( q_x - r_x ) * ( p_y - r_y ) / ( q_y - r_y ) + r_x;
-                // ( p_x, p_y ) lies on the inside of the line segment
-                if ( p_x < x_intersect ) {
+            auto b = points[ boundary[ i ] ];
+            if ( is_a_between_b_and_c( p.second, a.second, b.second ) ) {
+                T x_intersect = ( a.first - b.first ) * ( p.second - b.second ) / ( a.second - b.second ) + b.first;
+                if ( p.first < x_intersect ) {
                     is_in_outer = !is_in_outer;
                 }
             }
-            T new_dist = get_squared_distance_to_segment( q_x, q_y, r_x, r_y, p_x, p_y );
+            T new_dist = get_squared_distance_to_segment( q, r, p );
             dist = new_dist < dist ? new_dist : dist;
-            q_x = r_x;
-            q_y = r_y;
+            a = b;
         }
         dist = return_sqrt ? std::sqrt( dist ) : dist;
         return is_in_outer ? dist : -dist;
@@ -334,10 +363,8 @@ namespace geometry {
     // ==============================================
 
     template<typename I,typename T>
-    T get_distance_to_polygon_with_multiple_segments( const std::pair<T,T>& p, 
-                                                      const std::vector<std::pair<T,T>>& points,
-                                                      const std::vector<std::vector<I>>& boundaries,
-                                                      bool is_in_outer = false, 
+    T get_distance_to_polygon_with_multiple_segments( const std::pair<T,T>& p, const std::vector<std::pair<T,T>>& points,
+                                                      const std::vector<std::vector<I>>& boundaries, bool is_in_outer = false, 
                                                       const bool return_sqrt = true ) {
         T dist = std::numeric_limits<T>::max();
         for ( auto& boundary : boundaries ) {
