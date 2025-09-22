@@ -10,8 +10,17 @@ namespace geometry {
     // ======================
 
     template<typename T>    
-    bool is_a_between_b_and_c( const T a, cont T b, const T c ) {
+    bool is_a_between_b_and_c( const T a, const T b, const T c ) {
         return ( c > a ) != ( b > a ); 
+    }
+
+    // =================
+    //  Get X Intersect
+    // =================
+
+    template<typename T>
+    T get_x_intersect( const std::pair<T,T>& a, const std::pair<T,T>& b, const std::pair<T,T>& point ) {
+        return a.first + ( point.second - a.second) * ( b.first - a.first ) / ( b.second - a.second );
     }
 
     // =====================
@@ -150,12 +159,11 @@ namespace geometry {
         for ( std::size_t i = 0; i < boundary.size(); ++i ) {
             auto& a = points[ boundary[ i ] ];
             auto& b = points[ boundary[ ( i + 1 ) % boundary.size() ] ];
-            if ( vi.second == vj.second ) {
+            if ( a.second == b.second ) {
                 continue;
             }
-            bool condition = is_a_between_b_and_c( point, a, b );
-            if ( condition ) {
-                T x_intersect = a.first + ( point.second - a.second) * ( b.first - a.first ) / ( b.second - a.second );
+            if ( is_a_between_b_and_c( point.second, a.second, b.second ) ) {
+                T x_intersect = get_x_intersect( a, b, point );
                 if ( point.first < x_intersect ) {
                     inside = !inside;
                 }
@@ -345,12 +353,12 @@ namespace geometry {
         for ( std::size_t i = 1; i < boundary.size(); ++i ) {
             auto b = points[ boundary[ i ] ];
             if ( is_a_between_b_and_c( p.second, a.second, b.second ) ) {
-                T x_intersect = ( a.first - b.first ) * ( p.second - b.second ) / ( a.second - b.second ) + b.first;
+                T x_intersect = get_x_intersect( a, b, p );
                 if ( p.first < x_intersect ) {
                     is_in_outer = !is_in_outer;
                 }
             }
-            T new_dist = get_squared_distance_to_segment( q, r, p );
+            T new_dist = get_squared_distance_to_segment( a, b, p );
             dist = new_dist < dist ? new_dist : dist;
             a = b;
         }

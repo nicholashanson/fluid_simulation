@@ -122,7 +122,7 @@ namespace geometry {
 
     // ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     template<typename T>
-    std::pair<T,T> scale( const T c, std::pair<T,T>& v ) {
+    std::pair<T,T> scale( const T c, const std::pair<T,T>& v ) {
         return std::make_pair( c * v.first, c * v.second );
     } 
 
@@ -174,6 +174,12 @@ namespace geometry {
         cross_product.y = p.z * q.x - p.x * q.z;
         cross_product.z = p.x * q.y - p.y * q.x;
         return cross_product;
+    }
+
+    // ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    template<typename T>
+    T get_cross_product( const std::pair<T,T>& p, const std::pair<T,T>& q ) {
+        return p.first * q.second - p.second * q.first;
     }
 
     // ================
@@ -262,13 +268,13 @@ namespace geometry {
     // ============
     //  Get Orient
     // ============
-    // - a triangle represented by the points ( p, q, r ) is positively-oriented if, when traversing in
-    // the order p -> q -> r, the interior of the triangle is on the right-hand side
+    // - (p,q,r) forms a  positively-oriented if, when traversing in the order p -> q -> r, 
+    // the interior of the triangle is on the right-hand side
     template<typename T>
     orient get_orient( const std::pair<T,T>& p, const std::pair<T,T>& q, const std::pair<T,T>& r ) {  
         auto delta_pr = get_difference( p, r );
         auto delta_qr = get_difference( q, r );
-        auto exterior_product = get_exterior_product( delta_qr, delta_qr );
+        auto exterior_product = get_exterior_product( delta_pr, delta_qr );
         const T epsilon = static_cast<T>( 1e-9 );
         if ( std::abs( exterior_product ) < epsilon /* colinear */ ) {
             return orient::degenerate;
@@ -279,28 +285,27 @@ namespace geometry {
     // =================================
     //  Get Squared Distance To Segment
     // =================================
-    // - calculate the distance between a point P and a line segment Q-R 
+    // - calculate the distance between point p and line segment a-b 
     template<typename T>
-    T get_squared_distance_to_segment( const std::pair<T,T>& q, const std::pair<T,T>& r, const std::pair<T,T>& p ) {
-        auto delta_pq = get_difference( p, q );
-        auto delta_rq = get_difference( r, q );
-        auto dot_product = get_inner_product( delta_pq, delta_rq );
-        auto qr_dist_sqr = dist_sqr( q, r );
-        if ( qr_dist_sqr == 0 /* Q == R */ ) {
-            return dist_sqr( p, q );
+    T get_squared_distance_to_segment( const std::pair<T,T>& a, const std::pair<T,T>& b, const std::pair<T,T>& p ) {
+        auto delta_pa = get_difference( p, a );
+        auto delta_ba = get_difference( b, a );
+        auto dot_product = get_inner_product( delta_pa, delta_ba );
+        auto ab_dist_sqr = dist_sqr( a, b );
+        if ( ab_dist_sqr == 0 /* a == b */ ) {
+            return dist_sqr( p, a );
         }
-        T t = dot_product / qr_dist_sqr /* (1) */;
+        T t = dot_product / ab_dist_sqr /* (1) */;
         T clamped_t = std::min( std::max( t, ( T )0 ), ( T )1 );
-        auto insersect = get_sum( q, scale( clamped_t, delta_rq ) ); 
+        auto insersect = get_sum( a, scale( clamped_t, delta_ba ) ); 
         T pintersect_dist_sqr = dist_sqr( p, insersect );
         return pintersect_dist_sqr;
     }
-    // (1) t <= 0: P is closest to Q, t >= P is closest to R, 0 < t < 1: P is closest to an intermediate point
+    // (1) t <= 0: p is closest to a, t >= 1: p is closest to b, 0 < t < 1: p is closest to an intermediate point
 
     // ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     template<typename T>
-    T get_squared_distance_to_segment( const T q_x, const T q_y, const T r_x, const T r_y, const T p_x, 
-                                       const T p_y ) {
+    T get_squared_distance_to_segment( const T q_x, const T q_y, const T r_x, const T r_y, const T p_x, const T p_y ) {
         return get_squared_distance_to_segment( std::make_pair( q_x, q_y ), std::make_pair( r_x, r_y ), std::make_pair( p_x, p_y ) );
     }
 
@@ -332,40 +337,28 @@ namespace geometry {
     // ========================================
 
     template<typename T>
-    relative_position get_relaive_position_of_point_to_line( const std::pair<T,T>& a,
-                                                             const std::pair<T,T>& b,
-                                                             const std::pair<T,T>& p ) {
+    relative_position get_relaive_position_of_point_to_line( const std::pair<T,T>& a, const std::pair<T,T>& b, const std::pair<T,T>& p ) {
         auto orientation = get_orient( a, b, p );
-        // a, b, p are colinear
-        if ( orientation == orient::degenerate ) 
+        if ( orientation == orient::degenerate /* colinear */ ) 
             return relative_position::on;
         else if ( orientation == orient::positive ) {
-            // a, b, p form a positively-oriented triangle, therefore p lies to the left of the segment
-            // between a and b
-            return relative_position::left;
+            return relative_position::left /* (1) */;
         } else {
-            // a, b, p form a negatively-oriented triangle, therefore p lies to the right of the segment
-            // between a and b
             return relative_position::right;
         }
     }
+    // if (a,b,p) forms a positively-oriented triangle, the p lies to the left of a-b
 
     // =================
     //  Calculate Theta
     // =================
 
     template <typename T>
-    T calculate_theta( const std::pair<T, T>& p,
-                       const std::pair<T, T>& q,
-                       const std::pair<T, T>& r,
-                       const std::pair<T, T>& s,
-                       T A ) {
-        T a_x = q.first - p.first; 
-        T a_y = q.second - p.second;
-        T b_x = r.first - s.first;  
-        T b_y = r.second - s.second;
-        T dot_ab = a_x * b_x + a_y * b_y;
-        T theta = dot_ab == 0 ? ( M_PI / 2.0 ) : std::atan( 2 * A / dot_ab );
+    T calculate_theta( const std::pair<T, T>& p, const std::pair<T, T>& q, const std::pair<T, T>& r, const std::pair<T, T>& s, T A ) {
+        auto delta_qp = get_difference( q, p );
+        auto delta_rs = get_difference( r, s );
+        T dot_product = get_inner_product( delta_qp, delta_rs );
+        T theta = dot_product == 0 ? ( M_PI / 2.0 ) : std::atan( 2 * A / dot_product );
         if ( theta < 0 ) { 
             theta += M_PI;
         }
