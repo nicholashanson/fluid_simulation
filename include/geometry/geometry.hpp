@@ -118,6 +118,12 @@ namespace geometry {
     template<typename T>
     three_d_point<T> scale( const T c, const three_d_point<T>& v ) {
         return three_d_point( c * v.x, c * v.y, c * v.z );
+    }
+
+    // ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    template<typename T>
+    std::pair<T,T> scale( const T c, std::pair<T,T>& v ) {
+        return std::make_pair( c * v.first, c * v.second );
     } 
 
     // ========
@@ -210,6 +216,10 @@ namespace geometry {
         return std::make_tuple( a, b, c );
     }
 
+    // ================
+    //  Orient 2 Adapt
+    // ================
+
     template<typename T>
     T orient_2_adapt( const std::pair<T,T>& p, const std::pair<T,T>& q, const std::pair<T,T>& r, const T det_sum ) {
         auto ac = get_difference( p, r );
@@ -249,64 +259,49 @@ namespace geometry {
         negative
     };
 
-    /*
-        get_orient()
-
-        takes three points representing a triangle and uses those points to determine if the triangle is
-        positively-oriented or not
-
-        a triangle represented by the points ( p, q, r ) is positively-oriented if, when traversing in
-        the order p -> q -> r, the interior of the triangle is on the right-hand side
-
-        in the case that the three points are co-linear, the triangle is determined to be degenerate
-    
-        return an enum value that indicates if the triangle is poistively-oriented, negatively-oriented 
-        or degenerate
-    */
+    // ============
+    //  Get Orient
+    // ============
+    // - a triangle represented by the points ( p, q, r ) is positively-oriented if, when traversing in
+    // the order p -> q -> r, the interior of the triangle is on the right-hand side
     template<typename T>
     orient get_orient( const std::pair<T,T>& p, const std::pair<T,T>& q, const std::pair<T,T>& r ) {  
-        auto p_r = get_difference( p, r );
-        auto q_r = get_difference( q, r );
-        auto ext = get_exterior_product( p_r, q_r );
+        auto delta_pr = get_difference( p, r );
+        auto delta_qr = get_difference( q, r );
+        auto exterior_product = get_exterior_product( delta_qr, delta_qr );
         const T epsilon = static_cast<T>( 1e-9 );
-        if ( std::abs( ext ) < epsilon ) {
+        if ( std::abs( exterior_product ) < epsilon /* colinear */ ) {
             return orient::degenerate;
         }
-        return adaptive_arithmetic::sign( ext ) > 0 ? orient::positive : orient::negative; 
+        return adaptive_arithmetic::sign( exterior_product ) > 0 ? orient::positive : orient::negative; 
     }
 
     // =================================
     //  Get Squared Distance To Segment
     // =================================
-    // calculate the distance between a point P and the line segment Q-R 
+    // - calculate the distance between a point P and a line segment Q-R 
+    template<typename T>
+    T get_squared_distance_to_segment( const std::pair<T,T>& q, const std::pair<T,T>& r, const std::pair<T,T>& p ) {
+        auto delta_pq = get_difference( p, q );
+        auto delta_rq = get_difference( r, q );
+        auto dot_product = get_inner_product( delta_pq, delta_rq );
+        auto qr_dist_sqr = dist_sqr( q, r );
+        if ( qr_dist_sqr == 0 /* Q == R */ ) {
+            return dist_sqr( p, q );
+        }
+        T t = dot_product / qr_dist_sqr /* (1) */;
+        T clamped_t = std::min( std::max( t, ( T )0 ), ( T )1 );
+        auto insersect = get_sum( q, scale( clamped_t, delta_rq ) ); 
+        T pintersect_dist_sqr = dist_sqr( p, insersect );
+        return pintersect_dist_sqr;
+    }
+    // (1) t <= 0: P is closest to Q, t >= P is closest to R, 0 < t < 1: P is closest to an intermediate point
+
+    // ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     template<typename T>
     T get_squared_distance_to_segment( const T q_x, const T q_y, const T r_x, const T r_y, const T p_x, 
                                        const T p_y ) {
-        T p_q_x = p_x - q_x;    // the x distance between P and Q
-        T p_q_y = p_y - q_y;    // the y distance between P and Q
-        T r_q_x = r_x - q_x;    // the x distance between Q and R
-        T r_q_y = r_y - q_y;    // the y distance between Q and R
-        T dot_product = p_q_x * r_q_x + p_q_y * r_q_y;  // dot product of (P - Q) and (R - Q)
-        // squared distance between Q and R
-        T denom = dist_sqr( std::pair<T,T>{ q_x, q_y }, std::pair<T,T>{ r_x, r_y } );
-        // degenerate case: Q = R
-        if ( denom == T( 0 ) ) {
-            // squared distance between P and Q
-            return dist_sqr( std::pair<T,T>{ p_x, p_y }, std::pair<T,T>{ q_x, q_y } );
-        }
-        // if 0 < t < 1 then the closest point to P
-        // is somewhere between Q and R:
-        // t = 0: closest to Q
-        // t = 1: closest to R
-        T t = dot_product / denom;
-        // it's possible that t < 0 or t > 1
-        // in these cases we need to clamp t 
-        // so that t = 0 or t = 1
-        T clamped_t = std::min( std::max( t, ( T )0 ), ( T )1 );
-        T intersect_x = q_x + clamped_t * r_q_x;
-        T intersect_y = q_y + clamped_t * r_q_y;
-        T delta_2 = dist_sqr( std::pair<T,T>{ p_x, p_y }, std::pair<T,T>{ intersect_x, intersect_y } );
-        return delta_2;
+        return get_squared_distance_to_segment( std::make_pair( q_x, q_y ), std::make_pair( r_x, r_y ), std::make_pair( p_x, p_y ) );
     }
 
     // ================================
