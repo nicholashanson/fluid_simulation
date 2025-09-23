@@ -1,8 +1,10 @@
 #include <gtest/gtest.h>
+
 #include <lin_alg/lin_alg.hpp>
+
 #include "test_constants.hpp"
 
-TEST( LinAlgTests, LUDecomposition ) {
+TEST( LinAlgTest, LUDecomposition ) {
     const size_t rows = 3;
     const size_t columns = 3;
     const std::array<double,rows*columns> elements = {

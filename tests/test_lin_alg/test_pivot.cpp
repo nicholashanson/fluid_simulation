@@ -2,7 +2,7 @@
 
 #include <lin_alg/lin_alg.hpp>
 
-TEST( LinAlgTests, Pivot ) {
+TEST( LinAlgTest, Pivot ) {
     const size_t rows = 3;
     const size_t columns = 3;
     const std::array<double,rows*columns> elemenents_before_pivot = {

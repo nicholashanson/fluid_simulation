@@ -2,7 +2,7 @@
 
 #include <lin_alg/lin_alg.hpp>
 
-TEST( LinAlgTests, LUSolve ) {
+TEST( LinAlgTest, LUSolve ) {
     const size_t rows = 3;
     const size_t columns = 3;
     /*

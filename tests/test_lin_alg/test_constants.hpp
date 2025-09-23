@@ -20,10 +20,13 @@ namespace test {
         const std::array<T, Dim * Dim>& A,
         const std::array<T, Dim * Dim>& B
     ) {
+        
         std::array<T, Dim * Dim> result = { ( T )0 };
+
         for ( size_t i = 0; i < Dim; ++i ) {
             for ( size_t j = 0; j < Dim; ++j ) {
                 for ( size_t k = 0; k < Dim; ++k ) {
+
                     result[ j + i * Dim ] += A[ k + i * Dim ] * B[ j + k * Dim ];
                 }
             }
@@ -34,10 +37,13 @@ namespace test {
 
     template<typename T, size_t Dim>
     void print_matrix( const std::array<T, Dim * Dim>& matrix ) {
+
         for ( size_t i = 0; i < Dim; ++i ) {
             for ( size_t j = 0; j < Dim; ++j ) {
+
                 std::cout << std::setw( 16 ) << matrix[ j + i * Dim ] << " ";
             }
+
             std::cout << std::endl;
         }
     }
