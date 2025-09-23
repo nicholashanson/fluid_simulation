@@ -5,6 +5,49 @@
 
 namespace geometry {
 
+    // =========
+    //  Reverse
+    // =========
+
+    template<typename T>
+    std::pair<T,T> reverse( const std::pair<T,T>& p ) {
+        return { p.second, p.first };
+    }
+
+    // ============
+    //  Matrix 2x2
+    // ============
+
+    template<typename T>
+    struct matrix2x2 {
+        T a11;
+        T a12;
+        T a21;
+        T a22;
+
+        matrix2x2( T a11_, T a12_, T a21_, T a22_ )
+            : a11( a11_ ), a12( a12_ ), a21( a21_ ), a22( a22_ ) {}
+
+        matrix2x2( const std::pair<T,T>& col1, const std::pair<T,T>& col2 ) 
+            : a11( col1.first ), a12( col2.first ), a21( col1.second ), a22( col2.second ) {}
+
+        std::pair<T,T> c1() const {
+            return { a11, a21 };
+        } 
+
+        std::pair<T,T> c2() const {
+            return { a12, a22 };
+        }
+
+        std::pair<T,T> r1() const {
+            return { a11, a12 };
+        } 
+
+        std::pair<T,T> r2() const {
+            return { a21, a22 };
+        }
+    };
+
     // ===============
     //  Three D Point
     // ===============
@@ -150,6 +193,12 @@ namespace geometry {
         T b = m.b.x * m.c.z - m.b.z * m.c.x;
         T c = m.b.x * m.c.y - m.b.y * m.c.x;
         return m.a.x * a - m.a.y * b + m.a.z * c;
+    }
+
+    // ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    template<typename T>
+    T get_determinant( matrix2x2<T> m ) {
+        return m.a11 * m.a22 - m.a12 * m.a21;
     }
 
     // ==========

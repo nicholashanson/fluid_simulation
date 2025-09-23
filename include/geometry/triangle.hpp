@@ -2,6 +2,7 @@
 #define TRIANGLE_HPP
 
 #include <geometry/geometry.hpp>
+#include <lin_alg/lin_alg.hpp>
 
 namespace geometry {
 
@@ -115,9 +116,7 @@ namespace geometry {
     // the centroid of a triangle is the point where the three medians of the traingle intersect
     // a median is a line segment that connects a vertex to the mid-point of the opposite edge
     template<typename T>
-    std::pair<T,T> get_triangle_centroid( const std::pair<T,T>& p, 
-                                          const std::pair<T,T>& q,
-                                          const std::pair<T,T>& r ) {
+    std::pair<T,T> get_triangle_centroid( const std::pair<T,T>& p, const std::pair<T,T>& q, const std::pair<T,T>& r ) {
         auto [ qx_prime, qy_prime ] = get_difference( q, p );
         auto [ rx_prime, ry_prime ] = get_difference( r, p );
         auto cx_prime = 2 * get_mid_point( qx_prime, rx_prime ) / 3;
@@ -133,19 +132,20 @@ namespace geometry {
     template<typename T>
     std::pair<T,T> get_triangle_ortho_center( const std::pair<T,T>& p, const std::pair<T,T>& q, const std::pair<T,T>& r,
                                               T a = 0, T b = 0, T c = 0 ) {
-        const T A = get_triangle_area( p, q, r );
-        const T d_11 = dist_sqr( p, r ) + c - a;
-        const T d_12 = p.second - r.second;
-        const T d_21 = dist_sqr( q, r ) + c - b;
-        const T d_22 = q.second - r.second;
-        
-        const T o_x = r.first + ( d_11 * d_22 - d_12 * d_21 ) / ( 4 * A );
-        const T e_11 = p.first - r.first;
-        const T e_12 = d_11;
-        const T e_21 = q.first - r.first;
-        const T e_22 = d_21;
-        const T o_y = r.second + ( e_11 * e_22 - e_12 * e_21 ) / ( 4 * A );
-        return { o_x, o_y };
+        auto qr = get_difference(q, r);
+        auto pr = get_difference(p, r);
+        matrix2x2<T> A(
+            qr.first, qr.second,
+            pr.first, pr.second
+        );
+
+        std::pair<T,T> B{
+            qr.first * p.first + qr.second * p.second,
+            pr.first * q.first + pr.second * q.second
+        };
+
+        auto H = lin_alg::solve_cramer(A, B);
+        return H;
     }
 
     // ========================================
@@ -194,23 +194,10 @@ namespace geometry {
     //  Get Triangle Orthoradius Squared
     // ==================================
 
-    template<typename I,typename T>
-    T get_triangle_orthoradius_squared( const std::pair<T,T>& p, 
-                                        const std::pair<T,T>& q,
-                                        const std::pair<T,T>& r,
-                                        const T a, const T b, const T c ) {
-        T A = get_triangle_area( p, q, r );
-        T d_11 = dist_sqr( p, r ) + c - a;
-        T d_21 = dist_sqr( q, r ) + c - b;
-        auto [ e_11, d_12 ] = get_difference( p, r );
-        auto [ e_21, d_22 ] = get_difference( q, r );
-
-        T e_12 = d_11;
-        T e_22 = d_21;
-
-        T t_1 = d_11 * d_22 - d_12 * d_21;
-        T t_2 = e_11 * e_22 - e_12 * e_21;
-        return ( t_1 * t_1 + t_2 * t_2 ) / ( 16 * A * A ) - c;
+    template<typename T>
+    T get_triangle_ortho_radius_squared( const std::pair<T,T>& p, const std::pair<T,T>& q, const std::pair<T,T>& r ) {
+        auto ortho_center = get_triangle_ortho_center( p, q, r );
+        return get_squared_distance_to_segment( p, r, ortho_center );
     }
 
     // =======================
@@ -235,30 +222,19 @@ namespace geometry {
     // ===========================
 
     template<typename T>
-    std::pair<T,T> get_triangle_circumcenter( const std::pair<T,T>& p, 
-                                              const std::pair<T,T>& q, 
-                                              const std::pair<T,T>& r,
-                                              const T A ) {
-        T d_11 = dist_sqr( p, r );
-        T d_12 = p.second - r.second;
-        T d_21 = dist_sqr( q, r );
-        T d_22 = q.second - r.second;
-        T o_x = r.first + ( d_11 * d_22 - d_12 * d_21 ) / ( 4 * A );
-        T e_11 = p.first - r.first;
-        T e_12 = d_11;
-        T e_21 = q.first - r.first;
-        T e_22 = d_21;
-        T o_y = r.second + ( e_11 * e_22 - e_12 * e_21 ) / ( 4 * A );
-        return { o_x, o_y };
+    std::pair<T,T> get_triangle_circumcenter( const std::pair<T,T>& p, const std::pair<T,T>& q, const std::pair<T,T>& r, const T area ) {
+        matrix2x2<T> M( get_difference( p, r ), get_difference( q, r ) );
+        std::pair<T,T> D{ dist_sqr( p, r ), dist_sqr( q, r ) };
+        std::pair<T,T> offset{ get_cross_product( D, M.r2() ), get_cross_product( M.r1(), D ) };
+        offset = scale( 1.0 / ( 4.0 * area ), offset );  
+        return get_sum( r, offset );
     }
 
     // ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     template<typename T>
-    std::pair<T,T> get_triangle_circumcenter( const std::pair<T,T>& p, 
-                                              const std::pair<T,T>& q, 
-                                              const std::pair<T,T>& r ) {
-        T A = get_triangle_area( p, q, r );
-        return get_triangle_circumcenter( p, q, r, A );
+    std::pair<T,T> get_triangle_circumcenter( const std::pair<T,T>& p, const std::pair<T,T>& q, const std::pair<T,T>& r ) {
+        T area = get_triangle_area( p, q, r );
+        return get_triangle_circumcenter( p, q, r, area );
     }
 
     // =====================
@@ -266,14 +242,12 @@ namespace geometry {
     // =====================
 
     template<typename T>
-    std::tuple<T,T,T> get_triangle_angles( const std::pair<T,T>& p,
-                                           const std::pair<T,T>& q,
-                                           const std::pair<T,T>& r ) {
-        const T A = get_triangle_area( p, q, r );
-        T theta_1 = calculate_theta( p, q, r, p, A );
-        T theta_2 = calculate_theta( q, p, r, q, A ); 
-        T theta_3 = calculate_theta( r, p, q, r, A );
-        return min_med_max( theta_1, theta_2, theta_3 );
+    std::tuple<T,T,T> get_triangle_angles( const std::pair<T,T>& p, const std::pair<T,T>& q, const std::pair<T,T>& r ) {
+        const T area = get_triangle_area( p, q, r );
+        T theta1 = calculate_theta( p, q, r, p, area );
+        T theta2 = calculate_theta( q, p, r, q, area ); 
+        T theta3 = calculate_theta( r, p, q, r, area );
+        return min_med_max( theta1, theta2, theta3 );
     }
 
 } // namespace geometry
