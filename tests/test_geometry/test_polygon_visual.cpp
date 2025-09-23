@@ -10,14 +10,13 @@
 
 #include <cmath>
 
-#include <fs/fvm/triangulation.hpp>
 #include <geometry/polygon.hpp>
 
 TEST( VisualGeometryTests, DistanceToSingleSegment1 ) {
 
     std::vector<size_t> boundary_nodes = { 0, 1 };
     std::pair<double, double> p = { 5.0, 5.0 };
-    double dist = geometry::distance_to_polygon_single_segment( 
+    double dist = geometry::get_distance_to_polygon_with_single_segment( 
         p,                      // the point 
         test::square_points,    // the points that deine the polygon
         boundary_nodes          // the nodes that define the single segement
@@ -120,10 +119,9 @@ TEST( VisualGeometryTests, DistanceToSingleSegment1 ) {
 
 TEST( VisualGeometryTests, DistanceToSingleSegment2 ) {
 
-
     std::vector<size_t> boundary_nodes = { 0, 3 };
     std::pair<double, double> p = { 5.0, 5.0 };
-    double dist = geometry::distance_to_polygon_single_segment( 
+    double dist = geometry::get_distance_to_polygon_with_single_segment( 
         p,                      // the point 
         test::square_points,    // the points that deine the polygon
         boundary_nodes          // the nodes that define the single segement
@@ -157,16 +155,13 @@ TEST( VisualGeometryTests, DistanceToSingleSegment2 ) {
     app::get_projection( triangle_shader_program, -20.0, 20.0, -20.0, 20.0 );
     app::identity_view( triangle_shader_program );
     app::identity_model( triangle_shader_program );
-
     auto point_shader_program = app::get_point_shader_program();
 
     glBindVertexArray( VAO );
     glBindBuffer( GL_ARRAY_BUFFER, VBO );
-
     glBufferData( GL_ARRAY_BUFFER, vertices.size() * sizeof( glm::vec2 ), vertices.data(), GL_STATIC_DRAW );
     glVertexAttribPointer( 0, 2, GL_FLOAT, GL_FALSE, sizeof( glm::vec2 ), ( void* )0 );
     glEnableVertexAttribArray( 0 );
-
     glBindBuffer( GL_ARRAY_BUFFER, 0 );
     glBindVertexArray( 0 );
 
@@ -190,7 +185,6 @@ TEST( VisualGeometryTests, DistanceToSingleSegment2 ) {
 
         glPointSize( 10.0f );
         glDrawArrays( GL_POINTS, 4, 3 );
-
         glBindVertexArray( 0 );
         glfwSwapBuffers( window );
         glfwPollEvents();

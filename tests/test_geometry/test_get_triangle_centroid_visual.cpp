@@ -8,18 +8,15 @@
 
 #include <cmath>
 
-#include <fs/fvm/triangulation.hpp>
 #include <geometry/triangle.hpp>
 
-TEST( VisualGeometryTests, TriangleCentroid ) {
-
+TEST( VisualGeometryTest, GetTriangleCentroid ) {
     std::pair<double,double> p( -1.0, 0.0 );
     std::pair<double,double> q(  1.0, 0.0 );
     std::pair<double,double> r(  0.0, 1.0 );
-
     auto triangle_centroid = geometry::get_triangle_centroid( p, q, r );
 
-    GLFWwindow* window = app::initialize_window_for_test();
+    GLFWwindow* window = app::initialize_window_for_test( "Triangle Centroid" );
     ASSERT_NE( window, nullptr );
 
     std::vector<glm::vec2> triangle = {
@@ -66,7 +63,6 @@ TEST( VisualGeometryTests, TriangleCentroid ) {
     glBufferData( GL_ARRAY_BUFFER, vertices.size() * sizeof( glm::vec2 ), vertices.data(), GL_STATIC_DRAW );
     glVertexAttribPointer( 0, 2, GL_FLOAT, GL_FALSE, sizeof( glm::vec2 ), ( void* )0 );
     glEnableVertexAttribArray( 0 );
-
     glBindBuffer( GL_ARRAY_BUFFER, 0 );
     glBindVertexArray( 0 );
 
@@ -82,7 +78,6 @@ TEST( VisualGeometryTests, TriangleCentroid ) {
 
         glBindVertexArray( VAO );
         glDrawArrays( GL_LINE_LOOP, 0, 3 ); 
-
         glDrawArrays( GL_LINES, 3, 6 ); 
 
         glUseProgram( point_shader_program);
