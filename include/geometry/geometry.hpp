@@ -5,6 +5,57 @@
 
 namespace geometry {
 
+    // ==========
+    //  B Spline
+    // ==========
+
+    template<typename T>
+    struct b_spline;
+
+    template<typename T>
+    std::pair<T,T> de_boor( const b_spline<T>&, const T t );
+
+    template<typename T>
+    struct b_spline {
+        b_spline( const std::vector<std::pair<T,T>>& control_points_, const int degree_ ) 
+        : control_points( control_points_ ), 
+          knots( degree_ + control_points_.size() + 1 ),
+          degree( degree_ ) {
+            std::size_t order = degree_ + 1;
+            std::fill( knots.begin(), knots.begin() + order, 0 );
+            for ( std::size_t i = order; i <= control_points_.size(); ++i ) {
+                knots[ i ] = knots[ i - 1 ] + 1;
+            }
+            std::fill( knots.begin() + control_points_.size(), knots.end(), 
+                knots[ control_points_.size() ] );
+        };
+
+        std::pair<T,T> evaluate( const T t ) const {
+            return de_boor( *this, t );
+        }
+        
+        int degree;
+        std::vector<std::pair<T,T>> control_points;
+        std::vector<int> knots;
+    };
+
+    // ================
+    //  Find Knot Span
+    // ================
+
+    template<typename T>
+    std::size_t find_knot_span( const b_spline<T>& spline, const T t ) {
+        std::size_t n = spline.knots.size() - spline.degree - 1;
+        if ( t == spline.knots[ n + 1 ] ) {
+            return n;
+        }
+        if (t == spline.knots[ spline.degree ] ) {
+            return spline.degree;
+        }
+        auto it = std::upper_bound( spline.knots.begin() + spline.degree, spline.knots.begin() + n + 1, t );
+        return std::distance( spline.knots.begin(), it ) - 1;
+    }
+
     // =========
     //  Reverse
     // =========
@@ -67,7 +118,7 @@ namespace geometry {
             return { x, y, z };
         }
 
-        bool operator==( const three_d_point& rhs ) {
+        bool operator==( const three_d_point& rhs ) const {
             return x == rhs.x && y == rhs.y && z == rhs.z;
         }
     };
@@ -85,6 +136,13 @@ namespace geometry {
 
         three_d_plane( const T alpha, const T beta, const T gamma, const T delta )
             : alpha( alpha ), beta( beta ), gamma( gamma ), delta( delta ) {}
+
+        bool operator==( const three_d_plane& rhs ) const {
+            return alpha == rhs.alpha &&
+                   beta == rhs.beta &&
+                   gamma == rhs.gamma &&
+                   delta == rhs.delta;
+        }
     };
 
     // ==========
@@ -102,15 +160,13 @@ namespace geometry {
     // =========
 
     template<typename T>
-    std::pair<T,T> get_sum( const std::pair<T,T>& p, 
-                            const std::pair<T,T>& q ) {
+    std::pair<T,T> get_sum( const std::pair<T,T>& p, const std::pair<T,T>& q ) {
         return { p.first + q.first, p.second + q.second };
     }
 
     // ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     template<typename T>
-    three_d_point<T> get_sum( const three_d_point<T>& p, 
-                              const three_d_point<T>& q ) {
+    three_d_point<T> get_sum( const three_d_point<T>& p, const three_d_point<T>& q ) {
         three_d_point<T> sum;
         sum.x = p.x + q.x;
         sum.y = p.y + q.y;
@@ -210,6 +266,13 @@ namespace geometry {
         return std::sqrt( ( p.x - q.x ) * ( p.x - q.x ) + 
                           ( p.y - q.y ) * ( p.y - q.y ) +
                           ( p.z - q.z ) * ( p.z - q.z ) );
+    }
+
+    // ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    template<typename T>
+    T get_distance( const std::pair<T,T>& p, const std::pair<T,T>& q ) {
+        return std::sqrt( ( p.first - q.first ) * ( p.first - q.first ) + 
+                          ( p.second - q.second ) * ( p.second - q.second ) );
     }
 
     // ===================
@@ -412,6 +475,36 @@ namespace geometry {
             theta += M_PI;
         }
         return theta;
+    }
+
+    // =========
+    //  De Boor
+    // =========
+
+    template<typename T>
+    std::pair<T,T> de_boor( const b_spline<T>& spline, const T t_normalized ) {
+        T a = spline.knots[ spline.degree ]; 
+        T b = spline.knots[ spline.control_points.size() ];
+        T t = a + t_normalized * ( b - a );
+        if ( t_normalized == 0 ) {
+            return spline.control_points.front();
+        }
+        if ( t_normalized == 1 ) {
+            return spline.control_points.back();
+        }
+        auto k = find_knot_span( spline, t );
+        std::vector<std::pair<T,T>> d( spline.degree + 1 );
+        for ( std::size_t i = 0; i <= spline.degree; ++i ) {
+            d[ i ] = spline.control_points[ k - spline.degree + i ];
+        }
+        for ( std::size_t r = 1; r <= spline.degree; ++r ) {
+            for ( std::size_t j = spline.degree; j >= r ; --j ) {
+                std::size_t i = k - spline.degree + j;
+                T alpha = ( t - spline.knots[ i ] ) / ( spline.knots[ i + spline.degree - r + 1 ] - spline.knots[ i ] );
+                d[ j ] = get_sum( scale( 1 - alpha, d[ j - 1 ] ), scale( alpha, d[ j ] ) );
+            } 
+        }
+        return d[ spline.degree ];
     }
 
 } // namespace geometry
