@@ -30,6 +30,11 @@ namespace geometry {
                 knots[ control_points_.size() ] );
         };
 
+        b_spline( const std::vector<std::pair<T,T>>& control_points_, const std::vector<int> knots_, const int degree_ ) 
+        : control_points( control_points_ ), 
+          knots( knots_ ),
+          degree( degree_ ) {}
+
         std::pair<T,T> evaluate( const T t ) const {
             return de_boor( *this, t );
         }
@@ -505,6 +510,27 @@ namespace geometry {
             } 
         }
         return d[ spline.degree ];
+    }
+
+    // ===============
+    //  Differentiate
+    // ===============
+
+    template<typename T>
+    std::pair<T,T> differentiate( const b_spline<T>& spline, const T t ) {
+        std::vector<std::pair<T,T>> derivative_control_points( spline.control_points.size() - 1 );
+        for ( std::size_t i = 0; i < spline.control_points.size() - 1; ++i ) {
+            T denom = spline.knots[ i + spline.degree + 1 ] - spline.knots[ i + 1 ];
+            auto factor = static_cast<T>( spline.degree ) / denom;
+            derivative_control_points[ i ] = std::make_pair( spline.control_points[ i + 1 ].first - spline.control_points[ i ].first,
+                                                             spline.control_points[ i + 1 ].second - spline.control_points[ i ].second );
+            derivative_control_points[ i ] = scale( factor, derivative_control_points[ i ] );
+        }
+        std::vector<int> derivative_knots( spline.knots.begin() + 1, spline.knots.end() - 1 );
+        auto derivative_spline = b_spline( derivative_control_points, derivative_knots, spline.degree - 1 );
+        std::pair<T,T> derivative = de_boor( derivative_spline, t );
+        T range = spline.knots.back() - spline.knots.front();
+        return scale( range, derivative );
     }
 
 } // namespace geometry
