@@ -2,6 +2,7 @@
 #define GEOMETRY_HPP
 
 #include "adaptive_arithmetic.hpp"
+#include "gl_quadrature.hpp"
 
 namespace geometry {
 
@@ -517,7 +518,7 @@ namespace geometry {
     // ===============
 
     template<typename T>
-    std::pair<T,T> differentiate( const b_spline<T>& spline, const T t ) {
+    std::pair<T,T> get_first_derivative( const b_spline<T>& spline, const T t ) {
         std::vector<std::pair<T,T>> derivative_control_points( spline.control_points.size() - 1 );
         for ( std::size_t i = 0; i < spline.control_points.size() - 1; ++i ) {
             T denom = spline.knots[ i + spline.degree + 1 ] - spline.knots[ i + 1 ];
@@ -531,6 +532,50 @@ namespace geometry {
         std::pair<T,T> derivative = de_boor( derivative_spline, t );
         T range = spline.knots.back() - spline.knots.front();
         return scale( range, derivative );
+    }
+
+    // ================
+    //  Get Arc Legnth
+    // ================
+
+    template<typename T>
+    T get_arc_length( const b_spline<T>& spline, const T t_1, const T t_2 ) {
+        T factor = ( t_2 - t_1 ) / 2.0;
+        T shift  = ( t_2 + t_1 ) / 2.0;
+        T s{};
+        for ( auto [ x, w ] : gl ) {
+            T t = factor * x + shift;
+            auto [ dx, dy ] = get_first_derivative( spline, t );
+            s += w * std::sqrt( dx * dx + dy * dy );
+        }
+        return factor * s;
+    }
+
+    // =======================
+    //  Get Second Derivative
+    // =======================
+
+    template<typename T>
+    std::pair<T,T> get_second_derivative( const b_spline<T>& spline, const T t ) {
+        int degree = spline.degree;
+        std::vector<std::pair<T,T>> deriv_points( spline.control_points.size() - 2 );
+        for ( std::size_t i = 0; i < spline.control_points.size() - 2; ++i ) {
+            auto x0 = spline.control_points[ i ];
+            auto x1 = spline.control_points[ i + 1 ];
+            auto x2 = spline.control_points[ i + 2 ];
+            auto scale1 = static_cast<T>( degree     ) / ( spline.knots[ i + degree + 1 ] - spline.knots[ i + 1 ] );
+            auto scale2 = static_cast<T>( degree     ) / ( spline.knots[ i + degree + 2 ] - spline.knots[ i + 2 ] );
+            auto scale3 = static_cast<T>( degree - 1 ) / ( spline.knots[ i + degree + 1 ] - spline.knots[ i + 2 ] );
+            auto q0 = scale( scale1, get_difference( x1, x0 ) );
+            auto q1 = scale( scale2, get_difference( x2, x1 ) );
+            deriv_points[ i ] = scale( scale3, get_difference( q1, q0 ) );
+        }
+        std::vector<int> deriv_knots( spline.knots.begin() + 2, spline.knots.end() - 2);
+        b_spline<T> derivative_spline( deriv_points, deriv_knots, degree - 2 );
+        auto deriv = derivative_spline.evaluate( t );
+        T range = spline.knots.back() - spline.knots.front();
+        range *= range;
+        return scale( range, deriv );
     }
 
 } // namespace geometry
