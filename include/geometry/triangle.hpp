@@ -25,8 +25,7 @@ namespace geometry {
     // ============================================
 
     template<typename T>
-    std::tuple<T,T,T,size_t> get_squared_triangle_lengths_with_smallest_index( const std::pair<T,T>& p,
-                                                                               const std::pair<T,T>& q,
+    std::tuple<T,T,T,size_t> get_squared_triangle_lengths_with_smallest_index( const std::pair<T,T>& p, const std::pair<T,T>& q,
                                                                                const std::pair<T,T>& r ) {
         const T l_1 = dist_sqr( p, q );
         const T l_2 = dist_sqr( q, r );
@@ -47,8 +46,7 @@ namespace geometry {
     // ==========================
 
     template<typename T>
-    std::tuple<T,T,T> get_squared_triangle_lengths( const std::pair<T,T>& p, const std::pair<T,T>& q, 
-                                                    const std::pair<T,T>& r ) {
+    std::tuple<T,T,T> get_squared_triangle_lengths( const std::pair<T,T>& p, const std::pair<T,T>& q, const std::pair<T,T>& r ) {
         T l_1{};
         T l_2{};
         T l_3{};
@@ -85,9 +83,8 @@ namespace geometry {
         }
         if ( A_2 < 0 ) {
             return 0;
-        } else {
-            return std::sqrt( A_2 );
         }
+        return std::sqrt( A_2 );
     }
 
     // ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -132,32 +129,21 @@ namespace geometry {
     template<typename T>
     std::pair<T,T> get_triangle_ortho_center( const std::pair<T,T>& p, const std::pair<T,T>& q, const std::pair<T,T>& r,
                                               T a = 0, T b = 0, T c = 0 ) {
-        auto qr = get_difference(q, r);
-        auto pr = get_difference(p, r);
-        matrix2x2<T> A(
-            qr.first, qr.second,
-            pr.first, pr.second
-        );
-
-        std::pair<T,T> B{
-            qr.first * p.first + qr.second * p.second,
-            pr.first * q.first + pr.second * q.second
-        };
-
-        auto H = lin_alg::solve_cramer(A, B);
-        return H;
+        auto delta_qr = get_difference(q, r);
+        auto delta_pr = get_difference(p, r);
+        matrix2x2<T> A( delta_qr.first, delta_qr.second, delta_pr.first, delta_pr.second );
+        std::pair<T,T> D{ get_inner_product( delta_qr, p ), get_inner_product( delta_pr, q ) };
+        auto ortho_center = lin_alg::solve_cramer( A, D );
+        return ortho_center;
     }
 
     // ========================================
     //  Construct Positively Oriented Triangle
     // ========================================
 
-    template<typename T,typename Points>
-    std::optional<triangle> construct_positively_oriented_triangle( const Points& points,
-                                                                    const std::size_t i, 
-                                                                    const std::size_t j, 
-                                                                    const std::size_t k ) {
-        auto [ p, q, r ] = get_triangle_points( points, i, j, k );
+    template<typename T>
+    std::optional<triangle> construct_positively_oriented_triangle( const std::pair<T,T>& p, const std::pair<T,T>& q, const std::pair<T,T>& r,
+                                                                    const std::size_t i = 0, const std::size_t j = 0, const std::size_t k = 0 ) {
         auto orientation = get_orient( p, q, r );
         if ( orientation == orient::degenerate ) {
             return std::nullopt;
@@ -171,6 +157,14 @@ namespace geometry {
         }
     }
 
+    // ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    template<typename T,typename Points>
+    std::optional<triangle> construct_positively_oriented_triangle( const Points& points, const std::size_t i, const std::size_t j, 
+                                                                    const std::size_t k ) {
+        auto [ p, q, r ] = get_triangle_points( points, i, j, k );
+        return construct_positively_oriented_triangle( p, q, r, i, j, k );
+    }
+
     // ===========================
     //  Get Triangle Circumradius
     // ===========================
@@ -182,9 +176,7 @@ namespace geometry {
 
     // ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     template<typename T>
-    T get_triangle_circumradius( const std::pair<T,T>& p, 
-                                 const std::pair<T,T>& q, 
-                                 const std::pair<T,T>& r ) {
+    T get_triangle_circumradius( const std::pair<T,T>& p, const std::pair<T,T>& q, const std::pair<T,T>& r ) {
         const auto [ l_1_sqr, l_2_sqr, l_3_sqr ] = get_squared_triangle_lengths( p, q, r );
         T A = get_triangle_area( p, q, r );
         return get_triangle_circumradius( A, l_1_sqr, l_2_sqr, l_3_sqr );
