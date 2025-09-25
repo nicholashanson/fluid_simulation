@@ -1,4 +1,5 @@
 #include <geometry/triangle.hpp>
+#include <geometry/polygon.hpp>
 
 namespace geometry {
 
@@ -49,35 +50,51 @@ namespace geometry {
             triangulation( const std::vector<std::pair<T,T>>&& points ) 
                 : m_points( std::move( points ) ) {}
 
-            triangulation( const triangle_set&& triangles, const std::vector<std::pair<T,T>>&& points, 
-                           const std::vector<I>&& boundary ) 
+            triangulation( const std::vector<std::pair<T,T>>& points,
+                           const std::vector<std::vector<I>>& boundaries,
+                           const polygon_heirarchy<I,T>& hierarchy ) 
+                : m_points( points ),
+                  m_boundaries( boundaries ),
+                  m_polygon_hierarchy( hierarchy ) {}
+
+                triangulation( const triangle_set&& triangles, 
+                               const std::vector<std::pair<T,T>>&& points, 
+                               const std::vector<std::vector<I>>&& boundaries ) 
                 : m_triangles( std::move( triangles ) ), 
                   m_points( std::move( points ) ), 
-                  m_boundary( std::move( boundary ) ) {}
+                  m_boundaries( std::move( boundaries ) ) {}
 
-            const std::map<I,representative_coords<I,T>>& get_representative_points() {
-                return m_representative_points;
-            }
             T get_weight( const std::size_t i ) const {
                 return ( T )0;
             }
             std::pair<T,T> get_point( const std::size_t i ) const {
                 return m_points[ i ];
             } 
-            const std::vector<std::pair<T,T>>& get_points() const {
-                return m_points;
+            std::vector<I> get_boundary( const I id ) const {
+                return m_boundaries( id );
+            }
+            std::vector<std::pair<T,T>> get_points( const std::vector<I>& boundary ) {
+                std::vector<std::pair<T,T>> points;
+                for ( auto& node : boundary ) {
+                    points.push_back( m_points[ node ] );
+                }
+                return points;
             }
             const triangle_set& get_triangles() const {
                 return m_triangles;
             }
-            const std::size_t number_of_point() const {
+            polygon_tree<I>* get_polygon_tree( const I id ) const {
+                return m_polygon_hierarchy.get_polygon_tree( id );
+            }
+            const std::size_t get_number_of_points() const {
                 return m_points.size();
             }
         private:
             triangle_set m_triangles;
             std::map<I,representative_coords<I,T>> m_representative_points;
             std::vector<std::pair<T,T>> m_points;
-            std::vector<I> m_boundary;
+            std::vector<std::vector<I>> m_boundaries;
+            polygon_heirarchy<I,T> m_polygon_hierarchy;
     };
 
 	// ===========
@@ -113,17 +130,20 @@ namespace geometry {
     //  Get Lattice Boundary
     // ======================
 
-    inline std::vector<int> get_lattice_boundary( const std::size_t xdim, const std::size_t ydim ) {
-        std::vector<int> boundary( 2 * xdim + 2 * ydim - 4 /* corners are counterd twice */ );
-        for ( size_t x = 0; x < xdim; ++x ) {
+    template<typename I = std::size_t>
+    std::vector<std::vector<I>> get_lattice_boundary( const std::size_t xdim, const std::size_t ydim ) {
+        std::vector<std::vector<I>> boundaries( 1 );
+        auto& boundary = boundaries.front();
+        boundary.resize( 2 * xdim + 2 * ydim - 4 /* corners are counterd twice */ );
+        for ( std::size_t x = 0; x < xdim; ++x ) {
             boundary[ x ] = sub_2_ind( x, 0, xdim );
             boundary[ xdim + x ] = sub_2_ind( x, ydim - 1, xdim );
         }
-        for ( size_t y = 1; y < ydim - 1; ++y ) {
+        for ( std::size_t y = 1; y < ydim - 1; ++y ) {
             boundary[ 2 * xdim + y - 1 ] = sub_2_ind( 0, y, xdim );
             boundary[ 2 * xdim + ( ydim - 2 ) + y - 1 ] = sub_2_ind( xdim - 1, y, xdim );
         }
-        return boundary;
+        return boundaries;
     }
 
     // =======================
@@ -152,12 +172,11 @@ namespace geometry {
     // =======================
 
     template<typename I,typename T>
-    triangulation<I,T> triangulate_rectangle( const T a, const T b, const T c, const T d,
-                                              const std::size_t xdim, const std::size_t ydim,  
+    triangulation<I,T> triangulate_rectangle( const T a, const T b, const T c, const T d, const std::size_t xdim, const std::size_t ydim,  
                                               bool single_boundary = false ) {
         auto lattice_triangles = get_lattice_triangles( ydim, xdim );
         auto points = get_lattice_points( a, b, c, d, xdim, ydim );
-        auto boundary = get_lattice_boundary( xdim, ydim ); 
+        auto boundary = get_lattice_boundary<int>( xdim, ydim ); 
         auto tri = triangulation( std::move( lattice_triangles ), std::move( points ), std::move( boundary ) );
         return tri;
     }
@@ -206,6 +225,17 @@ namespace geometry {
         const T b = tri.get_weight( std::get<1>( t ) );
         const T c = tri.get_weight( std::get<2>( t ) );
         return get_triangle_orthoradius_squared( p, q, r, a, b, c );
+    }
+
+    // =========================
+    //  Construct Triangulation
+    // =========================
+
+    template<typename I,typename T>
+    triangulation<I,T> construct_triangulation( const std::vector<std::pair<T,T>>& points, 
+                                                const std::vector<std::vector<I>>& boundaries ) {
+        auto polygon_heirarchy = construct_polygon_hierarchy_multiple_curves( points, boundaries );
+        return triangulation( points, boundaries, polygon_heirarchy );
     }
 
 } // namespace geometry
