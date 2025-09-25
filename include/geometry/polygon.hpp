@@ -99,8 +99,8 @@ namespace geometry {
     template<typename I,typename T>
     std::pair<T,std::pair<T,T>> get_polygon_featues_single_segment( const std::vector<std::pair<T,T>>& points, 
                                                                     const std::vector<I>& boundary ) {
-        std::pair<T,T> centroid;
-        T area;
+        std::pair<T,T> centroid{};
+        T area{};
         auto a = points[ boundary.front() ];
         for ( std::size_t i = 1; i < boundary.size(); ++i ) {
             auto b = points[ boundary[ i % boundary.size() ] ];
@@ -127,7 +127,7 @@ namespace geometry {
     };
 
     // ===================
-    //  Polygon Hierarchy
+    //  Polygon Heirarchy
     // ===================
 
     template<typename I,typename T>
@@ -136,6 +136,15 @@ namespace geometry {
         std::vector<bounding_box<T>> bounding_boxes;
         std::map<I,polygon_tree<I>*> trees;
         std::vector<polygon_tree<I>*> reoder_cache;
+
+        polygon_tree<I>* get_polygon_tree( const I id ) const {
+            auto it = trees.find( id );
+            if ( it != trees.end() ) {
+                return it->second;
+            }
+            return nullptr;
+        }
+
     };
 
     // ===========================
@@ -210,7 +219,7 @@ namespace geometry {
                 }
             }
         }
-        if ( point_is_in_polygon_tree( context, tree, representative_point ) ) {
+        if ( point_is_in_polygon_tree( context, tree, representative_point ) && !deepest ) {
             deepest = tree;
         }
         return deepest;
@@ -275,7 +284,7 @@ namespace geometry {
 
     template<typename I,typename T>
     polygon_heirarchy<I,T> construct_polygon_hierarchy_single_curve( const std::vector<std::pair<T,T>>& points, 
-                                                                      const std::vector<I>& boundary ) {
+                                                                     const std::vector<I>& boundary ) {
         polygon_heirarchy<I,T> hierarchy;
         bounding_box<T> bb;
         if ( points.size() == boundary.size() ) {
