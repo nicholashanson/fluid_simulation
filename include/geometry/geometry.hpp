@@ -189,6 +189,15 @@ namespace geometry {
         return ( v.x == 0 && v.y == 0 && v.z == 0 );
     }
 
+    // ============
+    //  Get Normal
+    // ============
+
+    template<typename T>
+    T get_normal( const std::pair<T,T>& p ) {
+        return std::sqrt( p.first * p.first + p.second * p.second );
+    }
+
     // =================
     //  Get Dot Product
     // =================
@@ -386,7 +395,7 @@ namespace geometry {
     // ============
     //  Get Orient
     // ============
-    // - (p,q,r) forms a  positively-oriented if, when traversing in the order p -> q -> r, 
+    // - (p,q,r) forms a  positively-oriented triangle if, when traversing in the order p -> q -> r, 
     // the interior of the triangle is on the right-hand side
     template<typename T>
     orient get_orient( const std::pair<T,T>& p, const std::pair<T,T>& q, const std::pair<T,T>& r ) {  
@@ -558,7 +567,7 @@ namespace geometry {
     template<typename T>
     std::pair<T,T> get_second_derivative( const b_spline<T>& spline, const T t ) {
         int degree = spline.degree;
-        std::vector<std::pair<T,T>> deriv_points( spline.control_points.size() - 2 );
+        std::vector<std::pair<T,T>> derivative_points( spline.control_points.size() - 2 );
         for ( std::size_t i = 0; i < spline.control_points.size() - 2; ++i ) {
             auto x0 = spline.control_points[ i ];
             auto x1 = spline.control_points[ i + 1 ];
@@ -568,15 +577,27 @@ namespace geometry {
             auto scale3 = static_cast<T>( degree - 1 ) / ( spline.knots[ i + degree + 1 ] - spline.knots[ i + 2 ] );
             auto q0 = scale( scale1, get_difference( x1, x0 ) );
             auto q1 = scale( scale2, get_difference( x2, x1 ) );
-            deriv_points[ i ] = scale( scale3, get_difference( q1, q0 ) );
+            derivative_points[ i ] = scale( scale3, get_difference( q1, q0 ) );
         }
-        std::vector<int> deriv_knots( spline.knots.begin() + 2, spline.knots.end() - 2);
-        b_spline<T> derivative_spline( deriv_points, deriv_knots, degree - 2 );
-        auto deriv = derivative_spline.evaluate( t );
+        std::vector<int> derivative_knots( spline.knots.begin() + 2, spline.knots.end() - 2);
+        b_spline<T> derivative_spline( derivative_points, derivative_knots, degree - 2 );
+        auto derivative = derivative_spline.evaluate( t );
         T range = spline.knots.back() - spline.knots.front();
         range *= range;
-        return scale( range, deriv );
+        return scale( range, derivative );
     }
+
+    // ===========
+    //  Curvature
+    // ===========
+
+    template<typename T>
+    T get_curvature( const b_spline<T>& spline, const T t ) {
+        auto first_derivative = get_first_derivative( spline, t );
+        auto second_derivative = get_second_derivative( spline, t );
+        return get_cross_product( first_derivative, second_derivative )
+             / std::pow( get_normal( first_derivative ), 3 ); 
+    }           
 
 } // namespace geometry
 
